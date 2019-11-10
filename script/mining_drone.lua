@@ -50,6 +50,33 @@ mining_drone.new = function(entity)
   new_drone.entity = entity
   entity.ai_settings.path_resolution_modifier = 1
   new_drone.inventory = proxy_inventory()
+
+
+  rendering.draw_light
+  {
+    sprite = "mining-drone-light",
+    oriented = true,
+    target = entity,
+    target_offset = {0, 0},
+    surface = entity.surface,
+    minimum_darkness = 0.3,
+    intensity = 0.6,
+    scale = 2
+  }
+
+  rendering.draw_light
+  {
+    sprite = "utility/light_medium",
+    oriented = false,
+    target = entity,
+    target_offset = {0, 0},
+    surface = entity.surface,
+    minimum_darkness = 0.3,
+    intensity = 0.4,
+    scale = 2.5,
+  }
+
+
   setmetatable(new_drone, mining_drone.metatable)
   return new_drone
 end
@@ -68,8 +95,10 @@ function mining_drone:process_mining()
 
   for k, product in pairs (mineable_properties.products) do
     local amount = self.inventory.insert({name = product.name, count = product_amount(product)})
-    self.entity.surface.create_entity{name = "flying-text", position = self.entity.position, text = product.name..": +"..amount}
+    --self.entity.surface.create_entity{name = "flying-text", position = self.entity.position, text = product.name..": +"..amount}
   end
+
+  self:update_sticker()
 
   if target.type == "resource" then
     if target.amount > 1 then
@@ -83,6 +112,7 @@ function mining_drone:process_mining()
   return self:try_to_mine()
 
 end
+
 
 function mining_drone:update(event)
   if event.result ~= defines.behavior_result.success then return end
@@ -145,6 +175,81 @@ function mining_drone:go_to(position)
     type = defines.command.go_to_location,
     destination = position
   }
+end
+
+local insert = table.insert
+
+function mining_drone:update_sticker()
+
+  local renderings = self.renderings
+  if renderings then
+    for k, v in pairs (renderings) do
+      rendering.destroy(v)
+    end
+    self  .renderings = nil
+  end
+
+  local inventory = self.inventory
+
+  local contents = inventory.get_contents()
+
+  if not next(contents) then return end
+
+  local number = table_size(contents)
+
+  local drone = self.entity
+  local surface = drone.surface
+  local forces = {drone.force}
+
+  local renderings = {}
+  self.renderings = renderings
+
+  insert(renderings, rendering.draw_sprite
+  {
+    sprite = "utility/entity_info_dark_background",
+    target = drone,
+    surface = surface,
+    forces = forces,
+    only_in_alt_mode = true,
+    target_offset = {0, -0.5},
+    x_scale = 0.5,
+    y_scale = 0.5,
+  })
+
+  if number == 1 then
+    insert(renderings, rendering.draw_sprite
+    {
+      sprite = "item/"..next(contents),
+      target = drone,
+      surface = surface,
+      forces = forces,
+      only_in_alt_mode = true,
+      target_offset = {0, -0.5},
+      x_scale = 0.5,
+      y_scale = 0.5,
+    })
+    return
+  end
+
+  local offset_index = 1
+
+  for name, count in pairs (contents) do
+    local offset = offsets[offset_index]
+    insert(renderings, rendering.draw_sprite
+    {
+      sprite = "item/"..name,
+      target = drone,
+      surface = surface,
+      forces = forces,
+      only_in_alt_mode = true,
+      target_offset = {-0.125 + offset[1], -0.5 + offset[2]},
+      x_scale = 0.25,
+      y_scale = 0.25,
+    })
+    offset_index = offset_index + 1
+  end
+
+
 end
 
 return mining_drone

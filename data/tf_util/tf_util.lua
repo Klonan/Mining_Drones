@@ -122,7 +122,7 @@ util.base_player = function()
 end
 
 util.path = function(str)
-  return "__Total_Automization__/" .. str
+  return "__Mining_Drones__/" .. str
 end
 
 util.empty_sound = function()

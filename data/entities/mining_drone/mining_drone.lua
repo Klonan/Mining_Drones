@@ -145,9 +145,24 @@ local recipe = {
   result = name
 }
 
+
+local light =
+{
+  type = "sprite",
+  name = "mining-drone-light",
+  filename = util.path("data/entities/mining_drone/drone-light-cone.png"),
+  priority = "extra-high",
+  flags = {"light"},
+  width = 200,
+  height = 430,
+  --shift = {0, -200/32}
+}
+
+
 data:extend
 {
   bot,
   item,
-  recipe
+  recipe,
+  light,
 }
