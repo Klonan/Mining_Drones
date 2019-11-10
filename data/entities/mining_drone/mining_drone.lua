@@ -133,7 +133,7 @@ local recipe = {
   type = "recipe",
   name = name,
   localised_name = {name},
-  --category = names.deployers.iron_unit,
+  --category = ,
   enabled = true,
   ingredients =
   {
