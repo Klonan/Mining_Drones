@@ -152,11 +152,22 @@ local recipe = {
   result = name
 }
 
+local chest_h =
+{
+  type = "container",
+  name = names.mining_depot_chest_h,
+  inventory_size = 19,
+  picture = util.empty_sprite(),
+  collision_box = {{-1.5, -1}, {1.5, 1}},
+  selection_box = {{-1.5, -1}, {1.5, 1}}
+}
+
 data:extend
 {
   machine,
   item,
   category,
   subgroup,
-  recipe
+  recipe,
+  chest_h
 }
