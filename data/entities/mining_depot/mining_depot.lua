@@ -6,7 +6,7 @@ local scale = 2
 util.recursive_hack_make_hr(machine)
 util.recursive_hack_scale(machine, scale)
 machine.collision_box = {{-1.5, -2.5},{1.5, 2.5}}
-machine.selection_box = {{-1.5, -2.5},{1.5, 2.5}}
+machine.selection_box = {{-1.5, -2.5},{1.5, 0.5}}
 machine.crafting_categories = {name}
 machine.crafting_speed = (1)
 machine.ingredient_count = nil
@@ -63,6 +63,18 @@ local h_chest = function(shift)
     shift = shift
   }
 end
+local h_shadow = function(shift)
+  return
+  {
+    filename = util.path("data/entities/mining_depot/depot-chest-h-shadow.png"),
+    width = 192,
+    height = 99,
+    frame_count = 1,
+    scale = 0.5,
+    shift = shift,
+    draw_as_shadow = true
+  }
+end
 
 local v_chest = function(shift)
   return
@@ -76,37 +88,54 @@ local v_chest = function(shift)
   }
 end
 
+local v_shadow = function(shift)
+  return
+  {
+    filename = util.path("data/entities/mining_depot/depot-chest-v-shadow.png"),
+    width = 150,
+    height = 155,
+    frame_count = 1,
+    scale = 0.5,
+    shift = shift,
+    draw_as_shadow = true
+  }
+end
+
 machine.animation =
 {
   north =
   {
     layers =
     {
-      base({0, -1}),
-      h_chest({0, 1.5})
+      base{0, -0.8},
+      h_shadow{0.2, 1.5},
+      h_chest{0, 1.5},
     }
   },
   south =
   {
     layers =
     {
-      h_chest({0, -1.5}),
-      base({0, 1}),
+      h_shadow{0.2, -1.5},
+      h_chest{0, -1.5},
+      base{0, 1.2},
     }
   },
   east =
   {
     layers =
     {
-      v_chest({-1.5, 0}),
-      base({1, 0}),
+      v_shadow{-1.3, 0},
+      v_chest{-1.5, 0},
+      base{1, 0.2},
     }
   },
   west =
   {
     layers =
     {
-      base({-1, 0}),
+      base{-1, 0.2},
+      v_shadow{1.7, 0},
       v_chest{1.5, 0},
     }
   },
@@ -159,7 +188,19 @@ local chest_h =
   inventory_size = 19,
   picture = util.empty_sprite(),
   collision_box = {{-1.5, -1}, {1.5, 1}},
-  selection_box = {{-1.5, -1}, {1.5, 1}}
+  selection_box = {{-1.5, -1}, {1.5, 1}},
+  selection_priority = 100
+}
+
+local chest_v =
+{
+  type = "container",
+  name = names.mining_depot_chest_v,
+  inventory_size = 19,
+  picture = util.empty_sprite(),
+  collision_box = {{-1, -1.5}, {1, 1.5}},
+  selection_box = {{-1, -1.5}, {1, 1.5}},
+  selection_priority = 100
 }
 
 data:extend
@@ -169,5 +210,6 @@ data:extend
   category,
   subgroup,
   recipe,
-  chest_h
+  chest_h,
+  chest_v,
 }
