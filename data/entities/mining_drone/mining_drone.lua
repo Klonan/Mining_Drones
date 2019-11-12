@@ -125,7 +125,7 @@ local item = {
   flags = {},
   --subgroup = "iron-units",
   order = "b-"..name,
-  stack_size = 10,
+  stack_size = 20,
   place_result = name
 }
 

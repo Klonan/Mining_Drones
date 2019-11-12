@@ -6,18 +6,15 @@ local scale = 2
 util.recursive_hack_make_hr(machine)
 util.recursive_hack_scale(machine, scale)
 machine.collision_box = {{-1.5, -2.5},{1.5, 2.5}}
-machine.selection_box = {{-1.5, -2.5},{1.5, 0.5}}
+machine.selection_box = {{-1.5, -2.5},{1.5, 2.5}}
 machine.crafting_categories = {name}
 machine.crafting_speed = (1)
 machine.ingredient_count = nil
 --machine.collision_mask = {"item-layer", "object-layer", "water-tile"}
 machine.allowed_effects = {"consumption", "speed", "pollution"}
-machine.module_specification =
-{
-  module_slots = 2
-}
+machine.module_specification =nil
 machine.minable = {result = name, mining_time = 1}
-machine.flags = {"placeable-neutral", "player-creation", "no-automated-item-removal"}
+machine.flags = {"placeable-neutral", "player-creation"}
 machine.fluid_boxes =
 {
   {
@@ -31,12 +28,13 @@ machine.fluid_boxes =
   off_when_no_fluid_recipe = false
 }
 machine.scale_entity_info_icon = true
-machine.energy_usage = "400kW"
+machine.energy_usage = "1W"
+machine.gui_title_key = "mining-depot-choose-resource"
 machine.energy_source =
 {
-  type = "electric",
+  type = "void",
   usage_priority = "secondary-input",
-  emissions_per_second_per_watt = 1 / 180000
+  emissions_per_second_per_watt = 0
 }
 machine.is_deployer = true
 
@@ -213,3 +211,22 @@ data:extend
   chest_h,
   chest_v,
 }
+
+local make_depot_recipe = function(item_prototype)
+  local recipe =
+  {
+    type = "recipe",
+    name = "mine-"..item_prototype.name,
+    localised_name = {"", "Mine ", item_prototype.localised_name or {"item-name."..item_prototype.name}},
+    icon = item_prototype.icon,
+    icon_size = item_prototype.icon_size,
+    icons = item_prototype.icons,
+    ingredients = {{names.drone_name, 20}},
+    result = item_prototype.name,
+    category = name
+  }
+  data:extend{recipe}
+end
+
+make_depot_recipe(data.raw.item["iron-ore"])
+make_depot_recipe(data.raw.item["wood"])

@@ -19,11 +19,6 @@ local on_built_entity = function(event)
 
   if entity.name ~= shared.drone_name then return end
 
-  local new_drone = Drone.new(entity)
-  add_drone(new_drone)
-  new_drone:set_desired_item("wood")
-  new_drone:try_to_mine()
-
 
 end
 
@@ -37,10 +32,10 @@ local lib = {}
 
 lib.events =
 {
-  [defines.events.on_built_entity] = on_built_entity,
-  [defines.events.on_robot_built_entity] = on_built_entity,
-  [defines.events.script_raised_revive] = on_built_entity,
-  [defines.events.script_raised_built] = on_built_entity,
+  --[defines.events.on_built_entity] = on_built_entity,
+  --[defines.events.on_robot_built_entity] = on_built_entity,
+  --[defines.events.script_raised_revive] = on_built_entity,
+  --[defines.events.script_raised_built] = on_built_entity,
 
   [defines.events.on_player_mined_entity] = on_entity_removed,
   [defines.events.on_robot_mined_entity] = on_entity_removed,
@@ -60,6 +55,12 @@ end
 
 lib.on_init = function()
   global.mining_drone_manager = global.mining_drone_manager or script_data
+end
+
+lib.new = function(entity)
+  local new_drone = Drone.new(entity)
+  add_drone(new_drone)
+  return new_drone
 end
 
 return lib
