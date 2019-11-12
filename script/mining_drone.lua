@@ -49,7 +49,7 @@ mining_drone.new = function(entity)
   if entity.name ~= shared.drone_name then error("what are you playing at") end
   local new_drone = {}
   new_drone.entity = entity
-  entity.ai_settings.path_resolution_modifier = 1
+  entity.ai_settings.path_resolution_modifier = 0
   new_drone.inventory = proxy_inventory()
 
 
@@ -87,16 +87,13 @@ function mining_drone:process_mining()
   local target = self.mining_target
   if not (target and target.valid) then
     --cancel command or something.
-    return self:try_to_mine()
+    return self.depot:order_drone(self)
   end
 
   local mineable_properties = target.prototype.mineable_properties
 
-  --mine it
-
   for k, product in pairs (mineable_properties.products) do
     local amount = self.inventory.insert({name = product.name, count = product_amount(product)})
-    --self.entity.surface.create_entity{name = "flying-text", position = self.entity.position, text = product.name..": +"..amount}
   end
 
   self:update_sticker()
@@ -107,18 +104,16 @@ function mining_drone:process_mining()
     target.destroy()
   end
   
-  
-  if self.depot and self.depot.entity.valid and self:has_desired_count() then
+  self.mining_count = self.mining_count - 1
+
+  if not target.valid or self.mining_count <= 0 then
     self.state = states.drop_at_depot
-    self:go_to_entity(self.depot.entity)
+    self:go_to_position(self.depot:get_spawn_position(), 1)
     return
   end
+  
+  return self:mine_entity(target, self.mining_count)
 
-  if target.valid then
-    return self:mine_entity(target)
-  end
-
-  return self:try_to_mine()
 
 end
 
@@ -144,18 +139,19 @@ function mining_drone:process_drop_at_depot()
   for k = 1, #inventory do
     local stack = inventory[k]
     if (stack and stack.valid and stack.valid_for_read) then
-      destination_inventory.insert(stack)
+      depot.estimated_count = depot.estimated_count - destination_inventory.insert(stack)
       stack.clear()
     else
       break
     end
   end
+  self:update_sticker()
   self:request_order()
 end
 
 function mining_drone:update(event)
   if event.result ~= defines.behavior_result.success then
-    self:say("FAIL BLOG.ORG")
+    --self:say("FAIL BLOG.ORG")
     self.entity.set_command
     {
       type = defines.command.stop,
@@ -178,8 +174,8 @@ function mining_drone:say(text)
   self.entity.surface.create_entity{name = "flying-text", position = self.entity.position, text = text}
 end
 
-function mining_drone:mine_entity(entity)
-  self:say("hi")
+function mining_drone:mine_entity(entity, count)
+  self.mining_count = count or 1
   self.mining_target = entity
   self.state = states.mining_entity
   local attack_proxy = attack_proxy(entity)
@@ -220,13 +216,6 @@ function mining_drone:find_desired_item()
   return closest
 end
 
-function mining_drone:try_to_mine()
-  local target = self:find_desired_item()
-  if target then
-    self:mine_entity(target)
-  end
-end
-
 function mining_drone:set_depot(depot_data)
   self.depot = depot_data
 end
@@ -235,21 +224,21 @@ function mining_drone:set_desired_amount(count)
   self.desired_count = count
 end
 
-function mining_drone:go_to(position)
+function mining_drone:go_to_position(position, radius)
   self.entity.set_command
   {
     type = defines.command.go_to_location,
     destination = position,
-    radius = 1
+    radius = radius or 1
   }
 end
 
-function mining_drone:go_to_entity(entity)
+function mining_drone:go_to_entity(entity, radius)
   self.entity.set_command
   {
     type = defines.command.go_to_location,
     destination_entity = entity,
-    radius = 5
+    radius = radius or 5
   }
 end
 
