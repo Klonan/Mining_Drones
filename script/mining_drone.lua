@@ -87,7 +87,7 @@ function mining_drone:process_mining()
   local target = self.mining_target
   if not (target and target.valid) then
     --cancel command or something.
-    return self.depot:order_drone(self)
+    return self:return_to_depot()
   end
 
   local mineable_properties = target.prototype.mineable_properties
@@ -107,8 +107,7 @@ function mining_drone:process_mining()
   self.mining_count = self.mining_count - 1
 
   if not target.valid or self.mining_count <= 0 then
-    self.state = states.return_to_depot
-    self:go_to_position(self.depot:get_spawn_position(), 1)
+    self:return_to_depot()
     return
   end
   
@@ -144,8 +143,14 @@ function mining_drone:process_return_to_depot()
     for k = 1, #inventory do
       local stack = inventory[k]
       if (stack and stack.valid and stack.valid_for_read) then
-        depot.estimated_count = depot.estimated_count - destination_inventory.insert(stack)
-        stack.clear()
+        local count = stack.count
+        local inserted = destination_inventory.insert(stack)
+        depot.estimated_count = depot.estimated_count - inserted
+        if inserted == count then
+          stack.clear()
+        else
+          stack.count  = count - inserted
+        end
       else
         break
       end
@@ -154,6 +159,13 @@ function mining_drone:process_return_to_depot()
     self:update_sticker()
 
   end
+
+  if not self.inventory.is_empty() then
+    --oof, we still holding something... oof
+    self:say("oof, I am still holding something... oof")
+    return
+  end
+
   self:request_order()
 
 end
@@ -177,11 +189,14 @@ function mining_drone:process_failed_command()
 end
 
 function mining_drone:update(event)
+  if not self.entity.valid then return end
+
   if event.result ~= defines.behavior_result.success then
     --self:say("FAIL BLOG.ORG")
     self:process_failed_command()
     return
   end
+
   if self.state == states.mining_entity then
     self:process_mining()
     return
@@ -205,10 +220,25 @@ function mining_drone:mine_entity(entity, count)
   self.attack_proxy = attack_proxy
   local command = {}
 
+  local commands = 
+  {
+    {
+      type = defines.command.go_to_location,
+      destination_entity = attack_proxy,
+      distraction = defines.distraction.by_damage,
+      pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+    },
+    {
+      type = defines.command.attack,
+      target = attack_proxy,
+      distraction = defines.distraction.by_damage
+    }
+  }
   self.entity.set_command
   {
-    type = defines.command.attack,
-    target = attack_proxy,
+    type = defines.command.compound,
+    structure_type = defines.compound_command.return_last,
+    commands = commands,
     distraction = defines.distraction.by_damage
   }
 end
@@ -220,6 +250,14 @@ end
 function mining_drone:return_to_depot()
   self.state = states.return_to_depot
   local depot = self.depot
+  if self.mining_count then
+    depot.estimated_count = depot.estimated_count - self.mining_count
+    self.mining_count = nil
+  end
+  if self.mining_target.valid then
+    depot:add_mining_target(self.mining_target)
+    self.mining_target = nil
+  end
   local position = depot:get_spawn_position()
   if position then
     self:go_to_position(position)

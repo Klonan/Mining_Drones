@@ -229,6 +229,10 @@ data:extend
 }
 
 local make_depot_recipe = function(item_prototype)
+  local results = {}
+  for k = 1, 6 do
+    results[k] = {type = "item", name = item_prototype.name, amount = item_prototype.stack_size, show_details_in_recipe_tooltip = false}
+  end
   local recipe =
   {
     type = "recipe",
@@ -238,11 +242,17 @@ local make_depot_recipe = function(item_prototype)
     icon_size = item_prototype.icon_size,
     icons = item_prototype.icons,
     ingredients = {{names.drone_name, 20}},
-    result = item_prototype.name,
-    category = name
+    results = results,
+    category = name,
+    subgroup = "mining-drone"
   }
   data:extend{recipe}
 end
 
-make_depot_recipe(data.raw.item["iron-ore"])
+for k, resource in pairs (data.raw.resource) do
+  if resource.minable and resource.minable.result and not resource.minable.required_fluid then
+    make_depot_recipe(data.raw.item[resource.minable.result])
+  end
+end
+--make_depot_recipe(data.raw.item["iron-ore"])
 make_depot_recipe(data.raw.item["wood"])

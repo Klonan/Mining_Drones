@@ -24,9 +24,9 @@ local bot =
   radar_range = 1,
   order="i-a",
   --subgroup = "iron-units",
-  healing_per_tick = 0,
+  healing_per_tick = 0.1,
   minable = {result = name, mining_time = 2},
-  collision_box = {{-0.25, -0.25}, {0.25, 0.25}},
+  collision_box = {{-0.15, -0.15}, {0.15, 0.15}},
   collision_mask = util.ground_unit_collision_mask(),
   max_pursue_distance = 64,
   resistances = nil,
@@ -109,11 +109,12 @@ local bot =
   vision_distance = 16,
   has_belt_immunity = false,
   affected_by_tiles = true,
-  movement_speed = 0.15,
-  distance_per_frame = 0.15,
+  movement_speed = 0.12,
+  distance_per_frame = 0.08,
   pollution_to_join_attack = 1000000,
   corpse = base.character_corpse,
-  run_animation = base.animations[1].running
+  run_animation = base.animations[1].running,
+  rotation_speed = 1
 }
 
 local item = {
