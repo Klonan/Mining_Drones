@@ -105,9 +105,10 @@ machine.animation =
   {
     layers =
     {
-      base{0, -0.8},
+      base{0, -0.5},
       h_shadow{0.2, 1.5},
       h_chest{0, 1.5},
+
     }
   },
   south =
@@ -116,7 +117,7 @@ machine.animation =
     {
       h_shadow{0.2, -1.5},
       h_chest{0, -1.5},
-      base{0, 1.2},
+      base{0, 1},
     }
   },
   east =
@@ -125,16 +126,16 @@ machine.animation =
     {
       v_shadow{-1.3, 0},
       v_chest{-1.5, 0},
-      base{1, 0.2},
+      base{0.5, 0.2},
     }
   },
   west =
   {
     layers =
     {
-      base{-1, 0.2},
       v_shadow{1.7, 0},
       v_chest{1.5, 0},
+      base{-0.5, 0.2},
     }
   },
 }
@@ -201,6 +202,20 @@ local chest_v =
   selection_priority = 100
 }
 
+local caution_sprite = 
+{
+  type = "sprite",
+  name = "caution-sprite",
+  filename = util.path("data/entities/mining_depot/depot-caution.png"),
+  width = 101,
+  height = 72,
+  frame_count = 1,
+  scale = 0.5,
+  shift = shift,
+  draw_as_shadow = false,
+  flags = {"terrain"}
+}
+
 data:extend
 {
   machine,
@@ -210,6 +225,7 @@ data:extend
   recipe,
   chest_h,
   chest_v,
+  caution_sprite
 }
 
 local make_depot_recipe = function(item_prototype)

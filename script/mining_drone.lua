@@ -36,7 +36,7 @@ end
 local states =
 {
   mining_entity = 1,
-  drop_at_depot = 2
+  return_to_depot = 2
 }
 
 local product_amount = util.product_amount
@@ -107,7 +107,7 @@ function mining_drone:process_mining()
   self.mining_count = self.mining_count - 1
 
   if not target.valid or self.mining_count <= 0 then
-    self.state = states.drop_at_depot
+    self.state = states.return_to_depot
     self:go_to_position(self.depot:get_spawn_position(), 1)
     return
   end
@@ -128,35 +128,58 @@ function mining_drone:request_order()
   depot:order_drone(self)
 end
 
-function mining_drone:process_drop_at_depot()
+function mining_drone:process_return_to_depot()
+
   local depot = self.depot
-  if not (depot and depot.entity.valid) then return end
+
+  if not (depot and depot.entity.valid) then
+    self:say("My depot isn't valid!")
+    return
+  end
+  
   local inventory = self.inventory
-  local destination_inventory
-  if depot.entity.type == "assembling-machine" then
-    destination_inventory = depot.entity.get_output_inventory()
-  end
-  for k = 1, #inventory do
-    local stack = inventory[k]
-    if (stack and stack.valid and stack.valid_for_read) then
-      depot.estimated_count = depot.estimated_count - destination_inventory.insert(stack)
-      stack.clear()
-    else
-      break
+  if not inventory.is_empty() then
+    
+    local destination_inventory = depot:get_output_inventory()
+    for k = 1, #inventory do
+      local stack = inventory[k]
+      if (stack and stack.valid and stack.valid_for_read) then
+        depot.estimated_count = depot.estimated_count - destination_inventory.insert(stack)
+        stack.clear()
+      else
+        break
+      end
     end
+
+    self:update_sticker()
+
   end
-  self:update_sticker()
   self:request_order()
+
+end
+
+function mining_drone:process_failed_command()
+  if self.state == states.mining_entity then
+    self:say("I can't mine that entity!")
+    if self.attack_proxy and self.attack_proxy.valid then
+      self.attack_proxy.destroy()
+    end
+    self.attack_proxy = nil
+    self:return_to_depot()
+    return
+  end
+
+  if self.state == states.return_to_depot then
+    self:say("I can't return to my depot!")
+    self:return_to_depot()
+  end
+
 end
 
 function mining_drone:update(event)
   if event.result ~= defines.behavior_result.success then
     --self:say("FAIL BLOG.ORG")
-    self.entity.set_command
-    {
-      type = defines.command.stop,
-      ticks_to_wait = math.random(200, 400)
-    }
+    self:process_failed_command()
     return
   end
   if self.state == states.mining_entity then
@@ -164,8 +187,8 @@ function mining_drone:update(event)
     return
   end
 
-  if self.state == states.drop_at_depot then
-    self:process_drop_at_depot()
+  if self.state == states.return_to_depot then
+    self:process_return_to_depot()
     return
   end
 end
@@ -179,6 +202,7 @@ function mining_drone:mine_entity(entity, count)
   self.mining_target = entity
   self.state = states.mining_entity
   local attack_proxy = attack_proxy(entity)
+  self.attack_proxy = attack_proxy
   local command = {}
 
   self.entity.set_command
@@ -189,39 +213,18 @@ function mining_drone:mine_entity(entity, count)
   }
 end
 
-function mining_drone:set_desired_item(item)
-  if not game.item_prototypes[item] then error("What you playing at? "..item) end
-  self.desired_item = item
-end
-
-function mining_drone:find_desired_item()
-  local potential = {}
-  for k, entity in pairs (self.entity.surface.find_entities_filtered{position = self.entity.position, radius = 32}) do
-    if not taken[unique_index(entity)] then
-      local properties = entity.prototype.mineable_properties
-      if properties.minable and properties.products then
-        for k, product in pairs (properties.products) do
-          if product.name == self.desired_item then
-            table.insert(potential, entity)
-            break
-          end
-        end
-      end
-    end
-  end
-  if not next(potential) then return end
-  local closest = self.entity.surface.get_closest(self.entity.position, potential)
-  assert(taken[unique_index(closest)] == nil, "wtf pal")
-  taken[unique_index(closest)] = true
-  return closest
-end
-
 function mining_drone:set_depot(depot_data)
   self.depot = depot_data
 end
 
-function mining_drone:set_desired_amount(count)
-  self.desired_count = count
+function mining_drone:return_to_depot()
+  self.state = states.return_to_depot
+  local depot = self.depot
+  local position = depot:get_spawn_position()
+  if position then
+    self:go_to_position(position)
+    return
+  end
 end
 
 function mining_drone:go_to_position(position, radius)

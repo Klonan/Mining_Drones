@@ -10,6 +10,14 @@ local script_data =
 
 local names = require("shared")
 
+local offsets = 
+{
+  [defines.direction.north] = {0, -3},
+  [defines.direction.south] = {0, 3},
+  [defines.direction.east] = {3, 0},
+  [defines.direction.west] = {-3, 0},
+}
+
 function mining_depot.new(entity)
   local depots = script_data.depots
   local depot = 
@@ -20,6 +28,15 @@ function mining_depot.new(entity)
     estimated_count = 0
   }
   setmetatable(depot, depot_metatable)
+  rendering.draw_sprite
+  {
+    sprite = "caution-sprite",
+    surface = entity.surface,
+    scale = 0.5,
+    render_layer = "decorative",
+    target = entity,
+    target_offset = offsets[entity.direction]
+  }
   local unit_number = entity.unit_number
   local bucket = depots[unit_number % depot_update_rate]
   if not bucket then
@@ -41,14 +58,6 @@ local on_built_entity = function(event)
 
 end
 
-local offsets = 
-{
-  [defines.direction.north] = {0, -3},
-  [defines.direction.south] = {0, 3},
-  [defines.direction.east] = {3, 0},
-  [defines.direction.west] = {-3, 0},
-}
-
 function mining_depot:get_spawn_position()
   local offset = offsets[self.entity.direction]
   local position = self.entity.position
@@ -59,9 +68,10 @@ end
 
 function mining_depot:spawn_drone()
   local entity = self.entity
-  local build_position = entity.surface.find_non_colliding_position(names.drone_name, self:get_spawn_position(), 5, 0.5, false)
-  if not build_position then return end
-  local unit = entity.surface.create_entity{name = names.drone_name, position = build_position, force = entity.force}
+  if not entity.surface.can_place_entity{name = names.drone_name, position = self:get_spawn_position()} then return end
+  --local build_position = entity.surface.find_non_colliding_position(names.drone_name, self:get_spawn_position(), 0.5, 0.1, false)
+  --if not build_position then return end
+  local unit = entity.surface.create_entity{name = names.drone_name, position = self:get_spawn_position(), force = entity.force}
   if not unit then return end
 
   self:get_drone_inventory().remove({name = names.drone_name, count = 1})
