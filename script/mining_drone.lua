@@ -125,7 +125,7 @@ end
 
 function mining_drone:request_order()
   local depot = self.depot
-  depot:order_drone(self)
+  depot:return_drone(self)
 end
 
 function mining_drone:process_return_to_depot()

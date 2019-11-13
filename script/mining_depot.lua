@@ -5,7 +5,8 @@ local depot_metatable = {__index = mining_depot}
 
 local script_data =
 {
-  depots = {}
+  depots = {},
+  path_requests = {}
 }
 
 local names = require("shared")
@@ -25,7 +26,8 @@ function mining_depot.new(entity)
     entity = entity,
     drones = {},
     potential = {},
-    estimated_count = 0
+    estimated_count = 0,
+    path_requests = {}
   }
   setmetatable(depot, depot_metatable)
   rendering.draw_sprite
@@ -81,7 +83,6 @@ function mining_depot:spawn_drone()
   local drone = drone_manager.new(unit)
 
   drone:set_depot(self)
-  self:order_drone(drone)
 
   return drone
 end
@@ -97,14 +98,33 @@ function mining_depot:update()
   if self:is_full() then return end
   if not self:can_spawn_drone() then return end
 
-  if not next(self:find_entities_to_mine()) then return end
+  local entity = self:find_entity_to_mine()
+  if not entity then return end
 
-  local drone = self:spawn_drone()
+  self:attempt_to_mine(entity)
 
 end
 
+function mining_depot:attempt_to_mine(entity)
+  --Will make a path request, and if it passes, send a drone to go mine it.
+  local prototype = game.entity_prototypes[names.drone_name]
+  local path_request_id = self.entity.surface.request_path
+  {
+    bounding_box = prototype.collision_box,
+    collision_mask = prototype.collision_mask,
+    start = self:get_spawn_position(),
+    goal = entity.position,
+    force = self.entity.force,
+    radius = (entity.get_radius() * 2) + 1,
+    can_open_gates = true
+  }
+
+  script_data.path_requests[path_request_id] = self
+  self.path_requests[path_request_id] = entity
+end
+
 function mining_depot:can_spawn_drone()
-  return not self:get_drone_inventory().is_empty()
+  return (not self:get_drone_inventory().is_empty()) and self.entity.surface.can_place_entity{name = names.drone_name, position = self:get_spawn_position()}
 end
 
 local unique_index = function(entity)
@@ -140,7 +160,10 @@ end
 function mining_depot:find_entity_to_mine()
 
   local entities = self:find_entities_to_mine()
-  if not next(entities) then return end
+  if not next(entities) then
+    self.potential = {}
+    return
+  end
 
   local closest = self.entity.surface.get_closest(self.entity.position, entities)
   entities[unique_index(closest)] = nil
@@ -157,14 +180,13 @@ end
 
 --self.potential[drone.desired_item][unique_index(target)] = target
 
-function mining_depot:order_drone(drone)
+function mining_depot:order_drone(drone, entity)
 
   if self:is_full() then
     self:remove_drone(drone)
     return
   end
 
-  local entity = self:find_entity_to_mine()
   if not entity then
     self:remove_drone(drone)
     return
@@ -205,6 +227,25 @@ function mining_depot:is_full()
   return count >= stack.prototype.stack_size 
 end
 
+function mining_depot:handle_path_request_finished(event)
+  local entity = self.path_requests[event.id]
+  if not (entity and entity.valid) then return end
+
+  if not event.path then
+    --we can't reach it, don't spawn any miners.
+    game.print("HUH")
+    return
+  end
+
+  local drone = self:spawn_drone()
+  self:order_drone(drone, entity)
+
+end
+
+function mining_depot:return_drone(drone)
+  self:remove_drone(drone)
+end
+
 local on_tick = function(event)
   local bucket = script_data.depots[event.tick % depot_update_rate]
   if bucket then
@@ -218,6 +259,12 @@ local on_tick = function(event)
   end
 end
 
+local on_script_path_request_finished = function(event)
+  local depot = script_data.path_requests[event.id]
+  if not depot then return end
+  depot:handle_path_request_finished(event)
+end
+
 local lib = {}
 
 lib.events =
@@ -226,6 +273,8 @@ lib.events =
   [defines.events.on_robot_built_entity] = on_built_entity,
   [defines.events.script_raised_revive] = on_built_entity,
   [defines.events.script_raised_built] = on_built_entity,
+
+  [defines.events.on_script_path_request_finished] = on_script_path_request_finished,
 
   [defines.events.on_tick] = on_tick,
 }
