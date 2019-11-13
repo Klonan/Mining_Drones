@@ -202,7 +202,7 @@ local chest_v =
   selection_priority = 100
 }
 
-local caution_sprite = 
+local caution_sprite =
 {
   type = "sprite",
   name = "caution-sprite",
@@ -230,7 +230,7 @@ data:extend
 
 local make_depot_recipe = function(item_prototype)
   local results = {}
-  for k = 1, 6 do
+  for k = 1, 15 do
     results[k] = {type = "item", name = item_prototype.name, amount = item_prototype.stack_size, show_details_in_recipe_tooltip = false}
   end
   local recipe =

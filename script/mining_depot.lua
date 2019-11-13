@@ -11,7 +11,7 @@ local script_data =
 
 local names = require("shared")
 
-local offsets = 
+local offsets =
 {
   [defines.direction.north] = {0, -3},
   [defines.direction.south] = {0, 3},
@@ -21,7 +21,7 @@ local offsets =
 
 function mining_depot.new(entity)
 
-  local depot = 
+  local depot =
   {
     entity = entity,
     drones = {},
@@ -29,9 +29,9 @@ function mining_depot.new(entity)
     estimated_count = 0,
     path_requests = {}
   }
-  
+
   setmetatable(depot, depot_metatable)
-  
+
   rendering.draw_sprite
   {
     sprite = "caution-sprite",
@@ -41,7 +41,7 @@ function mining_depot.new(entity)
     target = entity,
     target_offset = offsets[entity.direction]
   }
-  
+
   local unit_number = entity.unit_number
   local depots = script_data.depots
   local bucket = depots[unit_number % depot_update_rate]
@@ -61,7 +61,7 @@ local on_built_entity = function(event)
   if not (entity and entity.valid) then return end
 
   if entity.name ~= names.mining_depot then return end
-  
+
   mining_depot.new(entity)
 
 end
@@ -81,6 +81,7 @@ function mining_depot:spawn_drone()
   if not unit then return end
 
   unit.orientation = (entity.direction / 8)
+  unit.ai_settings.do_separation = false
 
   self:get_drone_inventory().remove({name = names.drone_name, count = 1})
 
@@ -97,7 +98,7 @@ function mining_depot:update()
   local entity = self.entity
   if not (entity and entity.valid) then return end
   if table_size(self.drones) >= 10 then return end
-  
+
   local recipe = entity.get_recipe()
   if not recipe then return end
 
@@ -154,10 +155,10 @@ end
 function mining_depot:find_entities_to_mine()
   local item = self:get_desired_item()
   local potential = self.potential
-  if not potential[item] then 
+  if not potential[item] then
 
     potential[item] = {}
-    
+
     for k, entity in pairs (self.entity.surface.find_entities_filtered{position = self.entity.position, radius = 100}) do
       local properties = entity.prototype.mineable_properties
       if properties.minable and properties.products then
@@ -169,6 +170,7 @@ function mining_depot:find_entities_to_mine()
         end
       end
     end
+
   else
     for unit_number, entity in pairs (potential[item]) do
       if not entity.valid then
@@ -193,7 +195,7 @@ function mining_depot:find_entity_to_mine()
   entities[unique_index(closest)] = nil
 
   return closest
-  
+
 end
 
 function mining_depot:remove_drone(drone)
@@ -217,6 +219,26 @@ function mining_depot:order_drone(drone, entity)
 
 end
 
+function mining_depot:handle_order_request(drone)
+
+  if not (drone.mining_target and drone.mining_target.valid) then
+    self:return_drone(drone)
+    return
+  end
+
+  if self:is_full() then
+    if (drone.mining_target and drone.mining_target.valid) then
+      self:add_mining_target(drone.mining_target)
+    end
+    self:return_drone(drone)
+    return
+  end
+
+  self:order_drone(drone, drone.mining_target)
+
+
+end
+
 function mining_depot:get_output_inventory()
   return self.entity.get_output_inventory()
 end
@@ -236,7 +258,7 @@ function mining_depot:is_full()
   local item = self:get_desired_item()
   local prototype = game.item_prototypes[item]
   local count = self.estimated_count + inventory.get_item_count(item)
-  return count >= (prototype.stack_size * 4) -- leave 2 stacks as overflow.
+  return count >= (prototype.stack_size * (#inventory - 2)) -- leave 2 stacks as overflow.
 end
 
 function mining_depot:handle_path_request_finished(event)
@@ -271,7 +293,7 @@ local on_tick = function(event)
       else
         depot:update()
       end
-    end 
+    end
   end
 end
 

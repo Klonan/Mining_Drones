@@ -25,6 +25,9 @@ end
 local on_ai_command_completed = function(event)
   local drone = script_data.drones[event.unit_number]
   if not drone then return end
+  if not (drone.entity and drone.entity.valid) then
+    script_data.drones[event.unit_number] = nil
+  end
   drone:update(event)
 end
 

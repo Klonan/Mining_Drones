@@ -82,6 +82,18 @@ mining_drone.new = function(entity)
   return new_drone
 end
 
+function mining_drone:get_desired_item()
+
+  if self.depot then
+    return self.depot:get_desired_item()
+  end
+
+end
+
+function mining_drone:spill(stack)
+  self.entity.surface.spill_item_stack(self.entity.position, stack, false, self.entity.force, false)
+end
+
 function mining_drone:process_mining()
 
   local target = self.mining_target
@@ -90,10 +102,21 @@ function mining_drone:process_mining()
     return self:return_to_depot()
   end
 
+
+  local item = self:get_desired_item()
+  if not item then
+    self:say("I don't know what I want")
+    return self:return_to_depot()
+  end
+
   local mineable_properties = target.prototype.mineable_properties
 
   for k, product in pairs (mineable_properties.products) do
-    local amount = self.inventory.insert({name = product.name, count = product_amount(product)})
+    if product.name == item then
+      local amount = self.inventory.insert({name = product.name, count = product_amount(product)})
+    else
+      self:spill{name = product.name, count = product_amount(product)}
+    end
   end
 
   self:update_sticker()
@@ -103,28 +126,21 @@ function mining_drone:process_mining()
   else
     target.destroy()
   end
-  
+
   self.mining_count = self.mining_count - 1
 
   if not target.valid or self.mining_count <= 0 then
     self:return_to_depot()
     return
   end
-  
+
   return self:mine_entity(target, self.mining_count)
 
 
 end
 
-function mining_drone:has_desired_count()
-  local contents = self.inventory.get_contents()
-  local have = contents[self.desired_item] or 0
-  return have >= self.desired_count
-end
-
 function mining_drone:request_order()
-  local depot = self.depot
-  depot:return_drone(self)
+  self.depot:handle_order_request(self)
 end
 
 function mining_drone:process_return_to_depot()
@@ -135,10 +151,10 @@ function mining_drone:process_return_to_depot()
     self:say("My depot isn't valid!")
     return
   end
-  
+
   local inventory = self.inventory
   if not inventory.is_empty() then
-    
+
     local destination_inventory = depot:get_output_inventory()
     for k = 1, #inventory do
       local stack = inventory[k]
@@ -163,7 +179,9 @@ function mining_drone:process_return_to_depot()
   if not self.inventory.is_empty() then
     --oof, we still holding something... oof
     self:say("oof, I am still holding something... oof")
-    return
+    for name, count in pairs (self.inventory.get_contents()) do
+      self:spill{name = name, count = count}
+    end
   end
 
   self:request_order()
@@ -220,7 +238,7 @@ function mining_drone:mine_entity(entity, count)
   self.attack_proxy = attack_proxy
   local command = {}
 
-  local commands = 
+  local commands =
   {
     {
       type = defines.command.go_to_location,
@@ -254,10 +272,10 @@ function mining_drone:return_to_depot()
     depot.estimated_count = depot.estimated_count - self.mining_count
     self.mining_count = nil
   end
-  if self.mining_target.valid then
-    depot:add_mining_target(self.mining_target)
-    self.mining_target = nil
-  end
+  --if self.mining_target and self.mining_target.valid then
+  --  depot:add_mining_target(self.mining_target)
+  --  self.mining_target = nil
+  --end
   local position = depot:get_spawn_position()
   if position then
     self:go_to_position(position)
@@ -292,7 +310,7 @@ function mining_drone:update_sticker()
     for k, v in pairs (renderings) do
       rendering.destroy(v)
     end
-    self  .renderings = nil
+    self.renderings = nil
   end
 
   local inventory = self.inventory
@@ -322,38 +340,17 @@ function mining_drone:update_sticker()
     y_scale = 0.5,
   })
 
-  if number == 1 then
-    insert(renderings, rendering.draw_sprite
-    {
-      sprite = "item/"..next(contents),
-      target = drone,
-      surface = surface,
-      forces = forces,
-      only_in_alt_mode = true,
-      target_offset = {0, -0.5},
-      x_scale = 0.5,
-      y_scale = 0.5,
-    })
-    return
-  end
-
-  local offset_index = 1
-
-  for name, count in pairs (contents) do
-    local offset = offsets[offset_index]
-    insert(renderings, rendering.draw_sprite
-    {
-      sprite = "item/"..name,
-      target = drone,
-      surface = surface,
-      forces = forces,
-      only_in_alt_mode = true,
-      target_offset = {-0.125 + offset[1], -0.5 + offset[2]},
-      x_scale = 0.25,
-      y_scale = 0.25,
-    })
-    offset_index = offset_index + 1
-  end
+  insert(renderings, rendering.draw_sprite
+  {
+    sprite = "item/"..next(contents),
+    target = drone,
+    surface = surface,
+    forces = forces,
+    only_in_alt_mode = true,
+    target_offset = {0, -0.5},
+    x_scale = 0.5,
+    y_scale = 0.5,
+  })
 
 
 end
