@@ -82,6 +82,7 @@ function mining_depot:spawn_drone()
 
   unit.orientation = (entity.direction / 8)
   unit.ai_settings.do_separation = false
+  unit.speed = unit.prototype.speed * (1 + (math.random() - 0.5) / 3)
 
   self:get_drone_inventory().remove({name = names.drone_name, count = 1})
 

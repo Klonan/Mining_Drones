@@ -191,10 +191,18 @@ end
 function mining_drone:process_failed_command()
   if self.state == states.mining_entity then
     self:say("I can't mine that entity!")
+
     if self.attack_proxy and self.attack_proxy.valid then
       self.attack_proxy.destroy()
     end
     self.attack_proxy = nil
+
+    if self.mining_target and self.mining_target.valid then
+      --game.players[1].teleport(self.mining_target.position)
+      self.depot:add_mining_target(self.mining_target)
+    end
+    self.mining_target = nil
+
     self:return_to_depot()
     return
   end
