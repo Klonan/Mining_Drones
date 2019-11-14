@@ -106,7 +106,8 @@ function mining_drone:process_mining()
   local item = self:get_desired_item()
   if not item then
     self:say("I don't know what I want")
-    return self:return_to_depot()
+    self:return_to_depot()
+    return
   end
 
   local mineable_properties = target.prototype.mineable_properties
@@ -134,7 +135,8 @@ function mining_drone:process_mining()
     return
   end
 
-  return self:mine_entity(target, self.mining_count)
+  self:mine_entity(target, self.mining_count)
+  return
 
 
 end
@@ -143,12 +145,48 @@ function mining_drone:request_order()
   self.depot:handle_order_request(self)
 end
 
+function mining_drone:find_new_depot()
+  local old_depot = self.depot
+  --we should have the old depot... hopefully...
+
+  if not old_depot then
+    game.print("Oof, I am not handling this yet")
+  end
+
+  local all_depots = old_depot:get_all_depots()
+  local can_go_to = {}
+  for unit_number, depot in pairs (all_depots) do
+    if depot:can_accept_drone() then
+      can_go_to[unit_number] = depot.entity
+    end
+  end
+
+  if not next(can_go_to) then
+    --None to go to
+    self.entity.die()
+    return
+  end
+
+  local closest_entity = self.entity.surface.get_closest(self.position, can_go_to)
+
+  local closest_depot = can_go_to[closest_entity.unit_number]
+
+  self:set_depot(closest_depot)
+  self:return_to_depot()
+
+end
+
 function mining_drone:process_return_to_depot()
 
   local depot = self.depot
 
   if not (depot and depot.entity.valid) then
     self:say("My depot isn't valid!")
+    return self:find_new_depot()
+  end
+
+  if util.distance(self.entity.position, self.depot:get_spawn_position()) > 1 then
+    self:go_to_position(self.depot:get_spawn_position())
     return
   end
 
@@ -188,20 +226,13 @@ function mining_drone:process_return_to_depot()
 
 end
 
+
 function mining_drone:process_failed_command()
   if self.state == states.mining_entity then
     self:say("I can't mine that entity!")
 
-    if self.attack_proxy and self.attack_proxy.valid then
-      self.attack_proxy.destroy()
-    end
-    self.attack_proxy = nil
+    self:clear_attack_proxy()
 
-    if self.mining_target and self.mining_target.valid then
-      --game.players[1].teleport(self.mining_target.position)
-      self.depot:add_mining_target(self.mining_target)
-    end
-    self.mining_target = nil
 
     self:return_to_depot()
     return
@@ -269,24 +300,27 @@ function mining_drone:mine_entity(entity, count)
   }
 end
 
-function mining_drone:set_depot(depot_data)
-  self.depot = depot_data
+function mining_drone:set_depot(depot)
+  self.depot = depot
 end
 
 function mining_drone:return_to_depot()
   self.state = states.return_to_depot
   local depot = self.depot
+
+  if not (depot and depot.entity.valid) then
+    self:find_new_depot()
+    return
+  end
+
   if self.mining_count then
     depot.estimated_count = depot.estimated_count - self.mining_count
     self.mining_count = nil
   end
-  --if self.mining_target and self.mining_target.valid then
-  --  depot:add_mining_target(self.mining_target)
-  --  self.mining_target = nil
-  --end
+
   local position = depot:get_spawn_position()
   if position then
-    self:go_to_position(position)
+    self:go_to_position(position, 0.3)
     return
   end
 end
@@ -309,8 +343,38 @@ function mining_drone:go_to_entity(entity, radius)
   }
 end
 
-local insert = table.insert
+function mining_drone:clear_attack_proxy()
+  local destroyed = self.attack_proxy and self.attack_proxy.valid and self.attack_proxy.destroy()
+  self.attack_proxy = nil
+end
 
+
+function mining_drone:clear_mining_target()
+  if self.mining_target and self.mining_target.valid then
+    if self.depot then
+      self.depot:add_mining_target(self.mining_target)
+    end
+  end
+  self.mining_target = nil
+end
+
+function mining_drone:clear_depot(unit_number)
+  if not self.depot then return end
+  self.depot.drones[unit_number] = nil
+  if self.mining_count then
+    self.depot.estimated_count = self.depot.estimated_count - self.mining_count
+    self.mining_count = nil
+  end
+  self.depot = nil
+end
+
+function mining_drone:handle_drone_deletion(unit_number)
+  self:clear_attack_proxy()
+  self:clear_mining_target()
+  self:clear_depot(unit_number)
+end
+
+local insert = table.insert
 function mining_drone:update_sticker()
 
   local renderings = self.renderings

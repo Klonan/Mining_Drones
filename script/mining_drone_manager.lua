@@ -27,8 +27,23 @@ local on_ai_command_completed = function(event)
   if not drone then return end
   if not (drone.entity and drone.entity.valid) then
     script_data.drones[event.unit_number] = nil
+    drone:handle_drone_deletion(event.unit_number)
   end
   drone:update(event)
+end
+
+local on_entity_removed = function(event)
+  local entity = event.entity
+  if not (entity and entity.valid) then return end
+
+  local unit_number = entity.unit_number
+  if not unit_number then return end
+
+  local drone = script_data.drones[unit_number]
+  if not drone then return end
+
+  drone:handle_drone_deletion(unit_number)
+
 end
 
 local lib = {}

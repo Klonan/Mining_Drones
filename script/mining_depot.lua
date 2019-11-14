@@ -86,9 +86,9 @@ function mining_depot:spawn_drone()
 
   self:get_drone_inventory().remove({name = names.drone_name, count = 1})
 
-  self.drones[unit.unit_number] = drone
 
   local drone = drone_manager.new(unit)
+  self.drones[unit.unit_number] = drone
 
   drone:set_depot(self)
 
@@ -98,23 +98,33 @@ end
 function mining_depot:update()
   local entity = self.entity
   if not (entity and entity.valid) then return end
-  if table_size(self.drones) >= 10 then return end
 
   local recipe = entity.get_recipe()
   if not recipe then return end
 
   if self:is_full() then return end
-  if self:is_spawn_blocked() then
 
+  if self:is_spawn_blocked() then
     return
   end
-  if not self:can_spawn_drone() then return end
 
-  local entity = self:find_entity_to_mine()
-  if not entity then return end
+  local count = self:get_can_spawn_count()
+  if count < 1 then return end
 
-  self:attempt_to_mine(entity)
+  for k = 1, count do
+    local entity = self:find_entity_to_mine()
+    if not entity then return end
 
+    self:attempt_to_mine(entity)
+  end
+
+end
+
+function mining_depot:get_can_spawn_count()
+  --100
+  local stack = self:get_drone_inventory()[1]
+  if not stack.valid_for_read then return 0 end
+  return math.min(100 - self:get_active_drone_count(), stack.count)
 end
 
 function mining_depot:is_spawn_blocked()
@@ -285,6 +295,76 @@ function mining_depot:add_mining_target(entity)
   self.potential[self:get_desired_item()][unique_index(entity)] = entity
 end
 
+function mining_depot:remove_from_list()
+  local unit_number = self.entity.unit_number
+
+  script_data.depots[unit_number % depot_update_rate][unit_number] = nil
+end
+
+function mining_depot:handle_depot_deletion()
+  --error("oof, to do...")
+  game.print("Handling deletion")
+  local all_depots = self:get_all_depots()
+  local can_go_to = {}
+  for unit_number, depot in pairs (all_depots) do
+    if depot ~= self and depot:can_accept_drone() then
+      can_go_to[unit_number] = depot.entity
+    end
+  end
+
+  if not next(can_go_to) then
+    --None to go to
+    game.print("No depots at all... fuck knows.")
+    return
+  end
+
+  local closest_entity = self.entity.surface.get_closest(self.entity.position, can_go_to)
+  local closest_depot = all_depots[closest_entity.unit_number]
+  for unit_number, drone in pairs (self.drones) do
+    closest_depot:take_drone(drone)
+  end
+
+  self:remove_from_list()
+
+end
+
+function mining_depot:take_drone(drone)
+  self.drones[drone.entity.unit_number] = drone
+  drone:set_depot(self)
+
+  drone:say("Assigned to a new depot!")
+end
+
+function mining_depot:get_all_depots()
+  local depots = {}
+  for k, bucket in pairs (script_data.depots) do
+    for unit_number, depot in pairs (bucket) do
+      if not depot.entity.valid then
+        error("HI idk if I should happen")
+        --depot:handle_depot_deletion(unit_number)
+        bucket[unit_number] = nil
+      else
+        depots[unit_number] = depot
+      end
+    end
+  end
+  return depots
+end
+
+function mining_depot:get_active_drone_count()
+  return table_size(self.drones)
+end
+
+function mining_depot:can_accept_drone()
+  local count = self:get_active_drone_count()
+  local stack = self:get_drone_inventory()[1]
+  if stack.valid_for_read then
+    count = count + stack.count
+  end
+
+  return self:get_desired_item() and count < 100
+end
+
 local on_tick = function(event)
   local bucket = script_data.depots[event.tick % depot_update_rate]
   if bucket then
@@ -299,9 +379,26 @@ local on_tick = function(event)
 end
 
 local on_script_path_request_finished = function(event)
+  --game.print(event.tick.." - "..event.id)
   local depot = script_data.path_requests[event.id]
   if not depot then return end
   depot:handle_path_request_finished(event)
+end
+
+local on_entity_removed = function(event)
+  local entity = event.entity
+  if not (entity and entity.valid) then
+    return
+  end
+  local unit_number = entity.unit_number
+  if not unit_number then return end
+
+  local bucket = script_data.depots[unit_number % depot_update_rate]
+  if not bucket then return end
+  local depot = bucket[unit_number]
+  if not depot then return end
+  depot:handle_depot_deletion(unit_number)
+
 end
 
 local lib = {}
@@ -314,6 +411,12 @@ lib.events =
   [defines.events.script_raised_built] = on_built_entity,
 
   [defines.events.on_script_path_request_finished] = on_script_path_request_finished,
+
+  [defines.events.on_player_mined_entity] = on_entity_removed,
+  [defines.events.on_robot_mined_entity] = on_entity_removed,
+
+  [defines.events.on_entity_died] = on_entity_removed,
+  [defines.events.script_raised_destroy] = on_entity_removed,
 
   [defines.events.on_tick] = on_tick,
 }
