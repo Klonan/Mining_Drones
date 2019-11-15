@@ -1,3 +1,27 @@
+
+local script_data =
+{
+  drones = {},
+  idle_drones = {}
+}
+
+local add_drone = function(drone)
+  script_data.drones[drone.entity.unit_number] = drone
+end
+
+local remove_drone = function(drone)
+  script_data.drones[drone.entity.unit_number] = nil
+end
+
+local add_idle_drone = function(drone)
+  script_data.idle_drones[drone.entity.unit_number] = drone
+end
+
+local remove_idle_drone = function(drone)
+  script_data.idle_drones[drone.entity.unit_number] = nil
+end
+
+
 local proxy_inventory = function()
   local chest = game.surfaces[1].create_entity{name = shared.proxy_chest_name, position = {1000000, 1000000}, force = "neutral"}
   return chest.get_output_inventory()
@@ -36,7 +60,8 @@ end
 local states =
 {
   mining_entity = 1,
-  return_to_depot = 2
+  return_to_depot = 2,
+  idle = 3
 }
 
 local product_amount = util.product_amount
@@ -46,12 +71,26 @@ local mining_drone = {}
 mining_drone.metatable = {__index = mining_drone}
 
 mining_drone.new = function(entity)
-  if entity.name ~= shared.drone_name then error("what are you playing at") end
-  local new_drone = {}
-  new_drone.entity = entity
-  entity.ai_settings.path_resolution_modifier = 0
-  new_drone.inventory = proxy_inventory()
 
+  if entity.name ~= shared.drone_name then error("what are you playing at") end
+
+  local drone =
+  {
+    entity = entity,
+    inventory = proxy_inventory()
+  }
+
+  setmetatable(drone, mining_drone.metatable)
+
+  drone:add_lights()
+
+  add_drone(drone)
+  
+  return drone
+end
+
+function mining_drone:add_lights()
+  local entity = self.entity
 
   rendering.draw_light
   {
@@ -77,9 +116,6 @@ mining_drone.new = function(entity)
     scale = 2.5,
   }
 
-
-  setmetatable(new_drone, mining_drone.metatable)
-  return new_drone
 end
 
 function mining_drone:get_desired_item()
@@ -360,18 +396,40 @@ end
 
 function mining_drone:clear_depot(unit_number)
   if not self.depot then return end
-  self.depot.drones[unit_number] = nil
-  if self.mining_count then
-    self.depot.estimated_count = self.depot.estimated_count - self.mining_count
-    self.mining_count = nil
-  end
+  self.depot.drones[self.entity.unit_number] = nil
   self.depot = nil
 end
 
-function mining_drone:handle_drone_deletion(unit_number)
-  self:clear_attack_proxy()
-  self:clear_mining_target()
-  self:clear_depot(unit_number)
+function mining_drone:handle_drone_deletion()
+  if not self.entity.valid then error("Hi, i am not handled.") end
+
+  if self.depot then
+    self.depot:remove_drone(self)
+  end
+
+  local inventory = self.inventory
+  if inventory.valid then
+    inventory.entity_owner.destroy()
+  end
+  self.inventory = nil
+
+end
+
+function mining_drone:go_idle()
+  self.state = states.idle
+  self.entity.set_command
+  {
+    type = defines.command.wander
+  }
+  add_idle_drone(self)
+end
+
+function mining_drone:is_idle()
+  return self.state == states.idle
+end
+
+function mining_drone:is_returning_to_depot()
+  return self.state == states.return_to_depot
 end
 
 local insert = table.insert
@@ -425,6 +483,73 @@ function mining_drone:update_sticker()
   })
 
 
+end
+
+local on_built_entity = function(event)
+  local entity = event.entity or event.created_entity
+  if not (entity and entity.valid) then return end
+
+  if entity.name ~= shared.drone_name then return end
+
+  local drone = mining_drone.new(entity)
+  drone:go_idle()
+
+end
+
+local on_ai_command_completed = function(event)
+  local drone = script_data.drones[event.unit_number]
+  if not drone then return end
+  if not (drone.entity and drone.entity.valid) then
+    error("Hi, why?")
+    script_data.drones[event.unit_number] = nil
+  end
+  drone:update(event)
+end
+
+local on_entity_removed = function(event)
+  local entity = event.entity
+  if not (entity and entity.valid) then return end
+
+  local unit_number = entity.unit_number
+  if not unit_number then return end
+
+  local drone = script_data.drones[unit_number]
+  if not drone then return end
+
+  drone:handle_drone_deletion()
+
+end
+
+
+mining_drone.events =
+{
+  [defines.events.on_built_entity] = on_built_entity,
+  [defines.events.on_robot_built_entity] = on_built_entity,
+  [defines.events.script_raised_revive] = on_built_entity,
+  [defines.events.script_raised_built] = on_built_entity,
+
+  [defines.events.on_player_mined_entity] = on_entity_removed,
+  [defines.events.on_robot_mined_entity] = on_entity_removed,
+
+  [defines.events.on_entity_died] = on_entity_removed,
+  [defines.events.script_raised_destroy] = on_entity_removed,
+
+  [defines.events.on_ai_command_completed] = on_ai_command_completed,
+}
+
+mining_drone.on_load = function()
+  script_data = global.mining_drone or script_data
+  for unit_number, drone in pairs (script_data.drones) do
+    setmetatable(drone, mining_drone.metatable)
+  end
+end
+
+mining_drone.on_init = function()
+  global.mining_drone = global.mining_drone or script_data
+end
+
+mining_drone.get_idle_drones = function()
+  return script_data.idle_drones
 end
 
 return mining_drone

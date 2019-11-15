@@ -1,4 +1,4 @@
-local drone_manager = require("script/mining_drone_manager")
+local mining_drone = require("script/mining_drone")
 local depot_update_rate = 60
 local mining_depot = {}
 local depot_metatable = {__index = mining_depot}
@@ -87,7 +87,7 @@ function mining_depot:spawn_drone()
   self:get_drone_inventory().remove({name = names.drone_name, count = 1})
 
 
-  local drone = drone_manager.new(unit)
+  local drone = mining_drone.new(unit)
   self.drones[unit.unit_number] = drone
 
   drone:set_depot(self)
@@ -101,6 +101,8 @@ function mining_depot:update()
 
   local recipe = entity.get_recipe()
   if not recipe then return end
+
+  self:adopt_idle_drones()
 
   if self:is_full() then return end
 
@@ -120,11 +122,32 @@ function mining_depot:update()
 
 end
 
-function mining_depot:get_can_spawn_count()
-  --100
+function mining_depot:adopt_idle_drones()
+
+  local idle_drones = mining_drone.get_idle_drones()
+  if not next(idle_drones) then return end
+
+  local space = 100 - (self:get_active_drone_count() + self:get_drone_item_count())
+
+  if space < 1 then return end
+
+  for unit_number, drone in pairs (idle_drones) do
+    self:take_drone(drone)
+    drone:return_to_depot()
+    idle_drones[unit_number] = nil
+    space = space - 1
+    if space < 1 then break end
+  end
+
+end
+
+function mining_depot:get_drone_item_count()
   local stack = self:get_drone_inventory()[1]
-  if not stack.valid_for_read then return 0 end
-  return math.min(100 - self:get_active_drone_count(), stack.count)
+  return stack.valid_for_read and stack.count or 0
+end
+
+function mining_depot:get_can_spawn_count()
+  return math.min(100 - self:get_active_drone_count(), self:get_drone_item_count())
 end
 
 function mining_depot:is_spawn_blocked()
@@ -210,9 +233,19 @@ function mining_depot:find_entity_to_mine()
 end
 
 function mining_depot:remove_drone(drone)
+
+  if drone.mining_count then
+    self.estimated_count = self.estimated_count - drone.mining_count
+    drone.mining_count = nil
+  end
+
+  local mining_target = drone.mining_target
+  if mining_target and mining_target.valid then
+    self:add_mining_target(mining_target)
+  end
+  drone.mining_target = nil
+
   self.drones[drone.entity.unit_number] = nil
-  drone.entity.destroy()
-  self:get_drone_inventory().insert{name = names.drone_name, count = 1}
 end
 
 --self.potential[drone.desired_item][unique_index(target)] = target
@@ -289,6 +322,13 @@ end
 
 function mining_depot:return_drone(drone)
   self:remove_drone(drone)
+
+  if self:get_drone_inventory().insert{name = names.drone_name, count = 1} ~= 1 then
+    drone:go_idle()
+    return
+  end
+
+  drone.entity.destroy()
 end
 
 function mining_depot:add_mining_target(entity)
@@ -297,7 +337,6 @@ end
 
 function mining_depot:remove_from_list()
   local unit_number = self.entity.unit_number
-
   script_data.depots[unit_number % depot_update_rate][unit_number] = nil
 end
 
@@ -315,6 +354,9 @@ function mining_depot:handle_depot_deletion()
   if not next(can_go_to) then
     --None to go to
     game.print("No depots at all... fuck knows.")
+    for unit_number, drone in pairs (self.drones) do
+      drone:go_idle()
+    end
     return
   end
 
@@ -333,6 +375,9 @@ function mining_depot:take_drone(drone)
   drone:set_depot(self)
 
   drone:say("Assigned to a new depot!")
+  if drone:is_returning_to_depot() then
+    drone:return_to_depot()
+  end
 end
 
 function mining_depot:get_all_depots()
