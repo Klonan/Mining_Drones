@@ -85,7 +85,7 @@ mining_drone.new = function(entity)
   drone:add_lights()
 
   add_drone(drone)
-  
+
   return drone
 end
 
@@ -151,6 +151,7 @@ function mining_drone:process_mining()
   for k, product in pairs (mineable_properties.products) do
     if product.name == item then
       local amount = self.inventory.insert({name = product.name, count = product_amount(product)})
+      --self:say(item.." +"..amount)
     else
       self:spill{name = product.name, count = product_amount(product)}
     end
@@ -218,7 +219,7 @@ function mining_drone:process_return_to_depot()
 
   if not (depot and depot.entity.valid) then
     self:say("My depot isn't valid!")
-    return self:find_new_depot()
+    return self:go_idle()
   end
 
   if util.distance(self.entity.position, self.depot:get_spawn_position()) > 1 then
@@ -276,7 +277,8 @@ function mining_drone:process_failed_command()
 
   if self.state == states.return_to_depot then
     self:say("I can't return to my depot!")
-    self:return_to_depot()
+    self:go_idle()
+    return
   end
 
 end
@@ -404,7 +406,7 @@ function mining_drone:handle_drone_deletion()
   if not self.entity.valid then error("Hi, i am not handled.") end
 
   if self.depot then
-    self.depot:remove_drone(self)
+    self.depot:remove_drone(self, true)
   end
 
   local inventory = self.inventory
