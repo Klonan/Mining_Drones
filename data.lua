@@ -3,3 +3,5 @@ names = require("shared")
 shared = require("shared")
 
 require "data/entities/entities"
+
+data.raw["gui-style"].default.machine_outputs_scroll_pane.maximal_height = 10000

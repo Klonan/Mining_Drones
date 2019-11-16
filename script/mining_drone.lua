@@ -61,7 +61,8 @@ local states =
 {
   mining_entity = 1,
   return_to_depot = 2,
-  idle = 3
+  idle = 3,
+  dead = 4
 }
 
 local product_amount = util.product_amount
@@ -127,7 +128,7 @@ function mining_drone:get_desired_item()
 end
 
 function mining_drone:spill(stack)
-  self.entity.surface.spill_item_stack(self.entity.position, stack, false, self.entity.force, false)
+  self.entity.surface.spill_item_stack(self.entity.position, stack, false, nil, false)
 end
 
 function mining_drone:process_mining()
@@ -146,15 +147,32 @@ function mining_drone:process_mining()
     return
   end
 
-  local mineable_properties = target.prototype.mineable_properties
+  local flow = self.entity.force.item_production_statistics.on_flow
 
-  for k, product in pairs (mineable_properties.products) do
-    if product.name == item then
-      local amount = self.inventory.insert({name = product.name, count = product_amount(product)})
-      --self:say(item.." +"..amount)
+
+  if target.type == "item-entity" then
+
+    local stack = target.stack
+    if stack.name == item then
+      local amount = self.inventory.insert({name = stack.name, count = stack.count})
+      flow(item, amount)
     else
-      self:spill{name = product.name, count = product_amount(product)}
+      self:spill{name = stack.name, count = stack.count}
     end
+
+  else
+
+    local mineable_properties = target.prototype.mineable_properties
+    for k, product in pairs (mineable_properties.products) do
+      if product.name == item then
+        local amount = self.inventory.insert({name = product.name, count = product_amount(product)})
+        flow(item, amount)
+        --self:say(item.." +"..amount)
+      else
+        self:spill{name = product.name, count = product_amount(product)}
+      end
+    end
+
   end
 
   self:update_sticker()
@@ -180,37 +198,6 @@ end
 
 function mining_drone:request_order()
   self.depot:handle_order_request(self)
-end
-
-function mining_drone:find_new_depot()
-  local old_depot = self.depot
-  --we should have the old depot... hopefully...
-
-  if not old_depot then
-    game.print("Oof, I am not handling this yet")
-  end
-
-  local all_depots = old_depot:get_all_depots()
-  local can_go_to = {}
-  for unit_number, depot in pairs (all_depots) do
-    if depot:can_accept_drone() then
-      can_go_to[unit_number] = depot.entity
-    end
-  end
-
-  if not next(can_go_to) then
-    --None to go to
-    self.entity.die()
-    return
-  end
-
-  local closest_entity = self.entity.surface.get_closest(self.position, can_go_to)
-
-  local closest_depot = can_go_to[closest_entity.unit_number]
-
-  self:set_depot(closest_depot)
-  self:return_to_depot()
-
 end
 
 function mining_drone:process_return_to_depot()
@@ -247,7 +234,6 @@ function mining_drone:process_return_to_depot()
       end
     end
 
-    self:update_sticker()
 
   end
 
@@ -257,7 +243,10 @@ function mining_drone:process_return_to_depot()
     for name, count in pairs (self.inventory.get_contents()) do
       self:spill{name = name, count = count}
     end
+    self.inventory.clear()
   end
+
+  self:update_sticker()
 
   self:request_order()
 
@@ -269,7 +258,7 @@ function mining_drone:process_failed_command()
     self:say("I can't mine that entity!")
 
     self:clear_attack_proxy()
-
+    self:clear_mining_target()
 
     self:return_to_depot()
     return
@@ -320,13 +309,13 @@ function mining_drone:mine_entity(entity, count)
     {
       type = defines.command.go_to_location,
       destination_entity = attack_proxy,
-      distraction = defines.distraction.by_damage,
+      distraction = defines.distraction.none,
       pathfind_flags = {prefer_straight_paths = false, use_cache = false}
     },
     {
       type = defines.command.attack,
       target = attack_proxy,
-      distraction = defines.distraction.by_damage
+      distraction = defines.distraction.none
     }
   }
   self.entity.set_command
@@ -334,7 +323,7 @@ function mining_drone:mine_entity(entity, count)
     type = defines.command.compound,
     structure_type = defines.compound_command.return_last,
     commands = commands,
-    distraction = defines.distraction.by_damage
+    distraction = defines.distraction.none
   }
 end
 
@@ -347,7 +336,7 @@ function mining_drone:return_to_depot()
   local depot = self.depot
 
   if not (depot and depot.entity.valid) then
-    self:find_new_depot()
+    self:go_idle()
     return
   end
 
@@ -368,7 +357,8 @@ function mining_drone:go_to_position(position, radius)
   {
     type = defines.command.go_to_location,
     destination = position,
-    radius = radius or 1
+    radius = radius,
+    distraction = defines.distraction.none
   }
 end
 
@@ -377,7 +367,8 @@ function mining_drone:go_to_entity(entity, radius)
   {
     type = defines.command.go_to_location,
     destination_entity = entity,
-    radius = radius or 5
+    radius = radius,
+    distraction = defines.distraction.none
   }
 end
 
@@ -405,12 +396,20 @@ end
 function mining_drone:handle_drone_deletion()
   if not self.entity.valid then error("Hi, i am not handled.") end
 
+  self:say("Am dead lol")
+  self:remove_from_list()
+
   if self.depot then
     self.depot:remove_drone(self, true)
   end
 
+  self.state = states.dead
+
   local inventory = self.inventory
   if inventory.valid then
+    for name, count in pairs (inventory.get_contents()) do
+      self:spill{name = name, count = count}
+    end
     inventory.entity_owner.destroy()
   end
   self.inventory = nil
@@ -423,6 +422,18 @@ function mining_drone:go_idle()
   {
     type = defines.command.wander
   }
+  self:clear_attack_proxy()
+  self:clear_mining_target()
+  self:clear_depot()
+
+  if self.inventory.valid then
+    for name, count in pairs (self.inventory.get_contents()) do
+      self:spill{name = name, count = count}
+    end
+    self.inventory.clear()
+  end
+  self:update_sticker()
+
   add_idle_drone(self)
 end
 
@@ -520,6 +531,11 @@ local on_entity_removed = function(event)
 
   drone:handle_drone_deletion()
 
+end
+
+function mining_drone:remove_from_list()
+  remove_drone(self)
+  remove_idle_drone(self)
 end
 
 

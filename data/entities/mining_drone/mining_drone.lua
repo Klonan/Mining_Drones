@@ -127,7 +127,7 @@ local item = {
   --subgroup = "iron-units",
   order = "b-"..name,
   stack_size = 20,
-  place_result = name
+  --place_result = name
 }
 
 local recipe = {
