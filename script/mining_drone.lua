@@ -223,7 +223,6 @@ function mining_drone:process_return_to_depot()
       if (stack and stack.valid and stack.valid_for_read) then
         local count = stack.count
         local inserted = destination_inventory.insert(stack)
-        depot.estimated_count = depot.estimated_count - inserted
         if inserted == count then
           stack.clear()
         else
@@ -237,17 +236,8 @@ function mining_drone:process_return_to_depot()
 
   end
 
-  if not self.inventory.is_empty() then
-    --oof, we still holding something... oof
-    self:say("oof, I am still holding something... oof")
-    for name, count in pairs (self.inventory.get_contents()) do
-      self:spill{name = name, count = count}
-    end
-    self.inventory.clear()
-  end
-
-  self:update_sticker()
-
+  self:clear_inventory()
+  self:clear_estimated_count()
   self:request_order()
 
 end
@@ -331,8 +321,26 @@ function mining_drone:set_depot(depot)
   self.depot = depot
 end
 
+function mining_drone:cancel_command(clear_depot)
+
+  self:clear_estimated_count()
+  self:clear_attack_proxy()
+  self:clear_mining_target()
+  self:clear_inventory()
+
+  if clear_depot then
+    self:clear_depot()
+    self:go_idle()
+  else
+    self:return_to_depot()
+  end
+
+end
+
 function mining_drone:return_to_depot()
   self.state = states.return_to_depot
+  self:clear_attack_proxy()
+
   local depot = self.depot
 
   if not (depot and depot.entity.valid) then
@@ -340,10 +348,6 @@ function mining_drone:return_to_depot()
     return
   end
 
-  if self.mining_count then
-    depot.estimated_count = depot.estimated_count - self.mining_count
-    self.mining_count = nil
-  end
 
   local position = depot:get_spawn_position()
   if position then
@@ -377,6 +381,31 @@ function mining_drone:clear_attack_proxy()
   self.attack_proxy = nil
 end
 
+function mining_drone:clear_inventory(destroy)
+  if not self.inventory.valid then return end
+
+  for name, count in pairs (self.inventory.get_contents()) do
+    self:spill{name = name, count = count}
+  end
+
+  self.inventory.clear()
+  self:update_sticker()
+
+
+  if destroy then
+    self.inventory.entity_owner.destroy()
+    self.inventory = nil
+  end
+
+end
+
+function mining_drone:clear_estimated_count()
+  self:say(self.estimated_count or "no-count")
+  if self.estimated_count and self.depot then
+    self.depot.estimated_count = self.depot.estimated_count - self.estimated_count
+  end
+  self.estimated_count = nil
+end
 
 function mining_drone:clear_mining_target()
   if self.mining_target and self.mining_target.valid then
@@ -405,14 +434,11 @@ function mining_drone:handle_drone_deletion()
 
   self.state = states.dead
 
-  local inventory = self.inventory
-  if inventory.valid then
-    for name, count in pairs (inventory.get_contents()) do
-      self:spill{name = name, count = count}
-    end
-    inventory.entity_owner.destroy()
-  end
-  self.inventory = nil
+  self:clear_estimated_count()
+  self:clear_attack_proxy()
+  self:clear_mining_target()
+  self:clear_inventory(true)
+  self:clear_depot()
 
 end
 
@@ -425,14 +451,7 @@ function mining_drone:go_idle()
   self:clear_attack_proxy()
   self:clear_mining_target()
   self:clear_depot()
-
-  if self.inventory.valid then
-    for name, count in pairs (self.inventory.get_contents()) do
-      self:spill{name = name, count = count}
-    end
-    self.inventory.clear()
-  end
-  self:update_sticker()
+  self:clear_inventory()
 
   add_idle_drone(self)
 end
