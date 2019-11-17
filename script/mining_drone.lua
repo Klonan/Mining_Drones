@@ -445,6 +445,7 @@ end
 function mining_drone:clear_depot(unit_number)
   if not self.depot then return end
   self.depot.drones[self.entity.unit_number] = nil
+  self.depot:update_sticker()
   self.depot = nil
 end
 

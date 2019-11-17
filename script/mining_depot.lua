@@ -143,10 +143,10 @@ end
 
 function mining_depot:desired_item_changed()
   self.item = self:get_desired_item()
-  self:find_potential_items()
   for k, drone in pairs(self.drones) do
-    drone:cancel_command()
+    drone:cancel_command(self.item == nil)
   end
+  self:find_potential_items()
 end
 
 function mining_depot:add_no_items_alert(string)
@@ -299,7 +299,7 @@ function mining_depot:attempt_to_mine(entity)
     start = self:get_spawn_position(),
     goal = entity.position,
     force = self.entity.force,
-    radius = (entity.get_radius() * 2) + 1,
+    radius = entity.get_radius() + 0.5,
     can_open_gates = true,
     pathfind_flags = {cache = false, low_priority = false}
   }
@@ -365,6 +365,7 @@ function mining_depot:find_potential_items()
   local potential = {}
   local unique_index = unique_index
   local item = self.item
+  if not item then self.potential = {} return end
   for k, entity in pairs(self.entity.surface.find_entities_filtered{area = self:get_area(), name = get_entities_for_products(item)}) do
     potential[unique_index(entity)] = entity
   end
