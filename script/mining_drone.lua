@@ -180,6 +180,7 @@ function mining_drone:process_mining()
   if target.type == "resource" and target.amount > 1 then
     target.amount = target.amount - 1
   else
+    self:clear_mining_target()
     target.destroy()
   end
 
@@ -242,24 +243,47 @@ function mining_drone:process_return_to_depot()
 
 end
 
+function mining_drone:oof()
+  local position = self.entity.surface.find_non_colliding_position(self.entity.name, self.entity.position, 0, 0.1, false)
+  self.entity.teleport(position)
+  self:say("oof")
+end
 
 function mining_drone:process_failed_command()
+  self:oof()
+  self.fail_count = (self.fail_count or 0) + 1
   if self.state == states.mining_entity then
-    self:say("I can't mine that entity!")
 
     self:clear_attack_proxy()
-    self:clear_mining_target()
 
+    if self.mining_target.valid and self.fail_count < 5 then
+      return self:mine_entity(self.mining_target, self.mining_count)
+    end
+
+    self:say("I can't mine that entity!")
+    self:clear_mining_target()
     self:return_to_depot()
     return
   end
 
   if self.state == states.return_to_depot then
+    if self.fail_count < 5 then
+      return self:wait(15)
+    end
     self:say("I can't return to my depot!")
     self:go_idle()
     return
   end
 
+end
+
+function mining_drone:wait(ticks)
+  self.entity.set_command
+  {
+    type = defines.command.wander,
+    ticks_to_wait = ticks,
+    distraction = defines.distraction.none
+  }
 end
 
 function mining_drone:update(event)
@@ -351,7 +375,7 @@ function mining_drone:return_to_depot()
 
   local position = depot:get_spawn_position()
   if position then
-    self:go_to_position(position, 0.3)
+    self:go_to_position(position, 0.5)
     return
   end
 end
@@ -361,8 +385,9 @@ function mining_drone:go_to_position(position, radius)
   {
     type = defines.command.go_to_location,
     destination = position,
-    radius = radius,
-    distraction = defines.distraction.none
+    radius = radius or 1,
+    distraction = defines.distraction.none,
+    pathfind_flags = {prefer_straight_paths = false, use_cache = false},
   }
 end
 
@@ -371,8 +396,9 @@ function mining_drone:go_to_entity(entity, radius)
   {
     type = defines.command.go_to_location,
     destination_entity = entity,
-    radius = radius,
-    distraction = defines.distraction.none
+    radius = radius or 1,
+    distraction = defines.distraction.none,
+    pathfind_flags = {prefer_straight_paths = false, use_cache = false}
   }
 end
 
@@ -400,7 +426,7 @@ function mining_drone:clear_inventory(destroy)
 end
 
 function mining_drone:clear_estimated_count()
-  self:say(self.estimated_count or "no-count")
+  --self:say(self.estimated_count or "no-count")
   if self.estimated_count and self.depot then
     self.depot.estimated_count = self.depot.estimated_count - self.estimated_count
   end
@@ -474,6 +500,7 @@ function mining_drone:update_sticker()
     end
     self.renderings = nil
   end
+  --if true then return end
 
   local inventory = self.inventory
 
@@ -583,6 +610,7 @@ end
 
 mining_drone.on_init = function()
   global.mining_drone = global.mining_drone or script_data
+  game.map_settings.path_finder.use_path_cache = false
 end
 
 mining_drone.get_idle_drones = function()

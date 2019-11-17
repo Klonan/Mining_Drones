@@ -73,4 +73,8 @@ util.angle = function(position_1, position_2)
   return math.atan2(d_y, d_x)
 end
 
+util.area = function(position, radius)
+  return {{position.x - radius, position.y - radius},{position.x + radius, position.y + radius}}
+end
+
 return util

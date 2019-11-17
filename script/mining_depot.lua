@@ -2,7 +2,8 @@ local mining_drone = require("script/mining_drone")
 local depot_update_rate = 60
 local mining_depot = {}
 local depot_metatable = {__index = mining_depot}
-local depot_range = 64
+local depot_range = 40
+local max_spawn_per_update = 10
 
 local script_data =
 {
@@ -12,14 +13,16 @@ local script_data =
   depot_highlights = {}
 }
 
-local get_product_amount = function(entity)
+local get_product_amount = function(entity, randomize_ore)
 
   if entity.type == "item-entity" then
     return entity.stack.count
   end
 
   if entity.type == "resource" then
-    return (entity.prototype.mineable_properties.products[1].amount or entity.prototype.mineable_properties.products[1].amount_min) * 5
+    local amount = (entity.prototype.mineable_properties.products[1].amount or entity.prototype.mineable_properties.products[1].amount_min) * 5
+    if randomize_ore then return math.random(amount - 2, amount + 3) end
+    return amount
   end
 
   return (entity.prototype.mineable_properties.products[1].amount or entity.prototype.mineable_properties.products[1].amount_min)
@@ -127,12 +130,12 @@ function mining_depot:update_sticker()
   {
     surface = self.entity.surface,
     target = self.entity,
-    text = self:get_active_drone_count().."/"..self:get_drone_item_count().."  ("..self.estimated_count..")",
+    text = self:get_active_drone_count().."/"..self:get_drone_item_count(),
     only_in_alt_mode = true,
     forces = {self.entity.force},
     color = {r = 1, g = 1, b = 1},
     alignment = "center",
-    scale = 2
+    scale = 1.5
   }
 
 
@@ -149,7 +152,7 @@ end
 function mining_depot:add_no_items_alert(string)
 
   for k, player in pairs (self.entity.force.connected_players) do
-    player.add_custom_alert(self.entity, {type = "item", name = self.entity.name}, "Mining depot out of mining targets", true)
+    player.add_custom_alert(self.entity, {type = "item", name = self.entity.name}, "Mining depot out of mining targets.", true)
   end
   rendering.draw_sprite
   {
@@ -158,7 +161,7 @@ function mining_depot:add_no_items_alert(string)
     sprite = "utility/warning_icon",
     forces = {self.entity.force},
     time_to_live = 30,
-    --target_offset = {0, -1},
+    target_offset = {0, -0.5},
     render_layer = "entity-info-icon-above"
   }
 end
@@ -166,7 +169,7 @@ end
 function mining_depot:add_spawn_blocked_alert(string)
 
   for k, player in pairs (self.entity.force.connected_players) do
-    player.add_custom_alert(self.entity, {type = "item", name = self.entity.name}, "Mining depot spawn blocked", true)
+    player.add_custom_alert(self.entity, {type = "item", name = self.entity.name}, "Mining depot spawn blocked.", true)
   end
   rendering.draw_sprite
   {
@@ -191,8 +194,15 @@ function mining_depot:update()
     self:desired_item_changed()
   end
 
+  if not item then return end
+
   if not next(self.potential) then
     --Nothing to mine, nothing to do...
+    if not self.had_rescan then
+      self.had_rescan = true
+      self:find_potential_items()
+      return
+    end
     self:add_no_items_alert()
     return
   end
@@ -218,7 +228,7 @@ function mining_depot:update()
   --game.print(serpent.line{output_space = output_space, count = count, estimated = self.estimated_count})
   if count > 0 then
 
-    for k = 1, count do
+    for k = 1, (math.min(count, max_spawn_per_update)) do
 
       if output_space - self.estimated_count <= 0 then break end
 
@@ -291,7 +301,7 @@ function mining_depot:attempt_to_mine(entity)
     force = self.entity.force,
     radius = (entity.get_radius() * 2) + 1,
     can_open_gates = true,
-    pathfind_flags = {cache = false, low_priority = true}
+    pathfind_flags = {cache = false, low_priority = false}
   }
 
   script_data.path_requests[path_request_id] = self
@@ -331,14 +341,34 @@ local get_entities_for_products = function(item)
   return names
 end
 
+local directions =
+{
+  [defines.direction.north] = {0, -(depot_range + 2.5)},
+  [defines.direction.south] = {0, (depot_range + 2.5)},
+  [defines.direction.east] = {(depot_range + 2.5), 0},
+  [defines.direction.west] = {-(depot_range + 2.5), 0},
+}
+
+local get_depot_area = function(entity)
+  local origin = entity.position
+  local direction = directions[entity.direction]
+  origin.x = origin.x + direction[1]
+  origin.y = origin.y + direction[2]
+  return util.area(origin, depot_range)
+end
+
+function mining_depot:get_area()
+  return get_depot_area(self.entity)
+end
+
 function mining_depot:find_potential_items()
   local potential = {}
   local unique_index = unique_index
   local item = self.item
-  for k, entity in pairs(self.entity.surface.find_entities_filtered{position = self.entity.position, radius = depot_range, name = get_entities_for_products(item)}) do
+  for k, entity in pairs(self.entity.surface.find_entities_filtered{area = self:get_area(), name = get_entities_for_products(item)}) do
     potential[unique_index(entity)] = entity
   end
-  for k, entity in pairs(self.entity.surface.find_entities_filtered{position = self.entity.position, radius = depot_range, type = "item-entity"}) do
+  for k, entity in pairs(self.entity.surface.find_entities_filtered{area = self:get_area(), type = "item-entity"}) do
     if entity.stack.name == item then
       potential[unique_index(entity)] = entity
     end
@@ -349,6 +379,8 @@ function mining_depot:find_potential_items()
 end
 
 function mining_depot:find_entities_to_mine()
+
+  if not next(self.potential) then return end
 
   local taken = script_data.global_taken
   local eligible_entities = {}
@@ -369,7 +401,6 @@ function mining_depot:find_entity_to_mine()
 
   local entities = self:find_entities_to_mine()
   if not next(entities) then
-    game.print("We out of entities to mine...")
     return
   end
 
@@ -407,7 +438,7 @@ end
 
 function mining_depot:order_drone(drone, entity)
 
-  local product_amount = get_product_amount(entity)
+  local product_amount = get_product_amount(entity, true)
   self.estimated_count = self.estimated_count + product_amount
   drone.estimated_count = product_amount
   drone:mine_entity(entity, product_amount)
@@ -422,9 +453,6 @@ function mining_depot:handle_order_request(drone)
   end
 
   if self:is_full() or self:get_active_drone_count() > self:get_drone_item_count() then
-    if (drone.mining_target and drone.mining_target.valid) then
-      self:add_mining_target(drone.mining_target)
-    end
     self:return_drone(drone)
     return
   end
@@ -462,6 +490,7 @@ end
 function mining_depot:handle_path_request_finished(event)
   local entity = self.path_requests[event.id]
   if not (entity and entity.valid) then return end
+  self.path_requests[event.id] = nil
 
   local product_amount = get_product_amount(entity)
 
@@ -470,6 +499,7 @@ function mining_depot:handle_path_request_finished(event)
   if not event.path then
     --we can't reach it, don't spawn any miners.
     self:add_mining_target(entity)
+    self.potential[unique_index(entity)] = nil
     game.print("HUH")
     return
   end
@@ -484,6 +514,7 @@ end
 
 function mining_depot:return_drone(drone)
   self:remove_drone(drone)
+  drone:remove_from_list()
   drone.entity.destroy()
   self:update_sticker()
 end
@@ -555,6 +586,7 @@ local on_script_path_request_finished = function(event)
   --game.print(event.tick.." - "..event.id)
   local depot = script_data.path_requests[event.id]
   if not depot then return end
+  script_data.path_requests[event.id] = nil
   depot:handle_path_request_finished(event)
 end
 
@@ -578,23 +610,28 @@ local on_selected_entity_changed = function(event)
   local player = game.get_player(event.player_index)
 
   local highlight = script_data.depot_highlights[event.player_index]
-  if highlight then rendering.destroy(highlight) end
+  if highlight then
+    rendering.destroy(highlight)
+    script_data.depot_highlights[event.player_index] = nil
+  end
 
   local entity = player.selected
   if not (entity and entity.valid) then return end
 
   if entity.name ~= names.mining_depot then return end
 
-  script_data.depot_highlights[event.player_index] = rendering.draw_circle
+  local area = get_depot_area(entity)
+  script_data.depot_highlights[event.player_index] = rendering.draw_rectangle
   {
     surface = entity.surface,
     players = {player},
-    radius = depot_range,
     filled = true,
     color = {r = 0, g = 0.1, b = 0, a = 0.1},
     draw_on_ground = true,
     target = entity,
-    only_in_alt_mode = false
+    only_in_alt_mode = false,
+    left_top = area[1],
+    right_bottom = area[2]
   }
 
 

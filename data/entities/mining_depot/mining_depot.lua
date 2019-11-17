@@ -5,7 +5,7 @@ machine.localised_name = {name}
 local scale = 2
 util.recursive_hack_make_hr(machine)
 util.recursive_hack_scale(machine, scale)
-machine.collision_box = {{-1.5, -2.5},{1.5, 2.5}}
+machine.collision_box = {{-1.25, -2.25},{1.25, 2.25}}
 machine.selection_box = {{-1.5, -2.5},{1.5, 2.5}}
 machine.crafting_categories = {name}
 machine.crafting_speed = (1)
@@ -45,7 +45,7 @@ local base = function(shift)
     width = 474,
     height = 335,
     frame_count = 1,
-    scale = 0.5,
+    scale = 0.45,
     shift = shift
   }
 end
@@ -81,7 +81,7 @@ local v_chest = function(shift)
     width = 136,
     height = 189,
     frame_count = 1,
-    scale = 0.5,
+    scale = 0.4,
     shift = shift
   }
 end
@@ -93,7 +93,7 @@ local v_shadow = function(shift)
     width = 150,
     height = 155,
     frame_count = 1,
-    scale = 0.5,
+    scale = 0.4,
     shift = shift,
     draw_as_shadow = true
   }
@@ -230,7 +230,7 @@ data:extend
 
 local make_depot_recipe = function(item_prototype)
   local results = {}
-  for k = 1, 15 do
+  for k = 1, 24 do
     results[k] = {type = "item", name = item_prototype.name, amount = item_prototype.stack_size, show_details_in_recipe_tooltip = false}
   end
   local recipe =
@@ -241,10 +241,12 @@ local make_depot_recipe = function(item_prototype)
     icon = item_prototype.icon,
     icon_size = item_prototype.icon_size,
     icons = item_prototype.icons,
-    ingredients = {{names.drone_name, 20}},
+    ingredients = {{names.drone_name, 1}},
     results = results,
     category = name,
-    subgroup = "mining-drone"
+    subgroup = "mining-drone",
+    overload_multiplier = 100,
+    hide_from_player_crafting = true,
   }
   data:extend{recipe}
 end
