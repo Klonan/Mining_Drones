@@ -47,13 +47,20 @@ end
 util.recursive_hack_animation_speed = recursive_hack_animation_speed
 
 local recursive_hack_tint
-recursive_hack_tint = function(array, tint)
+recursive_hack_tint = function(array, tint, check_runtime)
   for k, v in pairs (array) do
     if type(v) == "table" then
-      if is_sprite_def(v)  then
-        v.tint = tint
+      if is_sprite_def(v) then
+        if not check_runtime or v.apply_runtime_tint then
+          v.tint = tint
+          v.apply_runtime_tint = false
+          if v.hr_version then
+            v.hr_version.apply_runtime_tint = false
+            v.hr_version.tint = tint
+          end
+        end
       end
-      recursive_hack_tint(v, tint)
+      recursive_hack_tint(v, tint, check_runtime)
     end
   end
 end
@@ -102,6 +109,15 @@ util.remove_flag = function(prototype, flag)
     if v == flag then
       table.remove(prototype.flags, k)
       break
+    end
+  end
+end
+
+util.has_flag = function(prototype, flag)
+  if not prototype.flags then return false end
+  for k, v in pairs (prototype.flags) do
+    if v == flag then
+      return true
     end
   end
 end
@@ -216,6 +232,22 @@ recursive_hack_blend_mode = function(prototype, value)
     end
   end
 end
+
+local recursive_hack_runtime_tint
+recursive_hack_runtime_tint = function(prototype, value)
+  for k, v in pairs (prototype) do
+    if type(v) == "table" then
+      if util.is_sprite_def(v) then
+        v.apply_runtime_tint = value
+        if v.hr_version then
+          v.hr_version.apply_runtime_tint = value
+        end
+      end
+      recursive_hack_runtime_tint(v, value)
+    end
+  end
+end
+util.recursive_hack_runtime_tint = recursive_hack_runtime_tint
 
 util.copy = util.table.deepcopy
 

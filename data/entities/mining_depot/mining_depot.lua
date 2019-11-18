@@ -36,7 +36,8 @@ machine.energy_source =
   usage_priority = "secondary-input",
   emissions_per_second_per_watt = 0
 }
-machine.is_deployer = true
+machine.icon = util.path("data/entities/mining_depot/depot-icon.png")
+machine.icon_size = 216
 
 local base = function(shift)
   return
@@ -146,8 +147,8 @@ local item = {
   icon = machine.icon,
   icon_size = machine.icon_size,
   flags = {},
-  subgroup = "mining-drone",
-  order = "aa"..name,
+  subgroup = "extraction-machine",
+  order = "za"..name,
   place_result = name,
   stack_size = 50
 }
@@ -248,7 +249,7 @@ local make_depot_recipe = function(item_prototype)
     results = results,
     category = name,
     subgroup = "mining-drone",
-    overload_multiplier = 100,
+    overload_multiplier = 200,
     hide_from_player_crafting = true,
     allow_decomposition = false,
     allow_as_intermediate = false,

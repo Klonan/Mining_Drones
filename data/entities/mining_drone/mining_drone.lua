@@ -6,6 +6,10 @@ local base = util.copy(data.raw.character.character)
 --  layer.frame_count = 1
 --end
 
+--util.recursive_hack_runtime_tint(base, false)
+util.recursive_hack_tint(base, {r = 0.5, g = 0.4, b = 0.3, a = 0.5}, true)
+util.recursive_hack_scale(base, 0.85)
+
 util.recursive_hack_animation_speed(base.animations[1].mining_with_tool, 1/0.9)
 
 local attack_range = 16
@@ -26,12 +30,12 @@ local bot =
   --subgroup = "iron-units",
   healing_per_tick = 0.1,
   minable = {result = name, mining_time = 2},
-  collision_box = {{-0.15, -0.15}, {0.15, 0.15}},
+  collision_box = {{-0.10, -0.10}, {0.10, 0.10}},
   collision_mask = util.ground_unit_collision_mask(),
   max_pursue_distance = 64,
   resistances = nil,
   min_persue_time = 60 * 15,
-  selection_box = {{-0.5, -1.6}, {0.5, 0.3}},
+  selection_box = {{-0.3, -1}, {0.3, 0.2}},
   sticker_box = {{-0.3, -1}, {0.2, 0.3}},
   distraction_cooldown = (15),
   move_while_shooting = false,
@@ -109,12 +113,12 @@ local bot =
   vision_distance = 10,
   has_belt_immunity = false,
   affected_by_tiles = true,
-  movement_speed = 0.12,
-  distance_per_frame = 0.08,
+  movement_speed = 0.10,
+  distance_per_frame = 0.05,
   pollution_to_join_attack = 1000000,
   corpse = base.character_corpse,
   run_animation = base.animations[1].running,
-  rotation_speed = 1
+  rotation_speed = 0.25
 }
 
 local item = {
@@ -124,8 +128,8 @@ local item = {
   icon = bot.icon,
   icon_size = bot.icon_size,
   flags = {},
-  --subgroup = "iron-units",
-  order = "b-"..name,
+  subgroup = "extraction-machine",
+  order = "zb"..name,
   stack_size = 20,
   --place_result = name
 }
