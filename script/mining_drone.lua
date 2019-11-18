@@ -42,8 +42,13 @@ local max = math.max
 local min = math.min
 
 local attack_proxy = function(entity)
-
-  local size = min(ceil((max(entity.get_radius() - 0.1, 0.25)) * 2), 10)
+  
+  if game.entity_prototypes[shared.attack_proxy_name..entity.name] then
+    name = shared.attack_proxy_name..entity.name
+  else
+    local size = min(ceil((max(entity.get_radius() - 0.1, 0.25)) * 2), 10)
+    name = shared.attack_proxy_name..size
+  end
 
   --Health is set so it will take just enough damage at exactly the right time
 
@@ -52,7 +57,7 @@ local attack_proxy = function(entity)
   local number_of_ticks = (mining_time / mining_speed) * 60
   local number_of_hits = math.ceil(number_of_ticks / interval)
 
-  local proxy = entity.surface.create_entity{name = shared.attack_proxy_name..size, position = entity.position, force = "neutral"}
+  local proxy = entity.surface.create_entity{name = name, position = entity.position, force = "neutral"}
   proxy.health = number_of_hits * damage
   return proxy
 end

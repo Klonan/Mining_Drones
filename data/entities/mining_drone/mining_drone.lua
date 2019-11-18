@@ -46,11 +46,11 @@ local bot =
     ammo_category = "bullet",
     warmup = 19,
     cooldown = 26 - 19,
-    range = 1,
+    range = 0.5,
     --min_attack_distance = 1,
     --projectile_creation_distance = 0.5,
     --lead_target_for_projectile_speed = 1,
-    sound =
+    old_sound =
     {
       variations =
       {
@@ -106,7 +106,7 @@ local bot =
     },
     animation = base.animations[1].mining_with_tool
   },
-  vision_distance = 16,
+  vision_distance = 10,
   has_belt_immunity = false,
   affected_by_tiles = true,
   movement_speed = 0.12,
