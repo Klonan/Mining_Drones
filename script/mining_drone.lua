@@ -42,7 +42,7 @@ local max = math.max
 local min = math.min
 
 local attack_proxy = function(entity)
-  
+
   if game.entity_prototypes[shared.attack_proxy_name..entity.name] then
     name = shared.attack_proxy_name..entity.name
   else
@@ -70,7 +70,21 @@ local states =
   dead = 4
 }
 
-local product_amount = util.product_amount
+local random = math.random
+local product_amount = function(product)
+
+  if product.probability < 1 and random() >= product.probability then
+    return 0
+  end
+
+  if product.amount then
+    return product.amount
+  end
+
+  return random(product.amount_min, product.amount_max)
+
+end
+
 
 local mining_drone = {}
 
@@ -169,12 +183,15 @@ function mining_drone:process_mining()
 
     local mineable_properties = target.prototype.mineable_properties
     for k, product in pairs (mineable_properties.products) do
-      if product.name == item then
-        local amount = self.inventory.insert({name = product.name, count = product_amount(product)})
-        flow(item, amount)
-        --self:say(item.." +"..amount)
-      else
-        self:spill{name = product.name, count = product_amount(product)}
+      local count = product_amount(product)
+      if count > 0 then
+        if product.name == item then
+          self:say(count)
+          local amount = self.inventory.insert({name = product.name, count = count})
+          flow(item, amount)
+        else
+          self:spill{name = product.name, count = count}
+        end
       end
     end
 
