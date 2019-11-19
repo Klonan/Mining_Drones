@@ -117,16 +117,20 @@ function mining_depot:spawn_drone()
   return drone
 end
 
+local draw_text = rendering.draw_text
+local destroy = rendering.destroy
+
 function mining_depot:update_sticker()
 
 
   if self.rendering then
-    rendering.destroy(self.rendering)
+    rendering.set_text(self.rendering, self:get_active_drone_count().."/"..self:get_drone_item_count())
+    return
   end
 
-  if not self:get_desired_item() then return end
+  if not self.item then return end
 
-  self.rendering = rendering.draw_text
+  self.rendering = draw_text
   {
     surface = self.entity.surface,
     target = self.entity,
@@ -186,13 +190,24 @@ function mining_depot:add_spawn_blocked_alert(string)
 end
 
 function mining_depot:update()
+  local profiler = game.create_profiler()
+  local print = function(string)
+    if true then return end
+    game.print({"", game.tick, self.entity.unit_number, " - ", string, " ", profiler})
+    profiler.reset()
+  end
   local entity = self.entity
   if not (entity and entity.valid) then return end
+  
+  print("valid check")
 
   local item = self:get_desired_item()
   if item ~= self.item then
     self:desired_item_changed()
   end
+  
+
+  
 
   if not item then return end
 
@@ -207,24 +222,41 @@ function mining_depot:update()
     return
   end
 
+  
+  print("Check potential enttities")
+
   if self:is_spawn_blocked() then
     self:add_spawn_blocked_alert()
     return
   end
 
+  
+  print("Check spawn blocked")
+
   self:adopt_idle_drones()
 
+  
+  print("adopting")
+
   self:update_sticker()
+
+  
+  print("update sticker")
 
 
   if self:is_full() then
     return
   end
 
-
+  
+  print("is full")
 
   local count = self:get_drone_item_count() - self:get_active_drone_count()
   local output_space = self:get_output_space()
+
+  
+  print("checking space")
+
   --game.print(serpent.line{output_space = output_space, count = count, estimated = self.estimated_count})
   if count > 0 then
 
@@ -240,6 +272,9 @@ function mining_depot:update()
     end
 
   end
+
+  
+  print("Attempt to mine")
 
   if count < 0 then
 
@@ -259,7 +294,7 @@ function mining_depot:adopt_idle_drones()
   if not next(idle_drones) then return end
 
   local space = self:get_drone_item_count() - self:get_active_drone_count()
-
+  
   if space < 1 then return end
 
   for unit_number, drone in pairs (idle_drones) do
@@ -540,7 +575,7 @@ function mining_depot:take_drone(drone)
   self.drones[drone.entity.unit_number] = drone
   drone:set_depot(self)
 
-  drone:say("Assigned to a new depot!")
+  --drone:say("Assigned to a new depot!")
   if drone:is_returning_to_depot() then
     drone:return_to_depot()
   end

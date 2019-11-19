@@ -161,7 +161,7 @@ function mining_drone:process_mining()
 
   local item = self:get_desired_item()
   if not item then
-    self:say("I don't know what I want")
+    --self:say("I don't know what I want")
     self:return_to_depot()
     return
   end
@@ -186,7 +186,7 @@ function mining_drone:process_mining()
       local count = product_amount(product)
       if count > 0 then
         if product.name == item then
-          self:say(count)
+          --self:say(count)
           local amount = self.inventory.insert({name = product.name, count = count})
           flow(item, amount)
         else
@@ -228,7 +228,7 @@ function mining_drone:process_return_to_depot()
   local depot = self.depot
 
   if not (depot and depot.entity.valid) then
-    self:say("My depot isn't valid!")
+    --self:say("My depot isn't valid!")
     return self:go_idle()
   end
 
@@ -268,7 +268,7 @@ end
 function mining_drone:oof()
   local position = self.entity.surface.find_non_colliding_position(self.entity.name, self.entity.position, 0, 0.1, false)
   self.entity.teleport(position)
-  self:say("oof")
+  --self:say("oof")
 end
 
 function mining_drone:process_failed_command()
@@ -282,7 +282,7 @@ function mining_drone:process_failed_command()
       return self:mine_entity(self.mining_target, self.mining_count)
     end
 
-    self:say("I can't mine that entity!")
+    --self:say("I can't mine that entity!")
     self:clear_mining_target()
     self:return_to_depot()
     return
@@ -290,9 +290,9 @@ function mining_drone:process_failed_command()
 
   if self.state == states.return_to_depot then
     if self.fail_count < 5 then
-      return self:wait(15)
+      return self:wait(25)
     end
-    self:say("I can't return to my depot!")
+    --self:say("I can't return to my depot!")
     self:go_idle()
     return
   end
@@ -474,7 +474,7 @@ end
 function mining_drone:handle_drone_deletion()
   if not self.entity.valid then error("Hi, i am not handled.") end
 
-  self:say("Am dead lol")
+  --self:say("Am dead lol")
   self:remove_from_list()
 
   if self.depot then
@@ -514,33 +514,40 @@ function mining_drone:is_returning_to_depot()
 end
 
 local insert = table.insert
+
+
 function mining_drone:update_sticker()
 
-  local renderings = self.renderings
-  if renderings then
-    for k, v in pairs (renderings) do
-      rendering.destroy(v)
+  local stack = self.inventory[1]
+
+  if not (stack and stack.valid and stack.valid_for_read) then
+    if self.renderings then
+      rendering.destroy(self.renderings[1])
+      rendering.destroy(self.renderings[2])
+      self.renderings = nil
     end
-    self.renderings = nil
+    return
   end
-  --if true then return end
 
-  local inventory = self.inventory
+  local name = stack.name
 
-  local contents = inventory.get_contents()
+  if self.renderings then
 
-  if not next(contents) then return end
+    if self.renderings.name ~= name then
+      rendering.set_sprite(self.renderings[2], "item/"..name)
+      self.renderings.name = name
+    end
 
-  local number = table_size(contents)
+    return
+  end
+
+  self.renderings = {name = name}
 
   local drone = self.entity
   local surface = drone.surface
   local forces = {drone.force}
 
-  local renderings = {}
-  self.renderings = renderings
-
-  insert(renderings, rendering.draw_sprite
+  insert(self.renderings, rendering.draw_sprite
   {
     sprite = "utility/entity_info_dark_background",
     target = drone,
@@ -551,10 +558,10 @@ function mining_drone:update_sticker()
     x_scale = 0.5,
     y_scale = 0.5,
   })
-
-  insert(renderings, rendering.draw_sprite
+  
+  insert(self.renderings, rendering.draw_sprite
   {
-    sprite = "item/"..next(contents),
+    sprite = "item/"..name,
     target = drone,
     surface = surface,
     forces = forces,
@@ -563,6 +570,7 @@ function mining_drone:update_sticker()
     x_scale = 0.5,
     y_scale = 0.5,
   })
+
 
 
 end

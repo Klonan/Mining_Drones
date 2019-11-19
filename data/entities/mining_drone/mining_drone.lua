@@ -8,7 +8,7 @@ local base = util.copy(data.raw.character.character)
 
 --util.recursive_hack_runtime_tint(base, false)
 util.recursive_hack_tint(base, {r = 0.5, g = 0.4, b = 0.3, a = 0.5}, true)
-util.recursive_hack_scale(base, 0.85)
+util.recursive_hack_scale(base, 0.9)
 
 util.recursive_hack_animation_speed(base.animations[1].mining_with_tool, 1/0.9)
 
@@ -113,12 +113,12 @@ local bot =
   vision_distance = 10,
   has_belt_immunity = false,
   affected_by_tiles = true,
-  movement_speed = 0.10,
+  movement_speed = 0.08,
   distance_per_frame = 0.05,
   pollution_to_join_attack = 1000000,
   corpse = base.character_corpse,
   run_animation = base.animations[1].running,
-  rotation_speed = 0.25
+  rotation_speed = 0.2
 }
 
 local item = {

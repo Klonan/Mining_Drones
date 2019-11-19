@@ -2,5 +2,4 @@ local require = function(name) return require("data/entities/"..name) end
 
 require("mining_drone/mining_drone")
 require("proxy_chest/proxy_chest")
-require("attack_proxy/attack_proxy")
 require("mining_depot/mining_depot")
