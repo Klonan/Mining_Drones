@@ -1,3 +1,4 @@
+local pollution_per_ore = 0.2
 
 local script_data =
 {
@@ -179,6 +180,8 @@ function mining_drone:process_mining()
     for k, product in pairs (mineable_properties.products) do
       local count = product_amount(product) * self.mining_count
       if count > 0 then
+        self.entity.surface.pollute(target.position, pollution_per_ore * count)
+        game.pollution_statistics.on_flow(shared.drone_name, pollution_per_ore * count)
         if product.name == item then
           --self:say(count)
           local amount = self.inventory.insert({name = product.name, count = count})
@@ -190,6 +193,7 @@ function mining_drone:process_mining()
     end
 
   end
+
 
   self:update_sticker()
 
