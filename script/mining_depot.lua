@@ -48,8 +48,11 @@ function mining_depot.new(entity)
     potential = {},
     estimated_count = 0,
     path_requests = {},
+    surface_index = entity.surface.index,
     item = nil
   }
+
+  script_data.global_taken[depot.surface_index] = script_data.global_taken[depot.surface_index] or {}
 
   setmetatable(depot, depot_metatable)
 
@@ -198,16 +201,16 @@ function mining_depot:update()
   end
   local entity = self.entity
   if not (entity and entity.valid) then return end
-  
+
   print("valid check")
 
   local item = self:get_desired_item()
   if item ~= self.item then
     self:desired_item_changed()
   end
-  
 
-  
+
+
 
   if not item then return end
 
@@ -222,7 +225,7 @@ function mining_depot:update()
     return
   end
 
-  
+
   print("Check potential enttities")
 
   if self:is_spawn_blocked() then
@@ -230,17 +233,17 @@ function mining_depot:update()
     return
   end
 
-  
+
   print("Check spawn blocked")
 
   self:adopt_idle_drones()
 
-  
+
   print("adopting")
 
   self:update_sticker()
 
-  
+
   print("update sticker")
 
 
@@ -248,13 +251,13 @@ function mining_depot:update()
     return
   end
 
-  
+
   print("is full")
 
   local count = self:get_drone_item_count() - self:get_active_drone_count()
   local output_space = self:get_output_space()
 
-  
+
   print("checking space")
 
   --game.print(serpent.line{output_space = output_space, count = count, estimated = self.estimated_count})
@@ -273,7 +276,7 @@ function mining_depot:update()
 
   end
 
-  
+
   print("Attempt to mine")
 
   if count < 0 then
@@ -294,7 +297,7 @@ function mining_depot:adopt_idle_drones()
   if not next(idle_drones) then return end
 
   local space = self:get_drone_item_count() - self:get_active_drone_count()
-  
+
   if space < 1 then return end
 
   for unit_number, drone in pairs (idle_drones) do
@@ -356,7 +359,7 @@ local unique_index = function(entity)
   local unit_number = entity.unit_number
   if unit_number then return unit_number end
   local position = entity.position
-  return entity.surface.index.."_"..position.x.."_"..position.y
+  return (position.x * 10000000) + position.y
 end
 
 local insert = table.insert
@@ -396,56 +399,119 @@ function mining_depot:get_area()
   return get_depot_area(self.entity)
 end
 
+
+
+local abs = math.abs
+local insert = table.insert
+
+function mining_depot:add_to_potential_sorted(entity)
+
+  local origin = self.entity.position
+  local x, y = origin.x, origin.y
+
+  local distance = function(position)
+    return abs(x - position.x) + abs(y - position.y)
+  end
+
+  local length = distance(entity.position)
+  local entities = self.potential
+
+  for index, other_entity in pairs (entities) do
+    if not other_entity.valid then
+      entities[index] = nil
+    else
+      if length <= distance(other_entity.position) then
+        insert(entities, index, entity)
+        return
+      end
+    end
+  end
+
+  insert(entities, entity)
+
+end
+
+function mining_depot:sort_by_distance(entities)
+  local profiler = game.create_profiler()
+
+  local origin = self.entity.position
+  local x, y = origin.x, origin.y
+
+  local distance = function(position)
+    return abs(x - position.x) + abs(y - position.y)
+  end
+
+  local sorted = {}
+
+  local distance_cache = {}
+
+  for k, entity in pairs (entities) do
+
+    local length = distance(entity.position)
+    distance_cache[entity] = length
+    local added = false
+    for index, other_entity in pairs (sorted) do
+      if length <= distance_cache[other_entity] then
+        insert(sorted, index, entity)
+        added = true
+        break
+      end
+    end
+
+    if not added then
+      insert(sorted, entity)
+    end
+
+  end
+
+  distance_cache = nil
+
+  game.print{"", "sorted ", #sorted, " ", profiler}
+
+  return sorted
+
+end
+
 function mining_depot:find_potential_items()
-  local potential = {}
+  local unsorted = {}
   local unique_index = unique_index
   local item = self.item
   if not item then self.potential = {} return end
   for k, entity in pairs(self.entity.surface.find_entities_filtered{area = self:get_area(), name = get_entities_for_products(item)}) do
-    potential[unique_index(entity)] = entity
+    insert(unsorted, entity)
   end
   for k, entity in pairs(self.entity.surface.find_entities_filtered{area = self:get_area(), type = "item-entity"}) do
     if entity.stack.name == item then
-      potential[unique_index(entity)] = entity
+      insert(unsorted, entity)
     end
   end
 
-  self.potential = potential
-
-end
-
-function mining_depot:find_entities_to_mine()
-
-  if not next(self.potential) then return end
-
-  local taken = script_data.global_taken
-  local eligible_entities = {}
-
-  for unit_number, entity in pairs (self.potential) do
-    if not entity.valid then
-      self.potential[unit_number] = nil
-    elseif not taken[unit_number] then
-      eligible_entities[unit_number] = entity
-    end
-  end
-
-  return eligible_entities
+  self.potential = self:sort_by_distance(unsorted)
 
 end
 
 function mining_depot:find_entity_to_mine()
 
-  local entities = self:find_entities_to_mine()
-  if not next(entities) then
-    return
+
+  local entities = self.potential
+  if not next(entities) then return end
+
+  local taken = script_data.global_taken[self.surface_index]
+
+
+  for k, entity in pairs (entities) do
+    if not entity.valid then
+      entities[k] = nil
+    else
+      local index = unique_index(entity)
+      if not taken[unique_index(entity)] then
+        entities[k] = nil
+        script_data.global_taken[self.surface_index][index] = true
+        game.print(k)
+        return entity
+      end
+    end
   end
-
-  local closest = self.entity.surface.get_closest(self.entity.position, entities)
-  local index = unique_index(closest)
-
-  script_data.global_taken[index] = true
-
-  return closest
 
 end
 
@@ -475,6 +541,9 @@ end
 function mining_depot:order_drone(drone, entity)
 
   local product_amount = get_product_amount(entity, true)
+  if entity.type == "resource" then
+    product_amount = math.min(product_amount, entity.amount)
+  end
   self.estimated_count = self.estimated_count + product_amount
   drone.estimated_count = product_amount
   drone:mine_entity(entity, product_amount)
@@ -556,7 +625,8 @@ function mining_depot:return_drone(drone)
 end
 
 function mining_depot:add_mining_target(entity)
-  script_data.global_taken[unique_index(entity)] = nil
+  self:add_to_potential_sorted(entity)
+  script_data.global_taken[self.surface_index][unique_index(entity)] = nil
 end
 
 function mining_depot:remove_from_list()

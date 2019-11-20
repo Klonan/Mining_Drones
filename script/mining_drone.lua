@@ -27,13 +27,6 @@ local proxy_inventory = function()
   return chest.get_output_inventory()
 end
 
-local taken = {}
-
-local unique_index = function(entity)
-  local index = entity.unit_number or entity.surface.index..math.floor(entity.position.x).."-"..math.floor(entity.position.y)
-  return index
-end
-
 local mining_speed = 0.55
 local interval = shared.mining_interval
 local damage = shared.mining_damage
@@ -41,7 +34,7 @@ local ceil = math.ceil
 local max = math.max
 local min = math.min
 
-local attack_proxy = function(entity)
+local attack_proxy = function(entity, count)
 
   if game.entity_prototypes[shared.attack_proxy_name..entity.name] then
     name = shared.attack_proxy_name..entity.name
@@ -53,6 +46,7 @@ local attack_proxy = function(entity)
   --Health is set so it will take just enough damage at exactly the right time
 
   local mining_time = entity.prototype.mineable_properties.mining_time
+  local mining_time = mining_time * count
 
   local number_of_ticks = (mining_time / mining_speed) * 60
   local number_of_hits = math.ceil(number_of_ticks / interval)
@@ -183,7 +177,7 @@ function mining_drone:process_mining()
 
     local mineable_properties = target.prototype.mineable_properties
     for k, product in pairs (mineable_properties.products) do
-      local count = product_amount(product)
+      local count = product_amount(product) * self.mining_count
       if count > 0 then
         if product.name == item then
           --self:say(count)
@@ -199,22 +193,16 @@ function mining_drone:process_mining()
 
   self:update_sticker()
 
-  if target.type == "resource" and target.amount > 1 then
-    target.amount = target.amount - 1
+  if target.type == "resource" and target.amount > self.mining_count then
+    target.amount = target.amount - self.mining_count
   else
     self:clear_mining_target()
     target.destroy()
   end
 
-  self.mining_count = self.mining_count - 1
+  self.mining_count = nil
+  self:return_to_depot()
 
-  if not target.valid or self.mining_count <= 0 then
-    self:return_to_depot()
-    return
-  end
-
-  self:mine_entity(target, self.mining_count)
-  return
 
 
 end
@@ -336,7 +324,7 @@ function mining_drone:mine_entity(entity, count)
   self.mining_count = count or 1
   self.mining_target = entity
   self.state = states.mining_entity
-  local attack_proxy = attack_proxy(entity)
+  local attack_proxy = attack_proxy(entity, self.mining_count)
   self.attack_proxy = attack_proxy
   local command = {}
 
@@ -528,7 +516,7 @@ function mining_drone:update_sticker()
     end
     return
   end
-
+  if true then return end
   local name = stack.name
 
   if self.renderings then
@@ -558,7 +546,7 @@ function mining_drone:update_sticker()
     x_scale = 0.5,
     y_scale = 0.5,
   })
-  
+
   insert(self.renderings, rendering.draw_sprite
   {
     sprite = "item/"..name,
