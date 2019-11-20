@@ -118,7 +118,33 @@ local bot =
   pollution_to_join_attack = 1000000,
   corpse = base.character_corpse,
   run_animation = base.animations[1].running,
-  rotation_speed = 0.2
+  rotation_speed = 0.2,
+  light =
+  {
+    {
+      minimum_darkness = 0.3,
+      intensity = 0.4,
+      size = 15,
+      color = {r=1.0, g=1.0, b=1.0}
+    },
+    {
+      type = "oriented",
+      minimum_darkness = 0.3,
+      picture =
+      {
+        filename = "__core__/graphics/light-cone.png",
+        priority = "extra-high",
+        flags = { "light" },
+        scale = 2,
+        width = 200,
+        height = 200
+      },
+      shift = {0, -6},
+      size = 1,
+      intensity = 0.6,
+      color = {r=1.0, g=1.0, b=1.0}
+    }
+  },
 }
 
 local item = {

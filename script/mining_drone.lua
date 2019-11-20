@@ -96,7 +96,7 @@ mining_drone.new = function(entity)
 
   setmetatable(drone, mining_drone.metatable)
 
-  drone:add_lights()
+  --drone:add_lights()
 
   add_drone(drone)
 

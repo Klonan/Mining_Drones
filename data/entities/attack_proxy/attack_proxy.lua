@@ -72,7 +72,7 @@ local make_recipes = function(entity)
   if entity.minable.result then
     make_depot_recipe(items[entity.minable.result])
   end
-  
+
   if entity.minable.results then
     for k, result in pairs (entity.minable.results) do
       make_depot_recipe(items[result.name])
@@ -86,7 +86,7 @@ local count = 0
 local axe_mining_ore_trigger =
 {
   type = "play-sound",
-  sound = 
+  sound =
   {
     variations =
     {
@@ -116,7 +116,7 @@ local axe_mining_ore_trigger =
 local mining_wood_trigger =
 {
   type = "play-sound",
-  sound = 
+  sound =
   {
     variations =
     {
@@ -133,7 +133,7 @@ local mining_wood_trigger =
 }
 
 local make_resource_attack_proxy = function(resource)
-  
+
   local attack_proxy =
   {
     type = "simple-entity",
@@ -156,7 +156,7 @@ local make_resource_attack_proxy = function(resource)
     }
   }
 
-  local damaged_trigger = 
+  local damaged_trigger =
   {
     axe_mining_ore_trigger
   }
@@ -168,7 +168,7 @@ local make_resource_attack_proxy = function(resource)
     {
       type = "create-particle",
       repeat_count = 3,
-      entity_name = particle,
+      particle_name = particle,
       initial_height = 0,
       speed_from_center = 0.025,
       speed_from_center_deviation = 0.025,
@@ -176,11 +176,11 @@ local make_resource_attack_proxy = function(resource)
       initial_vertical_speed_deviation = 0.025,
       offset_deviation = resource.selection_box
     })
-    attack_proxy.dying_trigger_effect = 
+    attack_proxy.dying_trigger_effect =
     {
       type = "create-particle",
       repeat_count = 5,
-      entity_name = particle,
+      particle_name = particle,
       initial_height = 0,
       speed_from_center = 0.045,
       speed_from_center_deviation = 0.035,
@@ -211,7 +211,7 @@ end
 
 
 local make_tree_proxy = function(tree)
-  
+
   local attack_proxy =
   {
     type = "simple-entity",
@@ -246,7 +246,7 @@ local make_tree_proxy = function(tree)
     {
       type = "create-particle",
       repeat_count = 3,
-      entity_name = particle,
+      particle_name = particle,
       initial_height = 0,
       speed_from_center = 0.025,
       speed_from_center_deviation = 0.025,

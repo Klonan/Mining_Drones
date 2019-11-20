@@ -325,21 +325,33 @@ function mining_depot:is_spawn_blocked()
   return not self.entity.surface.can_place_entity{name = names.drone_name, position = self:get_spawn_position()}
 end
 
+local box, mask
+
+local get_box_and_mask = function()
+  if not (box and mask) then
+    local prototype = game.entity_prototypes[names.drone_name]
+    box = prototype.collision_box
+    mask = prototype.collision_mask
+  end
+  return box, mask
+end
+
+local flags = {cache = false, low_priority = false}
+
 function mining_depot:attempt_to_mine(entity)
 
   --Will make a path request, and if it passes, send a drone to go mine it.
-
-  local prototype = game.entity_prototypes[names.drone_name]
+  local box, mask = get_box_and_mask()
   local path_request_id = self.entity.surface.request_path
   {
-    bounding_box = prototype.collision_box,
-    collision_mask = prototype.collision_mask,
+    bounding_box = box,
+    collision_mask = mask,
     start = self:get_spawn_position(),
     goal = entity.position,
     force = self.entity.force,
     radius = entity.get_radius() + 0.5,
     can_open_gates = true,
-    pathfind_flags = {cache = false, low_priority = false}
+    pathfind_flags = flags
   }
 
   script_data.path_requests[path_request_id] = self
@@ -504,10 +516,9 @@ function mining_depot:find_entity_to_mine()
       entities[k] = nil
     else
       local index = unique_index(entity)
-      if not taken[unique_index(entity)] then
+      if not taken[index] then
         entities[k] = nil
         script_data.global_taken[self.surface_index][index] = true
-        game.print(k)
         return entity
       end
     end
@@ -541,12 +552,15 @@ end
 function mining_depot:order_drone(drone, entity)
 
   local product_amount = get_product_amount(entity, true)
+  local mining_count = 1
   if entity.type == "resource" then
     product_amount = math.min(product_amount, entity.amount)
+    mining_count = product_amount
   end
   self.estimated_count = self.estimated_count + product_amount
   drone.estimated_count = product_amount
-  drone:mine_entity(entity, product_amount)
+
+  drone:mine_entity(entity, mining_count)
 
 end
 
@@ -598,19 +612,13 @@ function mining_depot:handle_path_request_finished(event)
   self.path_requests[event.id] = nil
 
   local product_amount = get_product_amount(entity)
-
   self.estimated_count = self.estimated_count - product_amount
 
   if not event.path then
     --we can't reach it, don't spawn any miners.
-    self:add_mining_target(entity)
-    self.potential[unique_index(entity)] = nil
-    game.print("HUH")
+    script_data.global_taken[self.surface_index][unique_index(entity)] = nil
     return
   end
-
-
-
 
   local drone = self:spawn_drone()
   self:order_drone(drone, entity)
