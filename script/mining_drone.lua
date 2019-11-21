@@ -161,7 +161,7 @@ function mining_drone:process_mining()
     return
   end
 
-  local flow = self.entity.force.item_production_statistics.on_flow
+  local item_flow = self.entity.force.item_production_statistics.on_flow
 
 
   if target.type == "item-entity" then
@@ -169,23 +169,26 @@ function mining_drone:process_mining()
     local stack = target.stack
     if stack.name == item then
       local amount = self.inventory.insert({name = stack.name, count = stack.count})
-      flow(item, amount)
+      item_flow(item, amount)
     else
       self:spill{name = stack.name, count = stack.count}
     end
 
   else
 
+    local pollute = self.entity.surface.pollute
+    local pollution_flow = game.pollution_statistics.on_flow
+
     local mineable_properties = target.prototype.mineable_properties
     for k, product in pairs (mineable_properties.products) do
       local count = product_amount(product) * self.mining_count
       if count > 0 then
-        self.entity.surface.pollute(target.position, pollution_per_ore * count)
-        game.pollution_statistics.on_flow(shared.drone_name, pollution_per_ore * count)
+        pollute(target.position, pollution_per_ore * count)
+        pollution_flow(shared.drone_name, pollution_per_ore * count)
         if product.name == item then
           --self:say(count)
           local amount = self.inventory.insert({name = product.name, count = count})
-          flow(item, amount)
+          item_flow(item, amount)
         else
           self:spill{name = product.name, count = count}
         end

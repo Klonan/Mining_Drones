@@ -13,19 +13,32 @@ local script_data =
   depot_highlights = {}
 }
 
+local main_products
+local get_main_product = function(entity)
+  local cached = main_products[entity.name]
+  if cached then return cached end
+
+  cached = entity.prototype.mineable_properties.products[1]
+  main_products[entity.name] = cached
+  return cached
+
+end
+
 local get_product_amount = function(entity, randomize_ore)
 
   if entity.type == "item-entity" then
     return entity.stack.count
   end
 
+  local product = get_main_product(entity)
+
   if entity.type == "resource" then
-    local amount = (entity.prototype.mineable_properties.products[1].amount or entity.prototype.mineable_properties.products[1].amount_min) * 5
-    if randomize_ore then return math.random(amount - 2, amount + 3) end
+    local amount = (product.amount or (product.amount_min + product.amount_max) / 2) * 5
+    if randomize_ore then return math.random(amount - 2, amount + 2) end
     return amount
   end
 
-  return (entity.prototype.mineable_properties.products[1].amount or entity.prototype.mineable_properties.products[1].amount_min)
+  return product.amount or (product.amount_min + product.amount_max) / 2
 
 end
 
@@ -154,6 +167,10 @@ function mining_depot:desired_item_changed()
     drone:cancel_command(self.item == nil)
   end
   self:find_potential_items()
+  if self.rendering then
+    rendering.destroy(self.rendering)
+    self.rendering = nil
+  end
 end
 
 function mining_depot:add_no_items_alert(string)
@@ -421,7 +438,7 @@ local abs = math.abs
 local insert = table.insert
 
 function mining_depot:add_to_potential_sorted(entity)
-
+  error("Don't use me?")
   local origin = self.entity.position
   local x, y = origin.x, origin.y
 
