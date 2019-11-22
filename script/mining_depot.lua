@@ -13,7 +13,7 @@ local script_data =
   depot_highlights = {}
 }
 
-local main_products
+local main_products = {}
 local get_main_product = function(entity)
   local cached = main_products[entity.name]
   if cached then return cached end
@@ -24,6 +24,8 @@ local get_main_product = function(entity)
 
 end
 
+local min = math.min
+local random = math.random
 local get_product_amount = function(entity, randomize_ore)
 
   if entity.type == "item-entity" then
@@ -34,8 +36,8 @@ local get_product_amount = function(entity, randomize_ore)
 
   if entity.type == "resource" then
     local amount = (product.amount or (product.amount_min + product.amount_max) / 2) * 5
-    if randomize_ore then return math.random(amount - 2, amount + 2) end
-    return amount
+    if randomize_ore then return min(random(amount - 2, amount + 2), entity.amount) end
+    return min(amount, entity.amount)
   end
 
   return product.amount or (product.amount_min + product.amount_max) / 2
@@ -111,15 +113,20 @@ function mining_depot:get_spawn_position()
   return position
 end
 
+local random = math.random
 function mining_depot:spawn_drone()
   local entity = self.entity
-  if not entity.surface.can_place_entity{name = names.drone_name, position = self:get_spawn_position()} then return end
-  local unit = entity.surface.create_entity{name = names.drone_name, position = self:get_spawn_position(), force = entity.force}
+
+  local spawn_entity_data = {name = names.drone_name, position = self:get_spawn_position(), force = entity.force}
+  local surface = entity.surface
+  if not surface.can_place_entity(spawn_entity_data) then return end
+
+  local unit = surface.create_entity(spawn_entity_data)
   if not unit then return end
 
   unit.orientation = (entity.direction / 8)
   unit.ai_settings.do_separation = false
-  unit.speed = unit.prototype.speed * (1 + (math.random() - 0.5) / 3)
+  unit.speed = unit.prototype.speed * (1 + (random() - 0.5) / 2.5)
 
   --self:get_drone_inventory().remove({name = names.drone_name, count = 1})
 
@@ -164,7 +171,7 @@ end
 function mining_depot:desired_item_changed()
   self.item = self:get_desired_item()
   for k, drone in pairs(self.drones) do
-    drone:cancel_command(self.item == nil)
+    drone:cancel_command()
   end
   self:find_potential_items()
   if self.rendering then
@@ -173,11 +180,14 @@ function mining_depot:desired_item_changed()
   end
 end
 
+local alert_data = {type = "item", name = shared.mining_depot}
+local target_offset = {0, -0.5}
 function mining_depot:add_no_items_alert(string)
 
   for k, player in pairs (self.entity.force.connected_players) do
-    player.add_custom_alert(self.entity, {type = "item", name = self.entity.name}, "Mining depot out of mining targets.", true)
+    player.add_custom_alert(self.entity, alert_data, "Mining depot out of mining targets.", true)
   end
+
   rendering.draw_sprite
   {
     surface = self.entity.surface,
@@ -185,7 +195,7 @@ function mining_depot:add_no_items_alert(string)
     sprite = "utility/warning_icon",
     forces = {self.entity.force},
     time_to_live = 30,
-    target_offset = {0, -0.5},
+    target_offset = target_offset,
     render_layer = "entity-info-icon-above"
   }
 end
@@ -193,7 +203,7 @@ end
 function mining_depot:add_spawn_blocked_alert(string)
 
   for k, player in pairs (self.entity.force.connected_players) do
-    player.add_custom_alert(self.entity, {type = "item", name = self.entity.name}, "Mining depot spawn blocked.", true)
+    player.add_custom_alert(self.entity, alert_data, "Mining depot spawn blocked.", true)
   end
   rendering.draw_sprite
   {
@@ -209,25 +219,18 @@ function mining_depot:add_spawn_blocked_alert(string)
   }
 end
 
+local min = math.min
 function mining_depot:update()
-  local profiler = game.create_profiler()
-  local print = function(string)
-    if true then return end
-    game.print({"", game.tick, self.entity.unit_number, " - ", string, " ", profiler})
-    profiler.reset()
-  end
+
   local entity = self.entity
   if not (entity and entity.valid) then return end
 
-  print("valid check")
 
   local item = self:get_desired_item()
   if item ~= self.item then
     self:desired_item_changed()
+    return
   end
-
-
-
 
   if not item then return end
 
@@ -246,45 +249,24 @@ function mining_depot:update()
     return
   end
 
-
-  print("Check potential enttities")
-
   if self:is_spawn_blocked() then
     self:add_spawn_blocked_alert()
     return
   end
 
-
-  print("Check spawn blocked")
-
   self:adopt_idle_drones()
 
-
-  print("adopting")
-
   self:update_sticker()
-
-
-  print("update sticker")
-
 
   if self:is_full() then
     return
   end
 
-
-  print("is full")
-
   local count = self:get_drone_item_count() - self:get_active_drone_count()
-  local output_space = self:get_output_space()
 
-
-  print("checking space")
-
-  --game.print(serpent.line{output_space = output_space, count = count, estimated = self.estimated_count})
   if count > 0 then
-
-    for k = 1, (math.min(count, max_spawn_per_update)) do
+    local output_space = self:get_output_space()
+    for k = 1, (min(count, max_spawn_per_update)) do
 
       if output_space - self.estimated_count <= 0 then break end
 
@@ -294,18 +276,11 @@ function mining_depot:update()
       self:attempt_to_mine(entity)
 
     end
-
-  end
-
-
-  print("Attempt to mine")
-
-  if count < 0 then
-
+  elseif count < 0 then
     for k = count, 0, 1 do
       local index, drone = next(self.drones)
       if drone then
-        drone:cancel_command(true)
+        drone:cancel_command()
       end
     end
   end
@@ -332,10 +307,7 @@ function mining_depot:adopt_idle_drones()
 end
 
 function mining_depot:get_drone_item_count()
-  local inventory = self:get_drone_inventory()
-  if #inventory == 0 then return 0 end
-  local stack = self:get_drone_inventory()[1]
-  return stack.valid_for_read and stack.count or 0
+  return self.entity.get_item_count(shared.drone_name)
 end
 
 function mining_depot:get_can_spawn_count()
@@ -576,7 +548,6 @@ function mining_depot:order_drone(drone, entity)
   local product_amount = get_product_amount(entity, true)
   local mining_count = 1
   if entity.type == "resource" then
-    product_amount = math.min(product_amount, entity.amount)
     mining_count = product_amount
   end
   self.estimated_count = self.estimated_count + product_amount

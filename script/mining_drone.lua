@@ -61,8 +61,7 @@ local states =
 {
   mining_entity = 1,
   return_to_depot = 2,
-  idle = 3,
-  dead = 4
+  idle = 3
 }
 
 local random = math.random
@@ -133,16 +132,19 @@ function mining_drone:add_lights()
 
 end
 
-function mining_drone:get_desired_item()
-
-  if self.depot then
-    return self.depot:get_desired_item()
-  end
-
-end
-
 function mining_drone:spill(stack)
   self.entity.surface.spill_item_stack(self.entity.position, stack, false, nil, false)
+end
+
+local products = {}
+local get_products = function(entity)
+  local cached = products[entity.name]
+  if cached then return cached end
+
+  cached = entity.prototype.mineable_properties.products
+  products[entity.name] = cached
+  return cached
+
 end
 
 function mining_drone:process_mining()
@@ -154,7 +156,7 @@ function mining_drone:process_mining()
   end
 
 
-  local item = self:get_desired_item()
+  local item = self.depot.item
   if not item then
     --self:say("I don't know what I want")
     self:return_to_depot()
@@ -162,7 +164,6 @@ function mining_drone:process_mining()
   end
 
   local item_flow = self.entity.force.item_production_statistics.on_flow
-
 
   if target.type == "item-entity" then
 
@@ -179,12 +180,12 @@ function mining_drone:process_mining()
     local pollute = self.entity.surface.pollute
     local pollution_flow = game.pollution_statistics.on_flow
 
-    local mineable_properties = target.prototype.mineable_properties
-    for k, product in pairs (mineable_properties.products) do
+    for k, product in pairs (get_products(target)) do
       local count = product_amount(product) * self.mining_count
       if count > 0 then
         pollute(target.position, pollution_per_ore * count)
         pollution_flow(shared.drone_name, pollution_per_ore * count)
+
         if product.name == item then
           --self:say(count)
           local amount = self.inventory.insert({name = product.name, count = count})
@@ -192,11 +193,11 @@ function mining_drone:process_mining()
         else
           self:spill{name = product.name, count = count}
         end
+
       end
     end
 
   end
-
 
   self:update_sticker()
 
@@ -307,7 +308,6 @@ function mining_drone:update(event)
   if not self.entity.valid then return end
 
   if event.result ~= defines.behavior_result.success then
-    --self:say("FAIL BLOG.ORG")
     self:process_failed_command()
     return
   end
