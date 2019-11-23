@@ -155,7 +155,7 @@ function mining_depot:update_sticker()
 
   self.rendering = draw_text
   {
-    surface = self.entity.surface,
+    surface = self.surface_index,
     target = self.entity,
     text = self:get_active_drone_count().."/"..self:get_drone_item_count(),
     only_in_alt_mode = true,
@@ -190,7 +190,7 @@ function mining_depot:add_no_items_alert(string)
 
   rendering.draw_sprite
   {
-    surface = self.entity.surface,
+    surface = self.surface_index,
     target = self.entity,
     sprite = "utility/warning_icon",
     forces = {self.entity.force},
@@ -207,7 +207,7 @@ function mining_depot:add_spawn_blocked_alert(string)
   end
   rendering.draw_sprite
   {
-    surface = self.entity.surface,
+    surface = self.surface_index,
     target = self.entity,
     sprite = "utility/warning_icon",
     forces = {self.entity.force},
@@ -254,7 +254,7 @@ function mining_depot:update()
     return
   end
 
-  self:adopt_idle_drones()
+  --self:adopt_idle_drones()
 
   self:update_sticker()
 
@@ -478,14 +478,21 @@ function mining_depot:sort_by_distance(entities)
 end
 
 function mining_depot:find_potential_items()
-  local unsorted = {}
-  local unique_index = unique_index
+
+
   local item = self.item
   if not item then self.potential = {} return end
-  for k, entity in pairs(self.entity.surface.find_entities_filtered{area = self:get_area(), name = get_entities_for_products(item)}) do
+
+  local unsorted = {}
+
+  local area = self:get_area()
+  local find_entities_filtered = self.entity.surface.find_entities_filtered
+
+  for k, entity in pairs(find_entities_filtered{area = area, name = get_entities_for_products(item)}) do
     insert(unsorted, entity)
   end
-  for k, entity in pairs(self.entity.surface.find_entities_filtered{area = self:get_area(), type = "item-entity"}) do
+
+  for k, entity in pairs(find_entities_filtered{area = area, type = "item-entity"}) do
     if entity.stack.name == item then
       insert(unsorted, entity)
     end
@@ -503,14 +510,13 @@ function mining_depot:find_entity_to_mine()
 
   local taken = script_data.global_taken[self.surface_index]
 
-
   for k, entity in pairs (entities) do
     if entity.valid then
       local index = unique_index(entity)
+      --entity.surface.create_entity{name = "flying-text", text = k, position = entity.position}
       if taken[index] then
         insert(taken[index], {depot = self, entity = entity, index = k})
       else
-        entity.surface.create_entity{name = "flying-text", text = k, position = entity.position}
         taken[index] = {{depot = self, entity = entity, index = k}}
         return entity
       end
@@ -609,7 +615,7 @@ function mining_depot:handle_path_request_finished(event)
 
   if not event.path then
     --we can't reach it, don't spawn any miners.
-    script_data.global_taken[self.surface_index][unique_index(entity)] = nil
+    self:add_mining_target(entity, true)
     return
   end
 
@@ -626,17 +632,18 @@ function mining_depot:return_drone(drone)
 end
 
 local insert = table.insert
-function mining_depot:add_mining_target(entity)
-
+function mining_depot:add_mining_target(entity, ignore_self)
   local taken = script_data.global_taken[self.surface_index]
   local index = unique_index(entity)
   local listening_depots = taken[index]
 
   for k, unlock_depot in pairs(listening_depots) do
     local depot = unlock_depot.depot
-    local entity = unlock_depot.entity
-    if entity.valid and depot.entity.valid then
-      depot.potential[unlock_depot.index] = entity
+    if not ignore_self or depot ~= self then
+      local entity = unlock_depot.entity
+      if entity.valid and depot.entity.valid then
+        depot.potential[unlock_depot.index] = entity
+      end
     end
   end
 
@@ -656,6 +663,7 @@ function mining_depot:handle_depot_deletion()
   for unit_number, drone in pairs (self.drones) do
     --self:remove_drone(drone)
     drone:cancel_command(true)
+    drone.entity.die()
   end
 end
 

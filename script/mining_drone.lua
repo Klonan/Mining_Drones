@@ -199,7 +199,7 @@ function mining_drone:process_mining()
 
   end
 
-  self:update_sticker()
+  --self:update_sticker()
 
   if target.type == "resource" and target.amount > self.mining_count then
     target.amount = target.amount - self.mining_count
@@ -225,7 +225,8 @@ function mining_drone:process_return_to_depot()
 
   if not (depot and depot.entity.valid) then
     --self:say("My depot isn't valid!")
-    return self:go_idle()
+    self:cancel_command()
+    return
   end
 
   if util.distance(self.entity.position, self.depot:get_spawn_position()) > 1 then
@@ -270,6 +271,7 @@ end
 function mining_drone:process_failed_command()
   self:oof()
   self.fail_count = (self.fail_count or 0) + 1
+
   if self.state == states.mining_entity then
 
     self:clear_attack_proxy()
@@ -289,7 +291,7 @@ function mining_drone:process_failed_command()
       return self:wait(25)
     end
     --self:say("I can't return to my depot!")
-    self:go_idle()
+    self:cancel_command()
     return
   end
 
@@ -364,17 +366,13 @@ end
 
 function mining_drone:cancel_command(clear_depot)
 
+  self:clear_mining_target()
   self:clear_estimated_count()
   self:clear_attack_proxy()
-  self:clear_mining_target()
-  self:clear_inventory()
-
-  if clear_depot then
-    self:clear_depot()
-    self:go_idle()
-  else
-    self:return_to_depot()
-  end
+  self:clear_inventory(true)
+  self:clear_depot()
+  self:remove_from_list()
+  self.entity.die()
 
 end
 
@@ -385,7 +383,7 @@ function mining_drone:return_to_depot()
   local depot = self.depot
 
   if not (depot and depot.entity.valid) then
-    self:go_idle()
+    self:cancel_command()
     return
   end
 
@@ -432,7 +430,7 @@ function mining_drone:clear_inventory(destroy)
   end
 
   self.inventory.clear()
-  self:update_sticker()
+  --self:update_sticker()
 
 
   if destroy then
@@ -476,8 +474,6 @@ function mining_drone:handle_drone_deletion()
     self.depot:remove_drone(self, true)
   end
 
-  self.state = states.dead
-
   self:clear_estimated_count()
   self:clear_attack_proxy()
   self:clear_mining_target()
@@ -486,30 +482,11 @@ function mining_drone:handle_drone_deletion()
 
 end
 
-function mining_drone:go_idle()
-  self.state = states.idle
-  self.entity.set_command
-  {
-    type = defines.command.wander
-  }
-  self:clear_attack_proxy()
-  self:clear_mining_target()
-  self:clear_depot()
-  self:clear_inventory()
-
-  add_idle_drone(self)
-end
-
-function mining_drone:is_idle()
-  return self.state == states.idle
-end
-
 function mining_drone:is_returning_to_depot()
   return self.state == states.return_to_depot
 end
 
 local insert = table.insert
-
 
 function mining_drone:update_sticker()
 
@@ -565,8 +542,6 @@ function mining_drone:update_sticker()
     x_scale = 0.5,
     y_scale = 0.5,
   })
-
-
 
 end
 

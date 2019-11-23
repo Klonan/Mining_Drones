@@ -116,7 +116,7 @@ local bot =
   movement_speed = 0.08,
   distance_per_frame = 0.05,
   pollution_to_join_attack = 1000000,
-  corpse = base.character_corpse,
+  corpse = name.."-corpse",
   run_animation = base.animations[1].running,
   rotation_speed = 0.02,
   light =
@@ -189,6 +189,15 @@ local light =
   --shift = {0, -200/32}
 }
 
+local corpse = util.copy(data.raw["character-corpse"]["character-corpse"])
+
+util.recursive_hack_tint(corpse, {r = 0.5, g = 0.4, b = 0.3, a = 0.5}, true)
+util.recursive_hack_scale(corpse, 0.9)
+
+corpse.name = name.."-corpse"
+corpse.selectable_in_game = false
+corpse.selection_box = nil
+corpse.render_layer = "remnants"
 
 data:extend
 {
@@ -196,4 +205,5 @@ data:extend
   item,
   recipe,
   light,
+  corpse
 }
