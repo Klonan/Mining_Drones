@@ -219,6 +219,7 @@ function mining_drone:request_order()
   self.depot:handle_order_request(self)
 end
 
+local distance = util.distance
 function mining_drone:process_return_to_depot()
 
   local depot = self.depot
@@ -229,31 +230,24 @@ function mining_drone:process_return_to_depot()
     return
   end
 
-  if util.distance(self.entity.position, self.depot:get_spawn_position()) > 1 then
-    self:go_to_position(self.depot:get_spawn_position())
+  if distance(self.entity.position, depot:get_spawn_position()) > 1 then
+    self:go_to_position(depot:get_spawn_position())
     return
   end
 
   local inventory = self.inventory
   if not inventory.is_empty() then
-
     local destination_inventory = depot:get_output_inventory()
-    for k = 1, #inventory do
-      local stack = inventory[k]
-      if (stack and stack.valid and stack.valid_for_read) then
-        local count = stack.count
-        local inserted = destination_inventory.insert(stack)
-        if inserted == count then
-          stack.clear()
-        else
-          stack.count  = count - inserted
-        end
+    local stack = inventory[1]
+    if (stack and stack.valid and stack.valid_for_read) then
+      local count = stack.count
+      local inserted = destination_inventory.insert(stack)
+      if inserted == count then
+        stack.clear()
       else
-        break
+        stack.count  = count - inserted
       end
     end
-
-
   end
 
   self:clear_inventory()
@@ -364,7 +358,7 @@ function mining_drone:set_depot(depot)
   self.depot = depot
 end
 
-function mining_drone:cancel_command(clear_depot)
+function mining_drone:cancel_command()
 
   self:clear_mining_target()
   self:clear_estimated_count()
@@ -425,8 +419,9 @@ end
 function mining_drone:clear_inventory(destroy)
   if not self.inventory.valid then return end
 
-  for name, count in pairs (self.inventory.get_contents()) do
-    self:spill{name = name, count = count}
+  local stack = self.inventory[1]
+  if stack and stack.valid and stack.valid_for_read then
+    self:spill(stack)
   end
 
   self.inventory.clear()

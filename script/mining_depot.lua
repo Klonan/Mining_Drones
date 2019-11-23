@@ -229,6 +229,7 @@ function mining_depot:update()
   local item = self:get_desired_item()
   if item ~= self.item then
     self:desired_item_changed()
+    self:update_sticker()
     return
   end
 
@@ -256,7 +257,6 @@ function mining_depot:update()
 
   --self:adopt_idle_drones()
 
-  self:update_sticker()
 
   if self:is_full() then
     return
@@ -661,9 +661,7 @@ end
 
 function mining_depot:handle_depot_deletion()
   for unit_number, drone in pairs (self.drones) do
-    --self:remove_drone(drone)
-    drone:cancel_command(true)
-    drone.entity.die()
+    drone:cancel_command()
   end
 end
 
