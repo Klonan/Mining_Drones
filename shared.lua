@@ -10,5 +10,6 @@ data.attack_proxy_name = "mining-drone-attack-proxy"
 data.mining_depot = "mining-depot"
 data.mining_depot_chest_h = "mining-depot-chest-h"
 data.mining_depot_chest_v = "mining-depot-chest-v"
+data.variation_count = 20
 
 return data

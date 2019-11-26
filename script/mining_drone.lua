@@ -86,7 +86,7 @@ mining_drone.metatable = {__index = mining_drone}
 
 mining_drone.new = function(entity)
 
-  if entity.name ~= shared.drone_name then error("what are you playing at") end
+  --if entity.name ~= shared.drone_name then error("what are you playing at") end
 
   local drone =
   {
@@ -184,7 +184,7 @@ function mining_drone:process_mining()
       local count = product_amount(product) * self.mining_count
       if count > 0 then
         pollute(target.position, pollution_per_ore * count)
-        pollution_flow(shared.drone_name, pollution_per_ore * count)
+        pollution_flow(shared.drone_name..1, pollution_per_ore * count)
 
         if product.name == item then
           --self:say(count)
@@ -583,7 +583,7 @@ end
 
 mining_drone.events =
 {
-  [defines.events.on_built_entity] = on_built_entity,
+  --[defines.events.on_built_entity] = on_built_entity,
   [defines.events.on_robot_built_entity] = on_built_entity,
   [defines.events.script_raised_revive] = on_built_entity,
   [defines.events.script_raised_built] = on_built_entity,

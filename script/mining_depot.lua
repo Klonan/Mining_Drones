@@ -4,6 +4,7 @@ local mining_depot = {}
 local depot_metatable = {__index = mining_depot}
 local depot_range = 40
 local max_spawn_per_update = 5
+local variation_count = shared.variation_count
 
 local script_data =
 {
@@ -121,7 +122,7 @@ end
 function mining_depot:spawn_drone()
   local entity = self.entity
 
-  local spawn_entity_data = {name = names.drone_name, position = self:get_spawn_position(), force = entity.force}
+  local spawn_entity_data = {name = names.drone_name..random(variation_count), position = self:get_spawn_position(), force = entity.force}
   local surface = entity.surface
   if not surface.can_place_entity(spawn_entity_data) then return end
 
@@ -129,7 +130,7 @@ function mining_depot:spawn_drone()
   if not unit then return end
 
   unit.orientation = (entity.direction / 8)
-  unit.ai_settings.do_separation = false
+  --unit.ai_settings.do_separation = false
 
   --self:get_drone_inventory().remove({name = names.drone_name, count = 1})
 
@@ -318,7 +319,7 @@ function mining_depot:get_can_spawn_count()
 end
 
 function mining_depot:is_spawn_blocked()
-  return not self.entity.surface.can_place_entity{name = names.drone_name, position = self:get_spawn_position()}
+  return not self.entity.surface.can_place_entity{name = names.drone_name..1, position = self:get_spawn_position()}
 end
 
 function mining_depot:can_spawn_drone()
@@ -683,7 +684,7 @@ end
 local box, mask
 local get_box_and_mask = function()
   if not (box and mask) then
-    local prototype = game.entity_prototypes[names.drone_name]
+    local prototype = game.entity_prototypes[names.drone_name..1]
     box = prototype.collision_box
     mask = prototype.collision_mask
   end
