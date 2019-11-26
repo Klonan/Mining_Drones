@@ -3,7 +3,7 @@ local depot_update_rate = 60
 local mining_depot = {}
 local depot_metatable = {__index = mining_depot}
 local depot_range = 40
-local max_spawn_per_update = 10
+local max_spawn_per_update = 5
 
 local script_data =
 {
@@ -114,6 +114,10 @@ function mining_depot:get_spawn_position()
 end
 
 local random = math.random
+local get_drone_speed = function()
+  return 0.05 * (1 + (random() - 0.5) / 2)
+end
+
 function mining_depot:spawn_drone()
   local entity = self.entity
 
@@ -126,7 +130,6 @@ function mining_depot:spawn_drone()
 
   unit.orientation = (entity.direction / 8)
   unit.ai_settings.do_separation = false
-  unit.speed = unit.prototype.speed * (1 + (random() - 0.5) / 2.5)
 
   --self:get_drone_inventory().remove({name = names.drone_name, count = 1})
 
@@ -316,44 +319,6 @@ end
 
 function mining_depot:is_spawn_blocked()
   return not self.entity.surface.can_place_entity{name = names.drone_name, position = self:get_spawn_position()}
-end
-
-local box, mask
-
-local get_box_and_mask = function()
-  if not (box and mask) then
-    local prototype = game.entity_prototypes[names.drone_name]
-    box = prototype.collision_box
-    mask = prototype.collision_mask
-  end
-  return box, mask
-end
-
-local flags = {cache = false, low_priority = false}
-
-function mining_depot:attempt_to_mine(entity)
-
-  --Will make a path request, and if it passes, send a drone to go mine it.
-  local box, mask = get_box_and_mask()
-  local path_request_id = self.entity.surface.request_path
-  {
-    bounding_box = box,
-    collision_mask = mask,
-    start = self:get_spawn_position(),
-    goal = entity.position,
-    force = self.entity.force,
-    radius = entity.get_radius() + 0.5,
-    can_open_gates = true,
-    pathfind_flags = flags
-  }
-
-  script_data.path_requests[path_request_id] = self
-  self.path_requests[path_request_id] = entity
-
-  local product_amount = get_product_amount(entity)
-
-  self.estimated_count = self.estimated_count + product_amount
-
 end
 
 function mining_depot:can_spawn_drone()
@@ -559,6 +524,7 @@ function mining_depot:order_drone(drone, entity)
   self.estimated_count = self.estimated_count + product_amount
   drone.estimated_count = product_amount
 
+  drone.entity.speed = get_drone_speed()
   drone:mine_entity(entity, mining_count)
 
 end
@@ -700,6 +666,7 @@ function mining_depot:can_accept_drone()
 end
 
 local on_tick = function(event)
+
   local bucket = script_data.depots[event.tick % depot_update_rate]
   if bucket then
     for unit_number, depot in pairs (bucket) do
@@ -710,6 +677,43 @@ local on_tick = function(event)
       end
     end
   end
+
+end
+
+local box, mask
+local get_box_and_mask = function()
+  if not (box and mask) then
+    local prototype = game.entity_prototypes[names.drone_name]
+    box = prototype.collision_box
+    mask = prototype.collision_mask
+  end
+  return box, mask
+end
+
+local flags = {cache = false, low_priority = false}
+function mining_depot:attempt_to_mine(entity)
+
+  --Will make a path request, and if it passes, send a drone to go mine it.
+  local box, mask = get_box_and_mask()
+  local path_request_id = self.entity.surface.request_path
+  {
+    bounding_box = box,
+    collision_mask = mask,
+    start = self:get_spawn_position(),
+    goal = entity.position,
+    force = self.entity.force,
+    radius = entity.get_radius() + 0.5,
+    can_open_gates = true,
+    pathfind_flags = flags
+  }
+
+  script_data.path_requests[path_request_id] = self
+  self.path_requests[path_request_id] = entity
+
+  local product_amount = get_product_amount(entity)
+
+  self.estimated_count = self.estimated_count + product_amount
+
 end
 
 local on_script_path_request_finished = function(event)
