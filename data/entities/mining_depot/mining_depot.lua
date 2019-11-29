@@ -167,8 +167,8 @@ local recipe = {
   ingredients =
   {
     {"iron-plate", 50},
-    {"iron-gear", 80},
-    {"iron-rod", 50},
+    {"iron-gear-wheel", 80},
+    {"iron-stick", 50},
   },
   energy_required = 100,
   result = name

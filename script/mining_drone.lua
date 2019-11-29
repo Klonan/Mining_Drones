@@ -1,10 +1,15 @@
+local mining_technologies = require("script/mining_technologies")
 local pollution_per_ore = 0.2
+local default_bot_name = shared.drone_name.."-1"
 
 local script_data =
 {
-  drones = {},
-  idle_drones = {}
+  drones = {}
 }
+
+local mining_drone = {}
+
+mining_drone.metatable = {__index = mining_drone}
 
 local add_drone = function(drone)
   script_data.drones[drone.entity.unit_number] = drone
@@ -14,45 +19,75 @@ local remove_drone = function(drone)
   script_data.drones[drone.entity.unit_number] = nil
 end
 
-local add_idle_drone = function(drone)
-  script_data.idle_drones[drone.entity.unit_number] = drone
-end
-
-local remove_idle_drone = function(drone)
-  script_data.idle_drones[drone.entity.unit_number] = nil
-end
-
-
 local proxy_inventory = function()
   local chest = game.surfaces[1].create_entity{name = shared.proxy_chest_name, position = {1000000, 1000000}, force = "neutral"}
   return chest.get_output_inventory()
 end
 
-local mining_speed = 0.55
+local get_drone_mining_speed = function()
+  return 0.5
+end
+
+local mining_times = {}
+local get_mining_time = function(entity)
+
+  local name = entity.name
+  local time = mining_times[name]
+  if time then return time end
+
+  time = entity.prototype.mineable_properties.mining_time
+  mining_times[name] = time
+  return time
+
+end
+
 local interval = shared.mining_interval
 local damage = shared.mining_damage
 local ceil = math.ceil
 local max = math.max
 local min = math.min
 
-local attack_proxy = function(entity, count)
+local proxy_names = {}
+local get_proxy_name = function(entity)
+
+  local entity_name = entity.name
+  local proxy_name = proxy_names[entity_name]
+  if proxy_name then
+    return proxy_name
+  end
 
   if game.entity_prototypes[shared.attack_proxy_name..entity.name] then
-    name = shared.attack_proxy_name..entity.name
+    proxy_name = shared.attack_proxy_name..entity.name
   else
     local size = min(ceil((max(entity.get_radius() - 0.1, 0.25)) * 2), 10)
-    name = shared.attack_proxy_name..size
+    proxy_name = shared.attack_proxy_name..size
   end
+
+  proxy_names[entity_name] = proxy_name
+
+  return proxy_name
+
+end
+
+function mining_drone:get_mining_speed()
+  self:say(0.5 * (1 + mining_technologies.get_mining_speed_bonus(self.force_index)))
+  return 0.5 * (1 + mining_technologies.get_mining_speed_bonus(self.force_index))
+end
+
+function mining_drone:get_productivity_probability()
+  return mining_technologies.get_productivity_bonus(self.force_index)
+end
+
+function mining_drone:make_attack_proxy(entity, count)
 
   --Health is set so it will take just enough damage at exactly the right time
 
-  local mining_time = entity.prototype.mineable_properties.mining_time
-  local mining_time = mining_time * count
+  local mining_time = get_mining_time(entity) * count
 
-  local number_of_ticks = (mining_time / mining_speed) * 60
+  local number_of_ticks = (mining_time / self:get_mining_speed()) * 60
   local number_of_hits = math.ceil(number_of_ticks / interval)
 
-  local proxy = entity.surface.create_entity{name = name, position = entity.position, force = "neutral"}
+  local proxy = entity.surface.create_entity{name = get_proxy_name(entity), position = entity.position, force = "neutral"}
   proxy.health = number_of_hits * damage
   return proxy
 end
@@ -60,8 +95,7 @@ end
 local states =
 {
   mining_entity = 1,
-  return_to_depot = 2,
-  idle = 3
+  return_to_depot = 2
 }
 
 local random = math.random
@@ -80,10 +114,6 @@ local product_amount = function(product)
 end
 
 
-local mining_drone = {}
-
-mining_drone.metatable = {__index = mining_drone}
-
 mining_drone.new = function(entity)
 
   --if entity.name ~= shared.drone_name then error("what are you playing at") end
@@ -91,6 +121,7 @@ mining_drone.new = function(entity)
   local drone =
   {
     entity = entity,
+    force_index = entity.force.index,
     inventory = proxy_inventory()
   }
 
@@ -147,6 +178,7 @@ local get_products = function(entity)
 
 end
 
+local random = math.random
 function mining_drone:process_mining()
 
   local target = self.mining_target
@@ -180,18 +212,33 @@ function mining_drone:process_mining()
     local pollute = self.entity.surface.pollute
     local pollution_flow = game.pollution_statistics.on_flow
 
+    local productivity_bonus_chance = self:get_productivity_probability()
+    local bonus_amount = 0
+    if productivity_bonus_chance > 0 then
+      for k = 1, self.mining_count do
+        local chance = productivity_bonus_chance
+        while chance > 0 do
+          if random() < productivity_bonus_chance then
+            bonus_amount = bonus_amount + 1
+          end
+          chance = chance - 1
+        end
+      end
+    end
+
     for k, product in pairs (get_products(target)) do
       local count = product_amount(product) * self.mining_count
       if count > 0 then
         pollute(target.position, pollution_per_ore * count)
-        pollution_flow(shared.drone_name..1, pollution_per_ore * count)
+        pollution_flow(default_bot_name, pollution_per_ore * count)
 
         if product.name == item then
-          --self:say(count)
-          local amount = self.inventory.insert({name = product.name, count = count})
+          self:say(count.." + "..bonus_amount)
+
+          local amount = self.inventory.insert({name = product.name, count = count + bonus_amount})
           item_flow(item, amount)
         else
-          self:spill{name = product.name, count = count}
+          self:spill{name = product.name, count = count + bonus_amount}
         end
 
       end
@@ -327,7 +374,7 @@ function mining_drone:mine_entity(entity, count)
   self.mining_count = count or 1
   self.mining_target = entity
   self.state = states.mining_entity
-  local attack_proxy = attack_proxy(entity, self.mining_count)
+  local attack_proxy = self:make_attack_proxy(entity, self.mining_count)
   self.attack_proxy = attack_proxy
   local command = {}
 
@@ -540,17 +587,6 @@ function mining_drone:update_sticker()
 
 end
 
-local on_built_entity = function(event)
-  local entity = event.entity or event.created_entity
-  if not (entity and entity.valid) then return end
-
-  if entity.name ~= shared.drone_name then return end
-
-  local drone = mining_drone.new(entity)
-  drone:go_idle()
-
-end
-
 local on_ai_command_completed = function(event)
   local drone = script_data.drones[event.unit_number]
   if not drone then return end
@@ -577,16 +613,15 @@ end
 
 function mining_drone:remove_from_list()
   remove_drone(self)
-  remove_idle_drone(self)
 end
 
 
 mining_drone.events =
 {
   --[defines.events.on_built_entity] = on_built_entity,
-  [defines.events.on_robot_built_entity] = on_built_entity,
-  [defines.events.script_raised_revive] = on_built_entity,
-  [defines.events.script_raised_built] = on_built_entity,
+  --[defines.events.on_robot_built_entity] = on_built_entity,
+  --[defines.events.script_raised_revive] = on_built_entity,
+  --[defines.events.script_raised_built] = on_built_entity,
 
   [defines.events.on_player_mined_entity] = on_entity_removed,
   [defines.events.on_robot_mined_entity] = on_entity_removed,
@@ -607,10 +642,6 @@ end
 mining_drone.on_init = function()
   global.mining_drone = global.mining_drone or script_data
   game.map_settings.path_finder.use_path_cache = false
-end
-
-mining_drone.get_idle_drones = function()
-  return script_data.idle_drones
 end
 
 return mining_drone

@@ -36,7 +36,7 @@ local make_depot_recipe = function(item_prototype)
   local recipe_name = "mine-"..item_prototype.name
   if recipes[recipe_name] then return end
   local results = {}
-  for k = 1, 24 do
+  for k = 1, 60 do
     results[k] = {type = "item", name = item_prototype.name, amount = item_prototype.stack_size, show_details_in_recipe_tooltip = false}
   end
   local recipe =
@@ -51,7 +51,7 @@ local make_depot_recipe = function(item_prototype)
     results = results,
     category = names.mining_depot,
     subgroup = "extraction-machine",
-    overload_multiplier = 200,
+    overload_multiplier = 100,
     hide_from_player_crafting = true,
     allow_decomposition = false,
     allow_as_intermediate = false,

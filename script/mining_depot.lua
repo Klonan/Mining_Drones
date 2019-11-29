@@ -1,10 +1,15 @@
+local names = require("shared")
+
 local mining_drone = require("script/mining_drone")
+local mining_technologies = require("script/mining_technologies")
+
 local depot_update_rate = 60
 local mining_depot = {}
 local depot_metatable = {__index = mining_depot}
 local depot_range = 40
 local max_spawn_per_update = 5
 local variation_count = shared.variation_count
+local default_bot_name = names.drone_name.."-1"
 
 local script_data =
 {
@@ -26,8 +31,10 @@ local get_main_product = function(entity)
 end
 
 local min = math.min
+local floor = math.floor
 local random = math.random
-local get_product_amount = function(entity, randomize_ore)
+
+function mining_depot:get_product_amount(entity, randomize_ore, ignore_productivity)
 
   if entity.type == "item-entity" then
     return entity.stack.count
@@ -35,17 +42,29 @@ local get_product_amount = function(entity, randomize_ore)
 
   local product = get_main_product(entity)
 
+  local amount = product.amount or ((product.amount_min + product.amount_max) / 2)
+
   if entity.type == "resource" then
-    local amount = (product.amount or (product.amount_min + product.amount_max) / 2) * 5
-    if randomize_ore then return min(random(amount - 2, amount + 2), entity.amount) end
-    return min(amount, entity.amount)
+    amount = amount * 5
+    local bonus = mining_technologies.get_cargo_size_bonus(self.force_index)
+    amount = amount + bonus
+
+    if randomize_ore then
+      amount = random(amount - 2, amount + 2)
+    end
+
+    amount = min(amount, entity.amount)
   end
 
-  return product.amount or (product.amount_min + product.amount_max) / 2
+  if not ignore_productivity then
+    local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
+    amount = math.ceil(amount * productivity)
+  end
+
+  return amount
 
 end
 
-local names = require("shared")
 
 local offsets =
 {
@@ -65,6 +84,7 @@ function mining_depot.new(entity)
     estimated_count = 0,
     path_requests = {},
     surface_index = entity.surface.index,
+    force_index = entity.force.index,
     item = nil
   }
 
@@ -115,14 +135,26 @@ function mining_depot:get_spawn_position()
 end
 
 local random = math.random
-local get_drone_speed = function()
-  return 0.05 * (1 + (random() - 0.5) / 2)
+local get_speed_variance = function()
+  return (1 + (random() - 0.5) / 3)
+end
+
+local drone_base_speed = 0.05
+
+function mining_depot:get_drone_speed()
+  return (drone_base_speed * (1 + mining_technologies.get_walking_speed_bonus(self.force_index))) * get_speed_variance()
 end
 
 function mining_depot:spawn_drone()
   local entity = self.entity
 
-  local spawn_entity_data = {name = names.drone_name..random(variation_count), position = self:get_spawn_position(), force = entity.force}
+  local spawn_entity_data =
+  {
+    name = names.drone_name.."-"..random(variation_count),
+    position = self:get_spawn_position(),
+    force = entity.force,
+    create_build_effect_smoke = false
+  }
   local surface = entity.surface
   if not surface.can_place_entity(spawn_entity_data) then return end
 
@@ -319,7 +351,7 @@ function mining_depot:get_can_spawn_count()
 end
 
 function mining_depot:is_spawn_blocked()
-  return not self.entity.surface.can_place_entity{name = names.drone_name..1, position = self:get_spawn_position()}
+  return not self.entity.surface.can_place_entity{name = default_bot_name, position = self:get_spawn_position()}
 end
 
 function mining_depot:can_spawn_drone()
@@ -517,15 +549,20 @@ end
 
 function mining_depot:order_drone(drone, entity)
 
-  local product_amount = get_product_amount(entity, true)
+  local product_amount = self:get_product_amount(entity, true, true)
   local mining_count = 1
   if entity.type == "resource" then
     mining_count = product_amount
   end
+
+
+  local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
+  product_amount = math.ceil(product_amount * productivity)
+
   self.estimated_count = self.estimated_count + product_amount
   drone.estimated_count = product_amount
 
-  drone.entity.speed = get_drone_speed()
+  drone.entity.speed = self:get_drone_speed()
   drone:mine_entity(entity, mining_count)
 
 end
@@ -565,7 +602,7 @@ function mining_depot:get_output_space()
   local item = self:get_desired_item()
   if not item then return 0 end
   local prototype = game.item_prototypes[item]
-  return (prototype.stack_size * (#inventory - 2)) - inventory.get_item_count(item)
+  return (prototype.stack_size * (#inventory - 3)) - inventory.get_item_count(item)
 end
 
 function mining_depot:is_full()
@@ -577,7 +614,7 @@ function mining_depot:handle_path_request_finished(event)
   if not (entity and entity.valid) then return end
   self.path_requests[event.id] = nil
 
-  local product_amount = get_product_amount(entity)
+  local product_amount = self:get_product_amount(entity)
   self.estimated_count = self.estimated_count - product_amount
 
   if not event.path then
@@ -684,7 +721,7 @@ end
 local box, mask
 local get_box_and_mask = function()
   if not (box and mask) then
-    local prototype = game.entity_prototypes[names.drone_name..1]
+    local prototype = game.entity_prototypes[default_bot_name]
     box = prototype.collision_box
     mask = prototype.collision_mask
   end
@@ -711,7 +748,7 @@ function mining_depot:attempt_to_mine(entity)
   script_data.path_requests[path_request_id] = self
   self.path_requests[path_request_id] = entity
 
-  local product_amount = get_product_amount(entity)
+  local product_amount = self:get_product_amount(entity)
 
   self.estimated_count = self.estimated_count + product_amount
 

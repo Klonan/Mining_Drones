@@ -15,23 +15,30 @@ for k = 1, names.variation_count do
 
   --util.recursive_hack_runtime_tint(base, false)
   local random_height = gaussian(90, 10) / 100
+  local tint = {r = 0.5 * math.random(), g = 0.5 * math.random(), b = 0.3 * math.random(), a = 0.5}
 
   util.recursive_hack_scale(base, random_height)
 
-  util.recursive_hack_tint(base, {r = 0.5 * math.random(), g = 0.5 * math.random(), b = 0.5 * math.random(), a = 0.5}, true)
+  util.recursive_hack_tint(base, tint, true)
 
   util.recursive_hack_animation_speed(base.animations[1].mining_with_tool, 1/0.9)
+
+  local random_mining_speed = 1.5 * 1 + ((math.random() - 0.5) / 4)
+
+  util.recursive_hack_animation_speed(base.animations[1].mining_with_tool, 1 / random_mining_speed)
+
+  local bot_name = name.."-"..k
 
   local attack_range = 16
   local bot =
   {
     type = "unit",
-    name = name..k,
+    name = bot_name,
     localised_name = {name},
     icon = base.icon,
     icon_size = base.icon_size,
     icons = base.icons,
-    flags = {"player-creation", "placeable-off-grid", "hidden"},
+    flags = {"placeable-off-grid", "hidden"},
     map_color = {b = 0.5, g = 1},
     enemy_map_color = {r = 1},
     max_health = 150,
@@ -39,7 +46,7 @@ for k = 1, names.variation_count do
     order="i-a",
     --subgroup = "iron-units",
     healing_per_tick = 0.1,
-    minable = {result = name, mining_time = 2},
+    --minable = {result = name, mining_time = 2},
     collision_box = {{-0.10, -0.10}, {0.10, 0.10}},
     collision_mask = util.ground_unit_collision_mask(),
     max_pursue_distance = 64,
@@ -58,8 +65,8 @@ for k = 1, names.variation_count do
     {
       type = "projectile",
       ammo_category = "bullet",
-      warmup = 19,
-      cooldown = 26 - 19,
+      warmup = math.floor(19 * random_mining_speed),
+      cooldown = math.floor((26 - 19) * random_mining_speed),
       range = 0.5,
       --min_attack_distance = 1,
       --projectile_creation_distance = 0.5,
@@ -126,7 +133,7 @@ for k = 1, names.variation_count do
     movement_speed = 0.05 * random_height,
     distance_per_frame = 0.05 / random_height,
     pollution_to_join_attack = 1000000,
-    corpse = name.."-corpse",
+    corpse = bot_name.."-corpse",
     run_animation = base.animations[1].running,
     rotation_speed = 0.05 / random_height,
     light =
@@ -157,7 +164,23 @@ for k = 1, names.variation_count do
     },
   }
 
-  data:extend{bot}
+
+  local corpse = util.copy(data.raw["character-corpse"]["character-corpse"])
+
+  util.recursive_hack_tint(corpse, tint, true)
+  util.recursive_hack_scale(corpse, random_height)
+
+  corpse.name = bot_name.."-corpse"
+  corpse.selectable_in_game = false
+  corpse.selection_box = nil
+  corpse.render_layer = "remnants"
+
+
+  data:extend
+  {
+    bot,
+    corpse
+  }
 
 end
 
@@ -186,8 +209,8 @@ local recipe = {
   ingredients =
   {
     {"iron-plate", 15},
-    {"iron-gear", 10},
-    {"iron-rod", 10}
+    {"iron-gear-wheel", 10},
+    {"iron-stick", 10}
   },
   energy_required = 15,
   result = name
@@ -205,16 +228,6 @@ local light =
   height = 430,
   --shift = {0, -200/32}
 }
-
-local corpse = util.copy(data.raw["character-corpse"]["character-corpse"])
-
-util.recursive_hack_tint(corpse, {r = 0.5, g = 0.4, b = 0.3, a = 0.5}, true)
-util.recursive_hack_scale(corpse, 0.9)
-
-corpse.name = name.."-corpse"
-corpse.selectable_in_game = false
-corpse.selection_box = nil
-corpse.render_layer = "remnants"
 
 data:extend
 {
