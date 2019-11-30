@@ -43,7 +43,7 @@ for k = 1, names.variation_count do
     enemy_map_color = {r = 1},
     max_health = 150,
     radar_range = 1,
-    order="i-a",
+    order="zzz-"..bot_name,
     --subgroup = "iron-units",
     healing_per_tick = 0.1,
     --minable = {result = name, mining_time = 2},
@@ -161,7 +161,7 @@ for k = 1, names.variation_count do
         intensity = 0.6,
         color = {r=1.0, g=1.0, b=1.0}
       }
-    },
+    }
   }
 
 
@@ -174,6 +174,7 @@ for k = 1, names.variation_count do
   corpse.selectable_in_game = false
   corpse.selection_box = nil
   corpse.render_layer = "remnants"
+  corpse.order = "zzz-"..bot_name
 
 
   data:extend
