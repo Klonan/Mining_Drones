@@ -38,7 +38,7 @@ for k, ingredients in pairs (levels) do
 
   local technology =
   {
-    name = name..k,
+    name = name.."-"..k,
     localised_name = {name},
     type = "technology",
     icon = util.path("data/entities/mining_depot/depot-icon.png"),
@@ -59,7 +59,7 @@ for k, ingredients in pairs (levels) do
         effect_description = "Mining drone cargo bonus: +1"--repair-turret-power-description"}
       },
     },
-    prerequisites = k > 1 and {name..k - 1} or {},
+    prerequisites = k > 1 and {name.."-"..k - 1} or {},
     unit =
     {
       count = k * 100,
@@ -70,3 +70,49 @@ for k, ingredients in pairs (levels) do
   }
   data:extend{technology}
 end
+
+
+local k = #levels + 1
+
+local infinite =
+{
+  name = name.."-"..k,
+  localised_name = {name},
+  type = "technology",
+  icon = util.path("data/entities/mining_depot/depot-icon.png"),
+  icon_size = 216,
+  upgrade = true,
+  effects =
+  {
+    {
+      type = "nothing",
+      effect_description = "Mining drone mining speed: +20%"
+    },
+    {
+      type = "nothing",
+      effect_description = "Mining drone walking speed: +20%"
+    },
+    {
+      type = "nothing",
+      effect_description = "Mining drone cargo bonus: +1"
+    },
+  },
+  prerequisites = k > 1 and {name.."-"..k - 1} or {},
+  unit =
+  {
+    count_formula = "(2^(L-6))*500",
+    ingredients =
+    {
+      {"automation-science-pack", 1},
+      {"logistic-science-pack", 1},
+      {"chemical-science-pack", 1},
+      {"production-science-pack", 1},
+      {"utility-science-pack", 1},
+      {"space-science-pack", 1},
+    },
+    time = 30
+  },
+  order = name,
+  max_level = "infinite"
+}
+data:extend{infinite}

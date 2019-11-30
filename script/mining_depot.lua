@@ -50,7 +50,7 @@ function mining_depot:get_product_amount(entity, randomize_ore, ignore_productiv
     amount = amount + bonus
 
     if randomize_ore then
-      amount = random(amount - 2, amount + 2)
+      amount = math.ceil((random() + 0.5) * amount)
     end
 
     amount = min(amount, entity.amount)

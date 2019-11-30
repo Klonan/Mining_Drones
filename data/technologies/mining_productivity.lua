@@ -38,7 +38,7 @@ for k, ingredients in pairs (levels) do
 
   local technology =
   {
-    name = name..k,
+    name = name.."-"..k,
     localised_name = {name},
     type = "technology",
     icon = util.path("data/entities/mining_depot/depot-icon.png"),
@@ -51,7 +51,7 @@ for k, ingredients in pairs (levels) do
         effect_description = "Mining drone productivity: +10%"--repair-turret-power-description"}
       }
     },
-    prerequisites = k > 1 and {name..k - 1} or {},
+    prerequisites = k > 1 and {name.."-"..k - 1} or {},
     unit =
     {
       count = k * 100,
@@ -67,7 +67,7 @@ local k = #levels + 1
 
 local infinite =
 {
-  name = name..k,
+  name = name.."-"..k,
   localised_name = {name},
   type = "technology",
   icon = util.path("data/entities/mining_depot/depot-icon.png"),
@@ -80,10 +80,10 @@ local infinite =
       effect_description = "Mining drone productivity: +10%"--repair-turret-power-description"}
     }
   },
-  prerequisites = k > 1 and {name..k - 1} or {},
+  prerequisites = k > 1 and {name.."-"..k - 1} or {},
   unit =
   {
-    count_formula = "(L)*500",
+    count_formula = "(L-5)*500",
     ingredients =
     {
       {"automation-science-pack", 1},

@@ -11,14 +11,14 @@ local max = math.max
 local technology_effects =
 {
   [shared.mining_speed_technology] = function(technology)
-    local count = technology.name:sub(shared.mining_speed_technology:len() + 1)
+    local count = technology.level
     local force_index = technology.force.index
     script_data.mining_speed[force_index] = max(script_data.mining_speed[force_index] or 0, count * 0.2)
     script_data.walking_speed[force_index] = max(script_data.walking_speed[force_index] or 0, count * 0.2)
     script_data.cargo_size[force_index] = max(script_data.cargo_size[force_index] or 0, count * 1)
   end,
   [shared.mining_productivity_technology] = function(technology)
-    local count = technology.research_unit_count_formula and technology.level + 5 or technology.name:sub(shared.mining_productivity_technology:len() + 1)
+    local count = technology.level
     local force_index = technology.force.index
     script_data.productivity_bonus[force_index] = max(script_data.productivity_bonus[force_index] or 0, count * 0.1)
   end,

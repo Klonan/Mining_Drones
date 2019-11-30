@@ -70,7 +70,6 @@ local get_proxy_name = function(entity)
 end
 
 function mining_drone:get_mining_speed()
-  self:say(0.5 * (1 + mining_technologies.get_mining_speed_bonus(self.force_index)))
   return 0.5 * (1 + mining_technologies.get_mining_speed_bonus(self.force_index))
 end
 
@@ -233,7 +232,7 @@ function mining_drone:process_mining()
         pollution_flow(default_bot_name, pollution_per_ore * count)
 
         if product.name == item then
-          self:say(count.." + "..bonus_amount)
+          --self:say(count.." + "..bonus_amount)
 
           local amount = self.inventory.insert({name = product.name, count = count + bonus_amount})
           item_flow(item, amount)
@@ -289,11 +288,11 @@ function mining_drone:process_return_to_depot()
     if (stack and stack.valid and stack.valid_for_read) then
       local count = stack.count
       local inserted = destination_inventory.insert(stack)
-      if inserted == count then
-        stack.clear()
-      else
-        stack.count  = count - inserted
-      end
+      --if inserted == count then
+      --  stack.clear()
+      --else
+      --  stack.count  = count - inserted
+      --end
     end
   end
 
@@ -466,10 +465,11 @@ end
 function mining_drone:clear_inventory(destroy)
   if not self.inventory.valid then return end
 
-  local stack = self.inventory[1]
-  if stack and stack.valid and stack.valid_for_read then
-    self:spill(stack)
-  end
+  --local stack = self.inventory[1]
+  --if stack and stack.valid and stack.valid_for_read then
+  --  self:spill(stack)
+  --end
+  -- Lets not spill it, looks messy. Just clear it.
 
   self.inventory.clear()
   --self:update_sticker()
