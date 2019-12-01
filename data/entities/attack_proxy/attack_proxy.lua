@@ -32,7 +32,7 @@ end
 
 
 local recipes = data.raw.recipe
-local make_depot_recipe = function(item_prototype)
+local make_depot_recipe = function(item_prototype, fluid_ingredient)
   local recipe_name = "mine-"..item_prototype.name
   if recipes[recipe_name] then return end
   local results = {}
@@ -47,7 +47,11 @@ local make_depot_recipe = function(item_prototype)
     icon = item_prototype.icon,
     icon_size = item_prototype.icon_size,
     icons = item_prototype.icons,
-    ingredients = {{names.drone_name, 1}},
+    ingredients =
+    {
+      {type = "item", name = names.drone_name, amount = 1},
+      fluid_ingredient
+    },
     results = results,
     category = names.mining_depot,
     subgroup = "extraction-machine",
@@ -70,12 +74,12 @@ local make_recipes = function(entity)
   if is_stupid(entity) then return end
   if not entity.minable then return end
   if entity.minable.result then
-    make_depot_recipe(items[entity.minable.result])
+    make_depot_recipe(items[entity.minable.result], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
   end
 
   if entity.minable.results then
     for k, result in pairs (entity.minable.results) do
-      make_depot_recipe(items[result.name])
+      make_depot_recipe(items[result.name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
     end
   end
 end
@@ -196,7 +200,7 @@ local make_resource_attack_proxy = function(resource)
 end
 
 for k, resource in pairs (data.raw.resource) do
-  if resource.minable and resource.minable.result and not resource.minable.required_fluid then
+  if resource.minable and resource.minable.result then
     make_recipes(resource)
     make_resource_attack_proxy(resource)
   end

@@ -206,6 +206,7 @@ end
 
 function mining_depot:desired_item_changed()
   self.item = self:get_desired_item()
+  self.fluid = self:get_required_fluid()
   for k, drone in pairs(self.drones) do
     drone:cancel_command()
   end
@@ -214,6 +215,12 @@ function mining_depot:desired_item_changed()
     rendering.destroy(self.rendering)
     self.rendering = nil
   end
+end
+
+function mining_depot:get_required_fluid()
+  local recipe = self.entity.get_recipe()
+  if not recipe then return end
+  return recipe.ingredients[2]
 end
 
 local alert_data = {type = "item", name = shared.mining_depot}
@@ -261,7 +268,6 @@ function mining_depot:update()
   local entity = self.entity
   if not (entity and entity.valid) then return end
 
-
   local item = self:get_desired_item()
   if item ~= self.item then
     self:desired_item_changed()
@@ -298,6 +304,10 @@ function mining_depot:update()
     return
   end
 
+  if not self:has_enough_fluid() then
+    return
+  end
+
   local count = self:get_drone_item_count() - self:get_active_drone_count()
 
   if count > 0 then
@@ -321,6 +331,19 @@ function mining_depot:update()
     end
   end
 
+end
+
+function mining_depot:has_enough_fluid()
+  if not self.fluid then return true end
+  local box = self:get_input_fluidbox()
+  if not box then return false end
+
+  return box.amount >= (self.fluid.amount / 10)
+
+end
+
+function mining_depot:get_input_fluidbox()
+  return self.entity.fluidbox[1]
 end
 
 function mining_depot:adopt_idle_drones()
@@ -559,12 +582,44 @@ function mining_depot:order_drone(drone, entity)
   local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
   product_amount = math.ceil(product_amount * productivity)
 
+  if self.fluid then
+    local box = self:get_input_fluidbox()
+    if not box then
+      self:add_mining_target(entity)
+      return
+    end
+    local needed_fluid = (self.fluid.amount / 100) * product_amount
+    if box.amount < needed_fluid then
+      local product_amount = math.floor(box.amount / (self.fluid.amount / 100))
+      if product_amount == 0 then
+        self:add_mining_target(entity)
+        return
+      end
+      needed_fluid = (self.fluid.amount / 100) * product_amount
+      mining_count = product_amount
+    end
+    self:take_fluid(needed_fluid)
+  end
+
   self.estimated_count = self.estimated_count + product_amount
   drone.estimated_count = product_amount
+
 
   drone.entity.speed = self:get_drone_speed()
   drone:mine_entity(entity, mining_count)
 
+end
+
+function mining_depot:take_fluid(amount)
+  local box = self:get_input_fluidbox()
+  if not box then game.print("Shouldn't happen?") return end
+  local current = box.amount
+  box.amount = box.amount - amount
+  self.entity.force.fluid_production_statistics.on_flow(self.fluid.name, -amount)
+  if box.amount == 0 then
+    box = nil
+  end
+  self.entity.fluidbox[1] = box
 end
 
 function mining_depot:handle_order_request(drone)
@@ -574,7 +629,7 @@ function mining_depot:handle_order_request(drone)
     return
   end
 
-  if self:is_full() or self:get_active_drone_count() > self:get_drone_item_count() then
+  if self:is_full() or self:get_active_drone_count() > self:get_drone_item_count() or not self:has_enough_fluid() then
     self:return_drone(drone)
     return
   end
@@ -621,6 +676,22 @@ function mining_depot:handle_path_request_finished(event)
     --we can't reach it, don't spawn any miners.
     self:add_mining_target(entity, true)
     return
+  end
+
+  if self.fluid then
+    local box = self:get_input_fluidbox()
+    if not box then
+      self:add_mining_target(entity)
+      return
+    end
+    local needed_fluid = (self.fluid.amount / 100) * product_amount
+    if box.amount < needed_fluid then
+      local product_amount = math.floor(box.amount / (self.fluid.amount / 100))
+      if product_amount == 0 then
+        self:add_mining_target(entity)
+        return
+      end
+    end
   end
 
   local drone = self:spawn_drone()

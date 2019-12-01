@@ -18,6 +18,14 @@ machine.flags = {"placeable-neutral", "player-creation"}
 machine.fluid_boxes =
 {
   {
+    production_type = "input",
+    pipe_picture = assembler1pipepictures(),
+    base_area = 10,
+    base_level = -1,
+    pipe_connections = {{ type="input-output", position = {0, 3} }},
+    pipe_covers = pipecoverspictures(),
+  },
+  {
     production_type = "output",
     pipe_picture = nil,
     pipe_covers = nil,

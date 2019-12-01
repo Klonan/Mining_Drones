@@ -41,7 +41,7 @@ for k, ingredients in pairs (levels) do
     name = name.."-"..k,
     localised_name = {name},
     type = "technology",
-    icon = util.path("data/entities/mining_depot/depot-icon.png"),
+    icon = util.path("data/technologies/mining-productivity-icon.png"),
     icon_size = 216,
     upgrade = true,
     effects =
@@ -70,7 +70,7 @@ local infinite =
   name = name.."-"..k,
   localised_name = {name},
   type = "technology",
-  icon = util.path("data/entities/mining_depot/depot-icon.png"),
+  icon = util.path("data/technologies/mining-productivity-icon.png"),
   icon_size = 216,
   upgrade = true,
   effects =
