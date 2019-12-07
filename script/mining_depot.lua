@@ -36,6 +36,8 @@ local random = math.random
 
 function mining_depot:get_product_amount(entity, randomize_ore, ignore_productivity)
 
+  --Minor issue: things like big rocks have coal and stone...
+
   if entity.type == "item-entity" then
     return entity.stack.count
   end
@@ -74,6 +76,17 @@ local offsets =
   [defines.direction.west] = {-3, 0},
 }
 
+local add_to_bucket = function(depot)
+  local unit_number = depot.entity.unit_number
+  local depots = script_data.depots
+  local bucket = depots[unit_number % depot_update_rate]
+  if not bucket then
+    bucket = {}
+    depots[unit_number % depot_update_rate] = bucket
+  end
+  bucket[unit_number] = depot
+end
+
 function mining_depot.new(entity)
 
   local depot =
@@ -85,12 +98,14 @@ function mining_depot.new(entity)
     path_requests = {},
     surface_index = entity.surface.index,
     force_index = entity.force.index,
-    item = nil
+    item = nil,
+    fluid = nil
   }
-
-  script_data.global_taken[depot.surface_index] = script_data.global_taken[depot.surface_index] or {}
-
   setmetatable(depot, depot_metatable)
+
+  if not global_taken[depot.surface_index] then
+    global_taken[depot.surface_index] = {}
+  end
 
   rendering.draw_sprite
   {
@@ -102,14 +117,7 @@ function mining_depot.new(entity)
     target_offset = offsets[entity.direction]
   }
 
-  local unit_number = entity.unit_number
-  local depots = script_data.depots
-  local bucket = depots[unit_number % depot_update_rate]
-  if not bucket then
-    bucket = {}
-    depots[unit_number % depot_update_rate] = bucket
-  end
-  bucket[unit_number] = depot
+  add_to_bucket(depot)
 
   entity.active = false
 
@@ -205,12 +213,17 @@ function mining_depot:update_sticker()
 end
 
 function mining_depot:desired_item_changed()
+
   self.item = self:get_desired_item()
   self.fluid = self:get_required_fluid()
+  self.had_rescan = nil
+
   for k, drone in pairs(self.drones) do
     drone:cancel_command()
   end
+
   self:find_potential_items()
+
   if self.rendering then
     rendering.destroy(self.rendering)
     self.rendering = nil
@@ -297,9 +310,6 @@ function mining_depot:update()
     return
   end
 
-  --self:adopt_idle_drones()
-
-
   if self:is_full() then
     return
   end
@@ -346,39 +356,12 @@ function mining_depot:get_input_fluidbox()
   return self.entity.fluidbox[1]
 end
 
-function mining_depot:adopt_idle_drones()
-
-  local idle_drones = mining_drone.get_idle_drones()
-  if not next(idle_drones) then return end
-
-  local space = self:get_drone_item_count() - self:get_active_drone_count()
-
-  if space < 1 then return end
-
-  for unit_number, drone in pairs (idle_drones) do
-    self:take_drone(drone)
-    drone:return_to_depot()
-    idle_drones[unit_number] = nil
-    space = space - 1
-    if space < 1 then break end
-  end
-
-end
-
 function mining_depot:get_drone_item_count()
   return self.entity.get_item_count(shared.drone_name)
 end
 
-function mining_depot:get_can_spawn_count()
-  return self:get_drone_item_count() - self:get_active_drone_count()
-end
-
 function mining_depot:is_spawn_blocked()
   return not self.entity.surface.can_place_entity{name = default_bot_name, position = self:get_spawn_position()}
-end
-
-function mining_depot:can_spawn_drone()
-  return not self:is_spawn_blocked() and self.get_drone_item_count() > self:get_active_drone_count()
 end
 
 local unique_index = function(entity)
@@ -425,40 +408,8 @@ function mining_depot:get_area()
   return get_depot_area(self.entity)
 end
 
-
-
-local abs = math.abs
-local insert = table.insert
-
-function mining_depot:add_to_potential_sorted(entity)
-  error("Don't use me?")
-  local origin = self.entity.position
-  local x, y = origin.x, origin.y
-
-  local distance = function(position)
-    return ((x - position.x) ^ 2 + (y - position.y) ^ 2) ^ 0.5
-  end
-
-  local length = distance(entity.position)
-  local entities = self.potential
-
-  for index, other_entity in pairs (entities) do
-    if not other_entity.valid then
-      entities[index] = nil
-    else
-      if length <= distance(other_entity.position) then
-        insert(entities, index, entity)
-        return
-      end
-    end
-  end
-
-  insert(entities, entity)
-
-end
-
 function mining_depot:sort_by_distance(entities)
-  local profiler = game.create_profiler()
+  --local profiler = game.create_profiler()
 
   local origin = self.entity.position
   local x, y = origin.x, origin.y
@@ -492,7 +443,7 @@ function mining_depot:sort_by_distance(entities)
 
   distance_cache = nil
 
-  game.print{"", "sorted ", #sorted, " ", profiler}
+  --game.print{"", "sorted ", #sorted, " ", profiler}
 
   return sorted
 
@@ -654,7 +605,7 @@ end
 
 function mining_depot:get_output_space()
   local inventory = self:get_output_inventory()
-  local item = self:get_desired_item()
+  local item = self.item
   if not item then return 0 end
   local prototype = game.item_prototypes[item]
   return (prototype.stack_size * (#inventory - 3)) - inventory.get_item_count(item)
@@ -755,8 +706,6 @@ function mining_depot:get_all_depots()
   for k, bucket in pairs (script_data.depots) do
     for unit_number, depot in pairs (bucket) do
       if not depot.entity.valid then
-        error("HI idk if I should happen")
-        --depot:handle_depot_deletion(unit_number)
         bucket[unit_number] = nil
       else
         depots[unit_number] = depot
@@ -768,10 +717,6 @@ end
 
 function mining_depot:get_active_drone_count()
   return table_size(self.drones)
-end
-
-function mining_depot:can_accept_drone()
-  return self:get_drone_item_count() > self:get_active_drone_count()
 end
 
 local on_tick = function(event)
@@ -849,6 +794,7 @@ local on_entity_removed = function(event)
 
 end
 
+local highlight_color = {r = 0, g = 0.1, b = 0, a = 0.1}
 local on_selected_entity_changed = function(event)
   local player = game.get_player(event.player_index)
 
@@ -869,17 +815,13 @@ local on_selected_entity_changed = function(event)
     surface = entity.surface,
     players = {player},
     filled = true,
-    color = {r = 0, g = 0.1, b = 0, a = 0.1},
+    color = highlight_color,
     draw_on_ground = true,
     target = entity,
     only_in_alt_mode = false,
     left_top = area[1],
     right_bottom = area[2]
   }
-
-
-
-
 end
 
 local lib = {}
