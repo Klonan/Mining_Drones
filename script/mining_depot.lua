@@ -436,7 +436,7 @@ function mining_depot:add_to_potential_sorted(entity)
   local x, y = origin.x, origin.y
 
   local distance = function(position)
-    return abs(x - position.x) + abs(y - position.y)
+    return ((x - position.x) ^ 2 + (y - position.y) ^ 2) ^ 0.5
   end
 
   local length = distance(entity.position)
@@ -464,7 +464,7 @@ function mining_depot:sort_by_distance(entities)
   local x, y = origin.x, origin.y
 
   local distance = function(position)
-    return abs(x - position.x) + abs(y - position.y)
+    return ((x - position.x) ^ 2 + (y - position.y) ^ 2) ^ 0.5
   end
 
   local sorted = {}
