@@ -103,8 +103,8 @@ function mining_depot.new(entity)
   }
   setmetatable(depot, depot_metatable)
 
-  if not global_taken[depot.surface_index] then
-    global_taken[depot.surface_index] = {}
+  if not script_data.global_taken[depot.surface_index] then
+    script_data.global_taken[depot.surface_index] = {}
   end
 
   rendering.draw_sprite

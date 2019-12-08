@@ -6,6 +6,8 @@ function gaussian (mean, variance)
           math.cos(2 * math.pi * math.random()) + mean
 end
 
+local sound = data.raw.tile["grass-1"].walking_sound
+
 for k = 1, names.variation_count do
 
   local base = util.copy(data.raw.character.character)
@@ -161,6 +163,16 @@ for k = 1, names.variation_count do
         intensity = 0.6,
         color = {r=1.0, g=1.0, b=1.0}
       }
+    },
+    running_sound_animation_positions = {5, 16},
+    walking_sound =
+    {
+      aggregation =
+      {
+        max_count = 2,
+        remove = true
+      },
+      variations = sound
     }
   }
 
