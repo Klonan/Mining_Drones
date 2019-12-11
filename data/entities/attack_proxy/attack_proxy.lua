@@ -33,6 +33,7 @@ end
 
 local recipes = data.raw.recipe
 local make_depot_recipe = function(item_prototype, fluid_ingredient)
+  if not item_prototype then return end
   local recipe_name = "mine-"..item_prototype.name
   if recipes[recipe_name] then return end
   local results = {}
@@ -73,13 +74,17 @@ local items = data.raw.item
 local make_recipes = function(entity)
   if is_stupid(entity) then return end
   if not entity.minable then return end
+  log(entity.name)
+
   if entity.minable.result then
-    make_depot_recipe(items[entity.minable.result], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+    local name = entity.minable.result or entity.minable.result[1]
+    make_depot_recipe(items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
   end
 
   if entity.minable.results then
     for k, result in pairs (entity.minable.results) do
-      make_depot_recipe(items[result.name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+      local name = result.name or result[1]
+      make_depot_recipe(items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
     end
   end
 end
@@ -96,23 +101,23 @@ local axe_mining_ore_trigger =
     {
       {
         filename = "__core__/sound/axe-mining-ore-1.ogg",
-        volume = 0.75
+        volume = 0.5
       },
       {
         filename = "__core__/sound/axe-mining-ore-2.ogg",
-        volume = 0.75
+        volume = 0.5
       },
       {
         filename = "__core__/sound/axe-mining-ore-3.ogg",
-        volume = 0.75
+        volume = 0.5
       },
       {
         filename = "__core__/sound/axe-mining-ore-4.ogg",
-        volume = 0.75
+        volume = 0.5
       },
       {
         filename = "__core__/sound/axe-mining-ore-5.ogg",
-        volume = 0.75
+        volume = 0.5
       }
     }
   }
@@ -126,11 +131,11 @@ local mining_wood_trigger =
     {
       {
         filename = "__core__/sound/mining-wood-1.ogg",
-        volume = 0.75
+        volume = 0.5
       },
       {
         filename = "__core__/sound/mining-wood-2.ogg",
-        volume = 0.75
+        volume = 0.5
       }
     }
   }
@@ -202,7 +207,7 @@ local make_resource_attack_proxy = function(resource)
 end
 
 for k, resource in pairs (data.raw.resource) do
-  if resource.minable and resource.minable.result then
+  if resource.minable and (resource.minable.result or resource.minable.results) then
     make_recipes(resource)
     make_resource_attack_proxy(resource)
   end

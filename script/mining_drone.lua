@@ -400,6 +400,7 @@ function mining_drone:mine_entity(entity, count)
   }
 end
 
+
 function mining_drone:set_depot(depot)
   self.depot = depot
 end
@@ -531,6 +532,7 @@ end
 local insert = table.insert
 
 function mining_drone:update_sticker()
+  if true then return end
 
   local stack = self.inventory[1]
 
@@ -615,6 +617,14 @@ function mining_drone:remove_from_list()
   remove_drone(self)
 end
 
+local make_unselectable = function()
+  if remote.interfaces["unit_control"] then
+    for k = 1, variation_count do
+      remote.call("unit_control", "register_unit_unselectable", names.drone_name.."-"..k)
+    end
+  end
+end
+
 
 mining_drone.events =
 {
@@ -642,6 +652,11 @@ end
 mining_drone.on_init = function()
   global.mining_drone = global.mining_drone or script_data
   game.map_settings.path_finder.use_path_cache = false
+  make_unselectable()
+end
+
+mining_drone.on_configuration_changed = function()
+  make_unselectable()
 end
 
 return mining_drone
