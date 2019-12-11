@@ -1,9 +1,12 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.5
-Date: 2019-03-23
+Version: 0.1.1
+Date: 2019-12-11
   Changes:
-    - Buffed all units health by about 80%.
-    - Disabled base game worms/spitters acid on ground damage effect, as it was severely over-powered.
-    - Some units attack in a slightly different way, E.G rocket guys rockets will track the target, SMG guy will hit instantly.
-    - Added damage upgrade technologies.
-    - Generally balanced the units and damage. They mostly do more damage now.
+    - Fixed compatibility with PyRawOres.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2019-12-11
+  Changes:
+    - Initial release.
+    - Add mining drones and mining depot.
+    - Add mining drone speed and mining drone productivity technologies.
