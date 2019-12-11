@@ -246,9 +246,17 @@ function mining_drone:process_mining()
   end
 
   --self:update_sticker()
-
-  if target.type == "resource" and target.amount > self.mining_count then
-    target.amount = target.amount - self.mining_count
+  if target.type == "resource" then
+    local resource_amount = target.amount
+    if resource_amount > self.mining_count then
+      target.amount = resource_amount - self.mining_count
+    elseif target.initial_amount then
+      --It is infinite
+      target.amount = target.prototype.minimum_resource_amount
+    else
+      self:clear_mining_target()
+      target.destroy()
+    end
   else
     self:clear_mining_target()
     target.destroy()
