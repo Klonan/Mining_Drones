@@ -126,7 +126,7 @@ mining_drone.new = function(entity)
 
   setmetatable(drone, mining_drone.metatable)
 
-  --drone:add_lights()
+  drone:add_lights()
 
   add_drone(drone)
 
@@ -148,17 +148,17 @@ function mining_drone:add_lights()
     scale = 2
   }
 
-  rendering.draw_light
-  {
-    sprite = "utility/light_medium",
-    oriented = false,
-    target = entity,
-    target_offset = {0, 0},
-    surface = entity.surface,
-    minimum_darkness = 0.3,
-    intensity = 0.4,
-    scale = 2.5,
-  }
+  --rendering.draw_light
+  --{
+  --  sprite = "utility/light_medium",
+  --  oriented = false,
+  --  target = entity,
+  --  target_offset = {0, 0},
+  --  surface = entity.surface,
+  --  minimum_darkness = 0.3,
+  --  intensity = 0.4,
+  --  scale = 2.5,
+  --}
 
 end
 
