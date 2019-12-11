@@ -620,7 +620,7 @@ end
 local make_unselectable = function()
   if remote.interfaces["unit_control"] then
     for k = 1, shared.variation_count do
-      remote.call("unit_control", "register_unit_unselectable", names.drone_name.."-"..k)
+      remote.call("unit_control", "register_unit_unselectable", shared.drone_name.."-"..k)
     end
   end
 end
