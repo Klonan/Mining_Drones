@@ -317,14 +317,18 @@ function mining_drone:oof()
 end
 
 function mining_drone:process_failed_command()
-  self:oof()
+  --self:oof()
   self.fail_count = (self.fail_count or 0) + 1
+
+  if self.fail_count == 1 then self.entity.ai_settings.path_resolution_modifier = -1 end
+  if self.fail_count == 3 then self.entity.ai_settings.path_resolution_modifier = 1 end
+  if self.fail_count == 4 then self.entity.ai_settings.path_resolution_modifier = 2 end
 
   if self.state == states.mining_entity then
 
     self:clear_attack_proxy()
 
-    if self.mining_target.valid and self.fail_count < 5 then
+    if self.mining_target.valid and self.fail_count <= 5 then
       return self:mine_entity(self.mining_target, self.mining_count)
     end
 
@@ -335,8 +339,8 @@ function mining_drone:process_failed_command()
   end
 
   if self.state == states.return_to_depot then
-    if self.fail_count < 5 then
-      return self:wait(25)
+    if self.fail_count <= 5 then
+      return self:wait(math.random(25, 45))
     end
     --self:say("I can't return to my depot!")
     self:cancel_command()
@@ -421,6 +425,7 @@ function mining_drone:cancel_command()
   self:clear_inventory(true)
   self:clear_depot()
   self:remove_from_list()
+  self.entity.force = "neutral"
   self.entity.die()
 
 end
