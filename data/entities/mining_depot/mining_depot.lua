@@ -19,7 +19,7 @@ machine.fluid_boxes =
 {
   {
     production_type = "input",
-    pipe_picture = assembler1pipepictures(),
+    pipe_picture = assembler2pipepictures(),
     base_area = 10,
     base_level = -1,
     pipe_connections = {{ type="input-output", position = {0, 3} }},

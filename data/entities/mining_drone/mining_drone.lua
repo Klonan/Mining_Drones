@@ -130,7 +130,7 @@ for k = 1, names.variation_count do
       animation = base.animations[1].mining_with_tool
     },
     vision_distance = 10,
-    has_belt_immunity = false,
+    has_belt_immunity = true,
     affected_by_tiles = true,
     movement_speed = 0.05 * random_height,
     distance_per_frame = 0.05 / random_height,
