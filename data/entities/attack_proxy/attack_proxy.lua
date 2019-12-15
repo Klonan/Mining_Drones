@@ -1,3 +1,31 @@
+local empty_rotated_animation = function()
+  return
+  {
+    filename = "__base__/graphics/entity/ship-wreck/small-ship-wreck-a.png",
+    width = 1,
+    height= 1,
+    direction_count = 1,
+    animation_speed = 1
+  }
+end
+
+local empty_attack_parameters = function()
+  return
+  {
+    type = "projectile",
+    ammo_category = "bullet",
+    cooldown = 1,
+    range = 0,
+    ammo_type =
+    {
+      category = util.ammo_category("mining-drone"),
+      target_type = "entity",
+      --action = {}
+    },
+    animation = empty_rotated_animation()
+  }
+end
+
 local make_proxy = function(size)
 
   local attack_proxy =
@@ -10,7 +38,7 @@ local make_proxy = function(size)
     order = "zzzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = {{-size/2, -size/2}, {size/2, size/2}},
-    collision_mask = {},
+    collision_mask = {"colliding-with-tiles-only"},
     selection_box = nil,
     pictures =
     {
@@ -145,7 +173,7 @@ local make_resource_attack_proxy = function(resource)
 
   local attack_proxy =
   {
-    type = "simple-entity",
+    type = "unit",
     name = shared.attack_proxy_name..resource.name,
     icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
     icon_size = 32,
@@ -153,16 +181,15 @@ local make_resource_attack_proxy = function(resource)
     order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = resource.collision_box,
-    collision_mask = {},
+    collision_mask = {"colliding-with-tiles-only"},
     selection_box = nil,
-    pictures =
-    {
-      {
-        filename = "__base__/graphics/entity/ship-wreck/small-ship-wreck-a.png",
-        width = 1,
-        height= 1
-      },
-    }
+    run_animation =empty_rotated_animation(),
+    attack_parameters = empty_attack_parameters(),
+    movement_speed = 0,
+    distance_per_frame = 0,
+    pollution_to_join_attack = 0,
+    distraction_cooldown = 0,
+    vision_distance = 0
   }
 
   local damaged_trigger =
@@ -225,24 +252,23 @@ local make_tree_proxy = function(tree)
 
   local attack_proxy =
   {
-    type = "simple-entity",
+    type = "unit",
     name = shared.attack_proxy_name..tree.name,
     icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
     icon_size = 32,
     flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"},
-    order = "zzzzzzz",
+    order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = tree.collision_box,
-    collision_mask = {},
+    collision_mask = {"colliding-with-tiles-only"},
     selection_box = nil,
-    pictures =
-    {
-      {
-        filename = "__base__/graphics/entity/ship-wreck/small-ship-wreck-a.png",
-        width = 1,
-        height= 1
-      },
-    }
+    run_animation = empty_rotated_animation(),
+    attack_parameters = empty_attack_parameters(),
+    movement_speed = 0,
+    distance_per_frame = 0,
+    pollution_to_join_attack = 0,
+    distraction_cooldown = 0,
+    vision_distance = 0
   }
 
   local damaged_trigger =

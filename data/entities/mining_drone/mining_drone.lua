@@ -175,7 +175,7 @@ for k = 1, names.variation_count do
       variations = sound
     }
   }
-
+--error(serpent.block(base.animations[1].running))
 
   local corpse = util.copy(data.raw["character-corpse"]["character-corpse"])
 

@@ -88,6 +88,7 @@ function mining_drone:make_attack_proxy(entity, count)
 
   local proxy = entity.surface.create_entity{name = get_proxy_name(entity), position = entity.position, force = "neutral"}
   proxy.health = number_of_hits * damage
+  proxy.active = false
   return proxy
 end
 
@@ -638,6 +639,19 @@ local make_unselectable = function()
   end
 end
 
+local validate_proxy_orders = function()
+  --local count = 0
+  for unit_number, drone in pairs (script_data.drones) do
+    if drone.state == states.mining_entity then
+      if not drone.attack_proxy.valid then
+        drone:return_to_depot()
+        ---count = count + 1
+      end
+    end
+  end
+  --game.print(count)
+end
+
 
 mining_drone.events =
 {
@@ -670,6 +684,8 @@ end
 
 mining_drone.on_configuration_changed = function()
   make_unselectable()
+  validate_proxy_orders()
+
 end
 
 return mining_drone
