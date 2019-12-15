@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.6
+Date: 2019-12-15
+  Changes:
+    - Fix mining drones removing ghosts on top of the mining targets. (This needs a migration, so lots of drones will stop working briefly.)
+---------------------------------------------------------------------------------------------------
 Version: 0.1.5
 Date: 2019-12-15
   Changes:
