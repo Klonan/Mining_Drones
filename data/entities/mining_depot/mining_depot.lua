@@ -15,6 +15,7 @@ machine.allowed_effects = {"consumption", "speed", "pollution"}
 machine.module_specification =nil
 machine.minable = {result = name, mining_time = 1}
 machine.flags = {"placeable-neutral", "player-creation"}
+machine.next_upgrade = nil
 machine.fluid_boxes =
 {
   {

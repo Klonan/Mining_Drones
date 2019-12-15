@@ -4,6 +4,7 @@ Date: 2019-12-15
   Changes:
     - Make the dudes immune to belts. They kept getting stuck, and didn't add anything to the fun.
     - Lowered the mining sound volume a bit.
+    - Fixed a startup crash due to some other mod.
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.4
 Date: 2019-12-14
