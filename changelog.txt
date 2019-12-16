@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.8
+Date: 2019-12-16
+  Changes:
+    - Switch to using a corpse for the 'caution plate' sprite.
+      This lets the return path target an entity which has some internal engine logic to make the pathing work smoother.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.7
 Date: 2019-12-16
   Changes:
