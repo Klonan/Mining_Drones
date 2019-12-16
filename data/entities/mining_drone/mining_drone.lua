@@ -49,7 +49,7 @@ for k = 1, names.variation_count do
     --subgroup = "iron-units",
     healing_per_tick = 0.1,
     --minable = {result = name, mining_time = 2},
-    collision_box = {{-0.10, -0.10}, {0.10, 0.10}},
+    collision_box = {{-0.15, -0.15}, {0.15, 0.15}},
     collision_mask = util.ground_unit_collision_mask(),
     max_pursue_distance = 64,
     resistances = nil,
@@ -129,7 +129,7 @@ for k = 1, names.variation_count do
       },
       animation = base.animations[1].mining_with_tool
     },
-    vision_distance = 10,
+    vision_distance = 80,
     has_belt_immunity = true,
     affected_by_tiles = true,
     movement_speed = 0.05 * random_height,
