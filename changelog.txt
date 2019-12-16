@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.7
+Date: 2019-12-16
+  Changes:
+    - Drastically reduce cost of mining depot.
+    - Rebalance cost of mining drone (More plate, but less gears and sticks), and reduce recipe time.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.6
 Date: 2019-12-15
   Changes:

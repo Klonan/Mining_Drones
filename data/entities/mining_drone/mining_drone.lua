@@ -221,11 +221,11 @@ local recipe = {
   enabled = true,
   ingredients =
   {
-    {"iron-plate", 15},
-    {"iron-gear-wheel", 10},
-    {"iron-stick", 10}
+    {"iron-plate", 20},
+    {"iron-gear-wheel", 5},
+    {"iron-stick", 5}
   },
-  energy_required = 15,
+  energy_required = 2,
   result = name
 }
 

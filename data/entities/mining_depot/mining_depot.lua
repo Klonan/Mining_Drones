@@ -168,18 +168,19 @@ local category = {
   name = name
 }
 
-local recipe = {
+local recipe =
+{
   type = "recipe",
   name = name,
   localised_name = {name},
   enabled = true,
   ingredients =
   {
-    {"iron-plate", 50},
-    {"iron-gear-wheel", 80},
-    {"iron-stick", 50},
+    {"iron-plate", 20},
+    {"iron-gear-wheel", 5},
+    {"iron-stick", 5},
   },
-  energy_required = 100,
+  energy_required = 5,
   result = name
 }
 
