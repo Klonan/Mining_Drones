@@ -286,7 +286,7 @@ function mining_drone:process_return_to_depot()
   end
 
   if distance(self.entity.position, depot:get_spawn_position()) > 1 then
-    self:go_to_position(depot:get_spawn_position())
+    self:return_to_depot()
     return
   end
 
@@ -442,6 +442,11 @@ function mining_drone:return_to_depot()
     return
   end
 
+  local corpse = depot.corpse
+  if corpse and corpse.valid then
+    self:go_to_entity(corpse, 0.5)
+    return
+  end
 
   local position = depot:get_spawn_position()
   if position then

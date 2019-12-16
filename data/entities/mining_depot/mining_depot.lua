@@ -194,8 +194,19 @@ local caution_sprite =
   frame_count = 1,
   scale = 0.5,
   shift = shift,
+  direction_count =1,
   draw_as_shadow = false,
   flags = {"terrain"}
+}
+
+local caution_corpse =
+{
+  type = "corpse",
+  name = "caution-corpse",
+  flags = {"placeable-off-grid"},
+  animation = caution_sprite,
+  remove_on_entity_placement = false,
+  remove_on_tile_placement = false
 }
 
 data:extend
@@ -204,7 +215,8 @@ data:extend
   item,
   category,
   recipe,
-  caution_sprite
+  caution_sprite,
+  caution_corpse
 }
 
 --error(count)
