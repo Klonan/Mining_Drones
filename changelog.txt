@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.10
+Date: 2019-12-17
+  Changes:
+    - Fix not cleaning up proxy chests used for inventory management, leading to performance drops over time.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.9
 Date: 2019-12-16
   Changes:

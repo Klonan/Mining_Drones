@@ -4,7 +4,8 @@ local default_bot_name = shared.drone_name.."-1"
 
 local script_data =
 {
-  drones = {}
+  drones = {},
+  fix_chests = true
 }
 
 local mining_drone = {}
@@ -657,6 +658,26 @@ local validate_proxy_orders = function()
   --game.print(count)
 end
 
+local fix_chests = function()
+  local used_chests = {}
+  
+  for unit_number, drone in pairs (script_data.drones) do
+    if drone.inventory and drone.inventory.valid then
+      used_chests[drone.inventory.entity_owner.unit_number] = true
+    end
+  end
+  
+  local count = 0
+  for k, chest in pairs (game.surfaces[1].find_entities_filtered{name = shared.proxy_chest_name}) do
+    if not used_chests[chest.unit_number] then
+      chest.destroy()
+      count = count + 1
+    end
+  end
+  game.print("Mining drone migration: fixed chest count "..count)
+end
+
+
 
 mining_drone.events =
 {
@@ -690,7 +711,10 @@ end
 mining_drone.on_configuration_changed = function()
   make_unselectable()
   validate_proxy_orders()
-
+  if not script_data.fix_chests then
+    script_data.fix_chests = true
+    fix_chests()
+  end
 end
 
 return mining_drone

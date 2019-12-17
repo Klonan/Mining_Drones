@@ -672,6 +672,7 @@ end
 function mining_depot:return_drone(drone)
   self:remove_drone(drone)
   drone:remove_from_list()
+  drone:clear_inventory(true)
   drone.entity.destroy()
   self:update_sticker()
 end
