@@ -4,7 +4,8 @@ local default_bot_name = shared.drone_name.."-1"
 
 local script_data =
 {
-  drones = {}
+  drones = {},
+  fix_chests = true
 }
 
 local mining_drone = {}
@@ -88,6 +89,7 @@ function mining_drone:make_attack_proxy(entity, count)
 
   local proxy = entity.surface.create_entity{name = get_proxy_name(entity), position = entity.position, force = "neutral"}
   proxy.health = number_of_hits * damage
+  proxy.active = false
   return proxy
 end
 
@@ -126,7 +128,7 @@ mining_drone.new = function(entity)
 
   setmetatable(drone, mining_drone.metatable)
 
-  --drone:add_lights()
+  drone:add_lights()
 
   add_drone(drone)
 
@@ -148,17 +150,17 @@ function mining_drone:add_lights()
     scale = 2
   }
 
-  rendering.draw_light
-  {
-    sprite = "utility/light_medium",
-    oriented = false,
-    target = entity,
-    target_offset = {0, 0},
-    surface = entity.surface,
-    minimum_darkness = 0.3,
-    intensity = 0.4,
-    scale = 2.5,
-  }
+  --rendering.draw_light
+  --{
+  --  sprite = "utility/light_medium",
+  --  oriented = false,
+  --  target = entity,
+  --  target_offset = {0, 0},
+  --  surface = entity.surface,
+  --  minimum_darkness = 0.3,
+  --  intensity = 0.4,
+  --  scale = 2.5,
+  --}
 
 end
 
@@ -246,9 +248,17 @@ function mining_drone:process_mining()
   end
 
   --self:update_sticker()
-
-  if target.type == "resource" and target.amount > self.mining_count then
-    target.amount = target.amount - self.mining_count
+  if target.type == "resource" then
+    local resource_amount = target.amount
+    if resource_amount > self.mining_count then
+      target.amount = resource_amount - self.mining_count
+    elseif target.initial_amount then
+      --It is infinite
+      target.amount = target.prototype.minimum_resource_amount
+    else
+      self:clear_mining_target()
+      target.destroy()
+    end
   else
     self:clear_mining_target()
     target.destroy()
@@ -277,7 +287,7 @@ function mining_drone:process_return_to_depot()
   end
 
   if distance(self.entity.position, depot:get_spawn_position()) > 1 then
-    self:go_to_position(depot:get_spawn_position())
+    self:return_to_depot()
     return
   end
 
@@ -309,14 +319,18 @@ function mining_drone:oof()
 end
 
 function mining_drone:process_failed_command()
-  self:oof()
+  --self:oof()
   self.fail_count = (self.fail_count or 0) + 1
+
+  if self.fail_count == 1 then self.entity.ai_settings.path_resolution_modifier = -1 end
+  if self.fail_count == 3 then self.entity.ai_settings.path_resolution_modifier = 1 end
+  if self.fail_count == 4 then self.entity.ai_settings.path_resolution_modifier = 2 end
 
   if self.state == states.mining_entity then
 
     self:clear_attack_proxy()
 
-    if self.mining_target.valid and self.fail_count < 5 then
+    if self.mining_target.valid and self.fail_count <= 5 then
       return self:mine_entity(self.mining_target, self.mining_count)
     end
 
@@ -327,8 +341,8 @@ function mining_drone:process_failed_command()
   end
 
   if self.state == states.return_to_depot then
-    if self.fail_count < 5 then
-      return self:wait(25)
+    if self.fail_count <= 5 then
+      return self:wait(math.random(25, 45))
     end
     --self:say("I can't return to my depot!")
     self:cancel_command()
@@ -400,6 +414,7 @@ function mining_drone:mine_entity(entity, count)
   }
 end
 
+
 function mining_drone:set_depot(depot)
   self.depot = depot
 end
@@ -412,6 +427,7 @@ function mining_drone:cancel_command()
   self:clear_inventory(true)
   self:clear_depot()
   self:remove_from_list()
+  self.entity.force = "neutral"
   self.entity.die()
 
 end
@@ -427,6 +443,11 @@ function mining_drone:return_to_depot()
     return
   end
 
+  local corpse = depot.corpse
+  if corpse and corpse.valid then
+    self:go_to_entity(corpse, 0.5)
+    return
+  end
 
   local position = depot:get_spawn_position()
   if position then
@@ -531,6 +552,7 @@ end
 local insert = table.insert
 
 function mining_drone:update_sticker()
+  if true then return end
 
   local stack = self.inventory[1]
 
@@ -615,6 +637,47 @@ function mining_drone:remove_from_list()
   remove_drone(self)
 end
 
+local make_unselectable = function()
+  if remote.interfaces["unit_control"] then
+    for k = 1, shared.variation_count do
+      remote.call("unit_control", "register_unit_unselectable", shared.drone_name.."-"..k)
+    end
+  end
+end
+
+local validate_proxy_orders = function()
+  --local count = 0
+  for unit_number, drone in pairs (script_data.drones) do
+    if drone.state == states.mining_entity then
+      if not drone.attack_proxy.valid then
+        drone:return_to_depot()
+        ---count = count + 1
+      end
+    end
+  end
+  --game.print(count)
+end
+
+local fix_chests = function()
+  local used_chests = {}
+  
+  for unit_number, drone in pairs (script_data.drones) do
+    if drone.inventory and drone.inventory.valid then
+      used_chests[drone.inventory.entity_owner.unit_number] = true
+    end
+  end
+  
+  local count = 0
+  for k, chest in pairs (game.surfaces[1].find_entities_filtered{name = shared.proxy_chest_name}) do
+    if not used_chests[chest.unit_number] then
+      chest.destroy()
+      count = count + 1
+    end
+  end
+  game.print("Mining drone migration: fixed chest count "..count)
+end
+
+
 
 mining_drone.events =
 {
@@ -642,6 +705,16 @@ end
 mining_drone.on_init = function()
   global.mining_drone = global.mining_drone or script_data
   game.map_settings.path_finder.use_path_cache = false
+  make_unselectable()
+end
+
+mining_drone.on_configuration_changed = function()
+  make_unselectable()
+  validate_proxy_orders()
+  if not script_data.fix_chests then
+    script_data.fix_chests = true
+    fix_chests()
+  end
 end
 
 return mining_drone

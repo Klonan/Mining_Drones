@@ -16,7 +16,8 @@ local script_data =
   depots = {},
   path_requests = {},
   global_taken = {},
-  depot_highlights = {}
+  depot_highlights = {},
+  migrate_corpse = true
 }
 
 local main_products = {}
@@ -70,10 +71,10 @@ end
 
 local offsets =
 {
-  [defines.direction.north] = {0, -3},
-  [defines.direction.south] = {0, 3},
-  [defines.direction.east] = {3, 0},
-  [defines.direction.west] = {-3, 0},
+  [defines.direction.north] = {0, -2.9},
+  [defines.direction.south] = {0, 2.9},
+  [defines.direction.east] = {2.9, 0},
+  [defines.direction.west] = {-2.9, 0},
 }
 
 local add_to_bucket = function(depot)
@@ -85,6 +86,32 @@ local add_to_bucket = function(depot)
     depots[unit_number % depot_update_rate] = bucket
   end
   bucket[unit_number] = depot
+end
+
+function mining_depot:add_corpse()
+
+  if self.corpse and self.corpse.valid then
+    error("HUH")
+    return
+  end
+
+  local corpse = self.entity.surface.create_entity
+  {
+    name = "caution-corpse",
+    position = self:get_spawn_position(),
+    force = "neutral"
+  }
+  corpse.corpse_expires = false
+  self.corpse = corpse
+end
+
+function mining_depot:remove_corpse()
+
+  if self.corpse and self.corpse.valid then
+    self.corpse.destroy()
+    self.corpse = nil
+  end
+
 end
 
 function mining_depot.new(entity)
@@ -107,15 +134,7 @@ function mining_depot.new(entity)
     script_data.global_taken[depot.surface_index] = {}
   end
 
-  rendering.draw_sprite
-  {
-    sprite = "caution-sprite",
-    surface = entity.surface,
-    scale = 0.5,
-    render_layer = "decorative",
-    target = entity,
-    target_offset = offsets[entity.direction]
-  }
+  depot:add_corpse()
 
   add_to_bucket(depot)
 
@@ -190,7 +209,7 @@ local destroy = rendering.destroy
 function mining_depot:update_sticker()
 
 
-  if self.rendering then
+  if self.rendering and rendering.is_valid(self.rendering) then
     rendering.set_text(self.rendering, self:get_active_drone_count().."/"..self:get_drone_item_count())
     return
   end
@@ -653,6 +672,7 @@ end
 function mining_depot:return_drone(drone)
   self:remove_drone(drone)
   drone:remove_from_list()
+  drone:clear_inventory(true)
   drone.entity.destroy()
   self:update_sticker()
 end
@@ -689,6 +709,7 @@ function mining_depot:handle_depot_deletion()
   for unit_number, drone in pairs (self.drones) do
     drone:cancel_command()
   end
+  self:remove_corpse()
 end
 
 function mining_depot:take_drone(drone)
@@ -856,6 +877,17 @@ lib.on_load = function()
   for k, bucket in pairs (script_data.depots) do
     for unit_number, depot in pairs (bucket) do
       setmetatable(depot, depot_metatable)
+    end
+  end
+end
+
+lib.on_configuration_changed = function()
+  if not script_data.migrate_corpse then
+    script_data.migrate_corpse = true
+    for k, bucket in pairs (script_data.depots) do
+      for unit_number, depot in pairs (bucket) do
+        depot:add_corpse()
+      end
     end
   end
 end

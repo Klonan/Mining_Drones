@@ -1,9 +1,63 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.5
-Date: 2019-03-23
+Version: 0.1.10
+Date: 2019-12-17
   Changes:
-    - Buffed all units health by about 80%.
-    - Disabled base game worms/spitters acid on ground damage effect, as it was severely over-powered.
-    - Some units attack in a slightly different way, E.G rocket guys rockets will track the target, SMG guy will hit instantly.
-    - Added damage upgrade technologies.
-    - Generally balanced the units and damage. They mostly do more damage now.
+    - Fix not cleaning up proxy chests used for inventory management, leading to performance drops over time.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.9
+Date: 2019-12-16
+  Changes:
+    - Fixed that natural evolution enemies would make the drones drop alien poop.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.8
+Date: 2019-12-16
+  Changes:
+    - Switch to using a corpse for the 'caution plate' sprite.
+      This lets the return path target an entity which has some internal engine logic to make the pathing work smoother.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.7
+Date: 2019-12-16
+  Changes:
+    - Drastically reduce cost of mining depot.
+    - Rebalance cost of mining drone (More plate, but less gears and sticks), and reduce recipe time.
+    - Fixed spazziness of drone mining resource on the deploy pad.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.6
+Date: 2019-12-15
+  Changes:
+    - Fix mining drones removing ghosts on top of the mining targets. (This needs a migration, so lots of drones will stop working briefly.)
+---------------------------------------------------------------------------------------------------
+Version: 0.1.5
+Date: 2019-12-15
+  Changes:
+    - Make the dudes immune to belts. They kept getting stuck, and didn't add anything to the fun.
+    - Lowered the mining sound volume a bit.
+    - Fixed a startup crash due to some other mod.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.4
+Date: 2019-12-14
+  Changes:
+    - Try to stop drones suiciding so much.
+    - And if they do suicide, they won't make an alert...
+---------------------------------------------------------------------------------------------------
+Version: 0.1.3
+Date: 2019-12-11
+  Changes:
+    - Fixed depleting infinite resources.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.2
+Date: 2019-12-11
+  Changes:
+    - Fixed compatibility with Unit Control.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 2019-12-11
+  Changes:
+    - Fixed compatibility with PyRawOres.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2019-12-11
+  Changes:
+    - Initial release.
+    - Add mining drones and mining depot.
+    - Add mining drone speed and mining drone productivity technologies.

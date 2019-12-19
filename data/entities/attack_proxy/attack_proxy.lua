@@ -1,3 +1,31 @@
+local empty_rotated_animation = function()
+  return
+  {
+    filename = "__base__/graphics/entity/ship-wreck/small-ship-wreck-a.png",
+    width = 1,
+    height= 1,
+    direction_count = 1,
+    animation_speed = 1
+  }
+end
+
+local empty_attack_parameters = function()
+  return
+  {
+    type = "projectile",
+    ammo_category = "bullet",
+    cooldown = 1,
+    range = 0,
+    ammo_type =
+    {
+      category = util.ammo_category("mining-drone"),
+      target_type = "entity",
+      --action = {}
+    },
+    animation = empty_rotated_animation()
+  }
+end
+
 local make_proxy = function(size)
 
   local attack_proxy =
@@ -10,7 +38,7 @@ local make_proxy = function(size)
     order = "zzzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = {{-size/2, -size/2}, {size/2, size/2}},
-    collision_mask = {},
+    collision_mask = {"colliding-with-tiles-only"},
     selection_box = nil,
     pictures =
     {
@@ -33,6 +61,7 @@ end
 
 local recipes = data.raw.recipe
 local make_depot_recipe = function(item_prototype, fluid_ingredient)
+  if not item_prototype then return end
   local recipe_name = "mine-"..item_prototype.name
   if recipes[recipe_name] then return end
   local results = {}
@@ -73,13 +102,17 @@ local items = data.raw.item
 local make_recipes = function(entity)
   if is_stupid(entity) then return end
   if not entity.minable then return end
+  log(entity.name)
+
   if entity.minable.result then
-    make_depot_recipe(items[entity.minable.result], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+    local name = entity.minable.result or entity.minable.result[1]
+    make_depot_recipe(items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
   end
 
   if entity.minable.results then
     for k, result in pairs (entity.minable.results) do
-      make_depot_recipe(items[result.name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+      local name = result.name or result[1]
+      make_depot_recipe(items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
     end
   end
 end
@@ -96,23 +129,23 @@ local axe_mining_ore_trigger =
     {
       {
         filename = "__core__/sound/axe-mining-ore-1.ogg",
-        volume = 0.75
+        volume = 0.4
       },
       {
         filename = "__core__/sound/axe-mining-ore-2.ogg",
-        volume = 0.75
+        volume = 0.4
       },
       {
         filename = "__core__/sound/axe-mining-ore-3.ogg",
-        volume = 0.75
+        volume = 0.4
       },
       {
         filename = "__core__/sound/axe-mining-ore-4.ogg",
-        volume = 0.75
+        volume = 0.4
       },
       {
         filename = "__core__/sound/axe-mining-ore-5.ogg",
-        volume = 0.75
+        volume = 0.4
       }
     }
   }
@@ -126,11 +159,11 @@ local mining_wood_trigger =
     {
       {
         filename = "__core__/sound/mining-wood-1.ogg",
-        volume = 0.75
+        volume = 0.4
       },
       {
         filename = "__core__/sound/mining-wood-2.ogg",
-        volume = 0.75
+        volume = 0.4
       }
     }
   }
@@ -140,7 +173,7 @@ local make_resource_attack_proxy = function(resource)
 
   local attack_proxy =
   {
-    type = "simple-entity",
+    type = "unit",
     name = shared.attack_proxy_name..resource.name,
     icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
     icon_size = 32,
@@ -148,16 +181,15 @@ local make_resource_attack_proxy = function(resource)
     order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = resource.collision_box,
-    collision_mask = {},
+    collision_mask = {"colliding-with-tiles-only"},
     selection_box = nil,
-    pictures =
-    {
-      {
-        filename = "__base__/graphics/entity/ship-wreck/small-ship-wreck-a.png",
-        width = 1,
-        height= 1
-      },
-    }
+    run_animation =empty_rotated_animation(),
+    attack_parameters = empty_attack_parameters(),
+    movement_speed = 0,
+    distance_per_frame = 0,
+    pollution_to_join_attack = 0,
+    distraction_cooldown = 0,
+    vision_distance = 0
   }
 
   local damaged_trigger =
@@ -173,6 +205,7 @@ local make_resource_attack_proxy = function(resource)
       type = "create-particle",
       repeat_count = 3,
       particle_name = particle,
+      entity_name = particle,
       initial_height = 0,
       speed_from_center = 0.025,
       speed_from_center_deviation = 0.025,
@@ -185,6 +218,7 @@ local make_resource_attack_proxy = function(resource)
       type = "create-particle",
       repeat_count = 5,
       particle_name = particle,
+      entity_name = particle,
       initial_height = 0,
       speed_from_center = 0.045,
       speed_from_center_deviation = 0.035,
@@ -200,7 +234,7 @@ local make_resource_attack_proxy = function(resource)
 end
 
 for k, resource in pairs (data.raw.resource) do
-  if resource.minable and resource.minable.result then
+  if resource.minable and (resource.minable.result or resource.minable.results) then
     make_recipes(resource)
     make_resource_attack_proxy(resource)
   end
@@ -218,24 +252,23 @@ local make_tree_proxy = function(tree)
 
   local attack_proxy =
   {
-    type = "simple-entity",
+    type = "unit",
     name = shared.attack_proxy_name..tree.name,
     icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
     icon_size = 32,
     flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"},
-    order = "zzzzzzz",
+    order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = tree.collision_box,
-    collision_mask = {},
+    collision_mask = {"colliding-with-tiles-only"},
     selection_box = nil,
-    pictures =
-    {
-      {
-        filename = "__base__/graphics/entity/ship-wreck/small-ship-wreck-a.png",
-        width = 1,
-        height= 1
-      },
-    }
+    run_animation = empty_rotated_animation(),
+    attack_parameters = empty_attack_parameters(),
+    movement_speed = 0,
+    distance_per_frame = 0,
+    pollution_to_join_attack = 0,
+    distraction_cooldown = 0,
+    vision_distance = 0
   }
 
   local damaged_trigger =
@@ -251,6 +284,7 @@ local make_tree_proxy = function(tree)
       type = "create-particle",
       repeat_count = 3,
       particle_name = particle,
+      entity_name = particle,
       initial_height = 0,
       speed_from_center = 0.025,
       speed_from_center_deviation = 0.025,

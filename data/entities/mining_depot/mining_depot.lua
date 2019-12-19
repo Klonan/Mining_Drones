@@ -15,11 +15,12 @@ machine.allowed_effects = {"consumption", "speed", "pollution"}
 machine.module_specification =nil
 machine.minable = {result = name, mining_time = 1}
 machine.flags = {"placeable-neutral", "player-creation"}
+machine.next_upgrade = nil
 machine.fluid_boxes =
 {
   {
     production_type = "input",
-    pipe_picture = assembler1pipepictures(),
+    pipe_picture = assembler2pipepictures(),
     base_area = 10,
     base_level = -1,
     pipe_connections = {{ type="input-output", position = {0, 3} }},
@@ -167,18 +168,19 @@ local category = {
   name = name
 }
 
-local recipe = {
+local recipe =
+{
   type = "recipe",
   name = name,
   localised_name = {name},
   enabled = true,
   ingredients =
   {
-    {"iron-plate", 50},
-    {"iron-gear-wheel", 80},
-    {"iron-stick", 50},
+    {"iron-plate", 20},
+    {"iron-gear-wheel", 5},
+    {"iron-stick", 5},
   },
-  energy_required = 100,
+  energy_required = 5,
   result = name
 }
 
@@ -192,8 +194,19 @@ local caution_sprite =
   frame_count = 1,
   scale = 0.5,
   shift = shift,
+  direction_count =1,
   draw_as_shadow = false,
   flags = {"terrain"}
+}
+
+local caution_corpse =
+{
+  type = "corpse",
+  name = "caution-corpse",
+  flags = {"placeable-off-grid"},
+  animation = caution_sprite,
+  remove_on_entity_placement = false,
+  remove_on_tile_placement = false
 }
 
 data:extend
@@ -202,7 +215,8 @@ data:extend
   item,
   category,
   recipe,
-  caution_sprite
+  caution_sprite,
+  caution_corpse
 }
 
 --error(count)
