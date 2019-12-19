@@ -10,7 +10,7 @@ machine.selection_box = {{-1.5, -2.5},{1.5, 2.5}}
 machine.crafting_categories = {name}
 machine.crafting_speed = (1)
 machine.ingredient_count = nil
---machine.collision_mask = {"item-layer", "object-layer", "water-tile"}
+machine.collision_mask = {"item-layer", "object-layer", "water-tile", "player-layer", "resource-layer"}
 machine.allowed_effects = {"consumption", "speed", "pollution"}
 machine.module_specification =nil
 machine.minable = {result = name, mining_time = 1}
@@ -43,10 +43,21 @@ machine.energy_source =
 {
   type = "void",
   usage_priority = "secondary-input",
-  emissions_per_second_per_watt = 0
+  emissions_per_second_per_watt = 0.1
 }
 machine.icon = util.path("data/entities/mining_depot/depot-icon.png")
 machine.icon_size = 216
+machine.radius_visualisation_specification =
+{
+  sprite = 
+  {
+    filename = "__base__/graphics/entity/electric-mining-drill/electric-mining-drill-radius-visualization.png",
+    width = 10,
+    height = 10
+  },
+  distance = 40.5,
+  offset = {0, -43}
+}
 
 local base = function(shift)
   return

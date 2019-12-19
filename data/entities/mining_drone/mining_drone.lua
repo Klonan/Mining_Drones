@@ -50,7 +50,7 @@ for k = 1, names.variation_count do
     healing_per_tick = 0.1,
     --minable = {result = name, mining_time = 2},
     collision_box = {{-0.15, -0.15}, {0.15, 0.15}},
-    collision_mask = util.ground_unit_collision_mask(),
+    collision_mask = {"not-colliding-with-itself", "player-layer", "train-layer", "consider-tile-transitions"},
     max_pursue_distance = 64,
     resistances = nil,
     min_persue_time = 60 * 15,
@@ -129,7 +129,7 @@ for k = 1, names.variation_count do
       },
       animation = base.animations[1].mining_with_tool
     },
-    vision_distance = 80,
+    vision_distance = 100,
     has_belt_immunity = true,
     affected_by_tiles = true,
     movement_speed = 0.05 * random_height,

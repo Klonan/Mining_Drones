@@ -71,10 +71,10 @@ end
 
 local offsets =
 {
-  [defines.direction.north] = {0, -2.9},
-  [defines.direction.south] = {0, 2.9},
-  [defines.direction.east] = {2.9, 0},
-  [defines.direction.west] = {-2.9, 0},
+  [defines.direction.north] = {0, -2.75},
+  [defines.direction.south] = {0, 2.75},
+  [defines.direction.east] = {2.75, 0},
+  [defines.direction.west] = {-2.75, 0},
 }
 
 local add_to_bucket = function(depot)
@@ -864,7 +864,7 @@ lib.events =
 
   [defines.events.on_tick] = on_tick,
 
-  [defines.events.on_selected_entity_changed] = on_selected_entity_changed,
+  --[defines.events.on_selected_entity_changed] = on_selected_entity_changed,
 
 }
 

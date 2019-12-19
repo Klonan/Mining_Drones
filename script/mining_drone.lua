@@ -128,7 +128,7 @@ mining_drone.new = function(entity)
 
   setmetatable(drone, mining_drone.metatable)
 
-  drone:add_lights()
+  --drone:add_lights()
 
   add_drone(drone)
 
@@ -247,7 +247,7 @@ function mining_drone:process_mining()
 
   end
 
-  --self:update_sticker()
+  self:update_sticker()
   if target.type == "resource" then
     local resource_amount = target.amount
     if resource_amount > self.mining_count then
@@ -445,13 +445,13 @@ function mining_drone:return_to_depot()
 
   local corpse = depot.corpse
   if corpse and corpse.valid then
-    self:go_to_entity(corpse, 0.5)
+    self:go_to_entity(corpse, 0.75)
     return
   end
 
   local position = depot:get_spawn_position()
   if position then
-    self:go_to_position(position, 0.5)
+    self:go_to_position(position, 0.75)
     return
   end
 end
@@ -493,7 +493,7 @@ function mining_drone:clear_inventory(destroy)
   -- Lets not spill it, looks messy. Just clear it.
 
   self.inventory.clear()
-  --self:update_sticker()
+  self:update_sticker()
 
 
   if destroy then
@@ -564,7 +564,7 @@ function mining_drone:update_sticker()
     end
     return
   end
-  if true then return end
+  --if true then return end
   local name = stack.name
 
   if self.renderings then
