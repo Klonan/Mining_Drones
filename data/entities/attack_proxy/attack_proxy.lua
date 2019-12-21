@@ -1,3 +1,5 @@
+local make_drone = require("data/entities/mining_drone/mining_drone_entity")
+
 local empty_rotated_animation = function()
   return
   {
@@ -60,7 +62,7 @@ end
 
 
 local recipes = data.raw.recipe
-local make_depot_recipe = function(item_prototype, fluid_ingredient)
+local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
   if not item_prototype then return end
   local recipe_name = "mine-"..item_prototype.name
   if recipes[recipe_name] then return end
@@ -91,6 +93,11 @@ local make_depot_recipe = function(item_prototype, fluid_ingredient)
     allow_intermediates = true
   }
   data:extend{recipe}
+  local map_color = (entity.type == "tree" and {r = 0.19, g = 0.39, b = 0.19, a = 0.40}) or entity.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 0.5 }
+  for k = 1, shared.variation_count do
+    --log("Making drone "..r..g..b)
+    make_drone(recipe_name..shared.drone_name..k, map_color)
+  end
 end
 
 local is_stupid = function(entity)
@@ -106,13 +113,13 @@ local make_recipes = function(entity)
 
   if entity.minable.result then
     local name = entity.minable.result or entity.minable.result[1]
-    make_depot_recipe(items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+    make_depot_recipe(entity, items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
   end
 
   if entity.minable.results then
     for k, result in pairs (entity.minable.results) do
       local name = result.name or result[1]
-      make_depot_recipe(items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+      make_depot_recipe(entity, items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
     end
   end
 end

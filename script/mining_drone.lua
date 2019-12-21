@@ -1,6 +1,6 @@
 local mining_technologies = require("script/mining_technologies")
 local pollution_per_ore = 0.2
-local default_bot_name = shared.drone_name.."-1"
+local default_bot_name = shared.drone_name
 
 local script_data =
 {
@@ -419,14 +419,18 @@ function mining_drone:set_depot(depot)
   self.depot = depot
 end
 
-function mining_drone:cancel_command()
-
+function mining_drone:clear_things(unit_number)
   self:clear_mining_target()
   self:clear_estimated_count()
   self:clear_attack_proxy()
   self:clear_inventory(true)
-  self:clear_depot()
-  self:remove_from_list()
+  self:clear_depot(unit_number)
+  self:remove_from_list(unit_number)
+end
+
+function mining_drone:cancel_command()
+
+  self:clear_things()
   self.entity.force = "neutral"
   self.entity.die()
 
@@ -522,7 +526,7 @@ end
 
 function mining_drone:clear_depot(unit_number)
   if not self.depot then return end
-  self.depot.drones[self.entity.unit_number] = nil
+  self.depot.drones[unit_number or self.entity.unit_number] = nil
   self.depot:update_sticker()
   self.depot = nil
 end
@@ -633,8 +637,12 @@ local on_entity_removed = function(event)
 
 end
 
-function mining_drone:remove_from_list()
-  remove_drone(self)
+function mining_drone:remove_from_list(unit_number)
+  if unit_number then
+    script_data.drones[unit_number] = nil
+  else
+    remove_drone(self)
+  end
 end
 
 local make_unselectable = function()
@@ -648,11 +656,15 @@ end
 local validate_proxy_orders = function()
   --local count = 0
   for unit_number, drone in pairs (script_data.drones) do
-    if drone.state == states.mining_entity then
-      if not drone.attack_proxy.valid then
-        drone:return_to_depot()
-        ---count = count + 1
+    if drone.entity.valid then
+      if drone.state == states.mining_entity then
+        if not drone.attack_proxy.valid then
+          drone:return_to_depot()
+          ---count = count + 1
+        end
       end
+    else
+      drone:clear_things(unit_number)
     end
   end
   --game.print(count)
@@ -660,13 +672,13 @@ end
 
 local fix_chests = function()
   local used_chests = {}
-  
+
   for unit_number, drone in pairs (script_data.drones) do
     if drone.inventory and drone.inventory.valid then
       used_chests[drone.inventory.entity_owner.unit_number] = true
     end
   end
-  
+
   local count = 0
   for k, chest in pairs (game.surfaces[1].find_entities_filtered{name = shared.proxy_chest_name}) do
     if not used_chests[chest.unit_number] then

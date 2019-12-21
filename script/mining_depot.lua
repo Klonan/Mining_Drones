@@ -9,7 +9,7 @@ local depot_metatable = {__index = mining_depot}
 local depot_range = 40
 local max_spawn_per_update = 5
 local variation_count = shared.variation_count
-local default_bot_name = names.drone_name.."-1"
+local default_bot_name = names.drone_name
 
 local script_data =
 {
@@ -175,9 +175,12 @@ end
 function mining_depot:spawn_drone()
   local entity = self.entity
 
+
+  local name = self.entity.get_recipe().name..names.drone_name..random(variation_count)
+
   local spawn_entity_data =
   {
-    name = names.drone_name.."-"..random(variation_count),
+    name = name,
     position = self:get_spawn_position(),
     force = entity.force,
     create_build_effect_smoke = false
