@@ -28,6 +28,8 @@ local empty_attack_parameters = function()
   }
 end
 
+local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics"}
+
 local make_proxy = function(size)
 
   local attack_proxy =
@@ -36,7 +38,7 @@ local make_proxy = function(size)
     name = shared.attack_proxy_name..size,
     icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
     icon_size = 32,
-    flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"},
+    flags = proxy_flags,
     order = "zzzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = {{-size/2, -size/2}, {size/2, size/2}},
@@ -184,7 +186,7 @@ local make_resource_attack_proxy = function(resource)
     name = shared.attack_proxy_name..resource.name,
     icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
     icon_size = 32,
-    flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"},
+    flags = proxy_flags,
     order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = resource.collision_box,
@@ -263,7 +265,7 @@ local make_tree_proxy = function(tree)
     name = shared.attack_proxy_name..tree.name,
     icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
     icon_size = 32,
-    flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"},
+    flags = proxy_flags,
     order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = tree.collision_box,

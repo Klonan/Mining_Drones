@@ -47,7 +47,7 @@ local make_drone = function(name, tint)
     icon = base.icon,
     icon_size = base.icon_size,
     icons = base.icons,
-    flags = {"placeable-off-grid", "hidden"},
+    flags = {"placeable-off-grid", "hidden", "not-in-kill-statistics"},
     map_color = {r ^ 0.5, g ^ 0.5, b ^ 0.5, 0.5},
     enemy_map_color = {r = 1},
     max_health = 150,
