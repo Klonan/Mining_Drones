@@ -534,18 +534,11 @@ end
 function mining_drone:handle_drone_deletion()
   if not self.entity.valid then error("Hi, i am not handled.") end
 
-  --self:say("Am dead lol")
-  self:remove_from_list()
-
   if self.depot then
     self.depot:remove_drone(self, true)
   end
 
-  self:clear_estimated_count()
-  self:clear_attack_proxy()
-  self:clear_mining_target()
-  self:clear_inventory(true)
-  self:clear_depot()
+  self:clear_things()
 
 end
 
@@ -632,6 +625,12 @@ local on_entity_removed = function(event)
 
   local drone = script_data.drones[unit_number]
   if not drone then return end
+
+  if event.force and event.force.valid then
+    event.force.kill_count_statistics.on_flow(default_bot_name, 1)
+  end
+
+  entity.force.kill_count_statistics.on_flow(default_bot_name, -1)
 
   drone:handle_drone_deletion()
 

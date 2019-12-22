@@ -25,7 +25,7 @@ local make_drone = function(name, tint)
 
 
   local r, g, b = tint.r or tint[1], tint.g or tint[2], tint.b or tint[3]
-  local mask_tint = {r, g, b, 0.5}
+  local mask_tint = {r ^ 2, g ^ 2, b ^ 2, shuffle(0.5, 0.5)}
 
   util.recursive_hack_scale(base, random_height)
 
