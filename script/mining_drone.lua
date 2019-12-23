@@ -179,6 +179,7 @@ local get_products = function(entity)
 
 end
 
+local max = math.max
 local random = math.random
 function mining_drone:process_mining()
 
@@ -250,11 +251,11 @@ function mining_drone:process_mining()
   self:update_sticker()
   if target.type == "resource" then
     local resource_amount = target.amount
-    if resource_amount > self.mining_count then
-      target.amount = resource_amount - self.mining_count
-    elseif target.initial_amount then
+    if target.initial_amount then
       --It is infinite
-      target.amount = target.prototype.minimum_resource_amount
+      target.amount = max(resource_amount - self.mining_count, target.prototype.minimum_resource_amount)
+    elseif resource_amount > self.mining_count then
+        target.amount = resource_amount - self.mining_count
     else
       self:clear_mining_target()
       target.destroy()
