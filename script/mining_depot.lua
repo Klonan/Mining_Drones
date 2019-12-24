@@ -448,10 +448,11 @@ function mining_depot:sort_by_distance(entities)
   for k, entity in pairs (entities) do
     local index = distance(entity.position)
     local group = distances[index]
-    if not group then group = {}
+    if not group then group = {[k] = entity}
       distances[index] = group
+    else
+      group[k] = entity
     end
-    group[k] = entity
   end
 
 
