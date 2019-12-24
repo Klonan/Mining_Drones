@@ -443,25 +443,15 @@ function mining_depot:sort_by_distance(entities)
 
   local sorted = {}
 
-  local distances = {}
-
   for k, entity in pairs (entities) do
-    local index = distance(entity.position)
-    local group = distances[index]
-    if not group then group = {[k] = entity}
-      distances[index] = group
-    else
-      group[k] = entity
-    end
+    sorted[k] = {entity = entity, distance = distance(entity.position)}
   end
 
+  table.sort(sorted, function (k1, k2) return k1.distance < k2.distance end )
 
-  local count = 1
-  for distance, group in pairs (distances) do
-    for k, entity in pairs (group) do
-      sorted[count] = entity
-      count = count + 1
-    end
+  for k = 1, #sorted do
+    local entity = sorted[k].entity
+    sorted[k] = entity
   end
 
 
@@ -506,6 +496,7 @@ function mining_depot:find_entity_to_mine()
   local taken = script_data.global_taken[self.surface_index]
 
   for k, entity in pairs (entities) do
+    --game.print(k)
     if entity.valid then
       local index = unique_index(entity)
       --entity.surface.create_entity{name = "flying-text", text = k, position = entity.position}
