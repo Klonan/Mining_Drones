@@ -433,34 +433,37 @@ end
 local insert = table.insert
 function mining_depot:sort_by_distance(entities)
   local profiler = game.create_profiler()
+  local step_profiler = game.create_profiler()
 
   local origin = self.entity.position
   local x, y = origin.x, origin.y
 
   local distance = function(position)
-    return ((x - position.x) ^ 2 + (y - position.y) ^ 2) --^ 0.5
+    return ((x - position.x) ^ 2 + (y - position.y) ^ 2)
   end
-
-  local sorted = {}
 
   for k, entity in pairs (entities) do
-    sorted[k] = {entity = entity, distance = distance(entity.position)}
+    entities[k] = {entity = entity, distance = distance(entity.position)}
   end
 
-  table.sort(sorted, function (k1, k2) return k1.distance < k2.distance end )
+  game.print{"", "Put into sorted list ", step_profiler}
+  step_profiler.reset()
 
-  for k = 1, #sorted do
-    local entity = sorted[k].entity
-    sorted[k] = entity
+  table.sort(entities, function (k1, k2) return k1.distance < k2.distance end )
+
+  game.print{"", "Sorted by Lua ", step_profiler}
+  step_profiler.reset()
+
+  for k = 1, #entities do
+    entities[k] = entities[k].entity
   end
 
+  game.print{"", "UnWinded ", step_profiler}
+  step_profiler.reset()
 
+  game.print{"", "sorted Total elapsed ", #entities, " ", profiler}
 
-  --distance_cache = nil
-
-  game.print{"", "sorted ", #sorted, " ", profiler}
-
-  return sorted
+  return entities
 
 end
 
