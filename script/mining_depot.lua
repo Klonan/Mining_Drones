@@ -430,42 +430,44 @@ function mining_depot:get_area()
   return get_depot_area(self.entity)
 end
 
+local insert = table.insert
 function mining_depot:sort_by_distance(entities)
-  --local profiler = game.create_profiler()
+  local profiler = game.create_profiler()
 
   local origin = self.entity.position
   local x, y = origin.x, origin.y
 
   local distance = function(position)
-    return ((x - position.x) ^ 2 + (y - position.y) ^ 2) ^ 0.5
+    return ((x - position.x) ^ 2 + (y - position.y) ^ 2) --^ 0.5
   end
 
   local sorted = {}
 
-  local distance_cache = {}
+  local distances = {}
 
   for k, entity in pairs (entities) do
-
-    local length = distance(entity.position)
-    distance_cache[entity] = length
-    local added = false
-    for index, other_entity in pairs (sorted) do
-      if length <= distance_cache[other_entity] then
-        insert(sorted, index, entity)
-        added = true
-        break
-      end
+    local index = distance(entity.position)
+    local group = distances[index]
+    if not group then group = {}
+      distances[index] = group
     end
-
-    if not added then
-      insert(sorted, entity)
-    end
-
+    group[k] = entity
   end
 
-  distance_cache = nil
 
-  --game.print{"", "sorted ", #sorted, " ", profiler}
+  local count = 1
+  for distance, group in pairs (distances) do
+    for k, entity in pairs (group) do
+      sorted[count] = entity
+      count = count + 1
+    end
+  end
+
+
+
+  --distance_cache = nil
+
+  game.print{"", "sorted ", #sorted, " ", profiler}
 
   return sorted
 
@@ -477,14 +479,12 @@ function mining_depot:find_potential_items()
   local item = self.item
   if not item then self.potential = {} return end
 
-  local unsorted = {}
+  --local unsorted = {}
 
   local area = self:get_area()
   local find_entities_filtered = self.entity.surface.find_entities_filtered
 
-  for k, entity in pairs(find_entities_filtered{area = area, name = get_entities_for_products(item)}) do
-    insert(unsorted, entity)
-  end
+  local unsorted = find_entities_filtered{area = area, name = get_entities_for_products(item)}
 
   for k, entity in pairs(find_entities_filtered{area = area, type = "item-entity"}) do
     if entity.stack.name == item then
