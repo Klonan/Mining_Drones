@@ -427,61 +427,39 @@ function mining_depot:get_area()
   return get_depot_area(self.entity)
 end
 
+local insert = table.insert
 function mining_depot:sort_by_distance(entities)
-  --local profiler = game.create_profiler()
 
   local origin = self.entity.position
   local x, y = origin.x, origin.y
 
   local distance = function(position)
-    return ((x - position.x) ^ 2 + (y - position.y) ^ 2) ^ 0.5
+    return ((x - position.x) ^ 2 + (y - position.y) ^ 2)
   end
-
-  local sorted = {}
-
-  local distance_cache = {}
 
   for k, entity in pairs (entities) do
-
-    local length = distance(entity.position)
-    distance_cache[entity] = length
-    local added = false
-    for index, other_entity in pairs (sorted) do
-      if length <= distance_cache[other_entity] then
-        insert(sorted, index, entity)
-        added = true
-        break
-      end
-    end
-
-    if not added then
-      insert(sorted, entity)
-    end
-
+    entities[k] = {entity = entity, distance = distance(entity.position)}
   end
 
-  distance_cache = nil
+  table.sort(entities, function (k1, k2) return k1.distance < k2.distance end )
 
-  --game.print{"", "sorted ", #sorted, " ", profiler}
+  for k = 1, #entities do
+    entities[k] = entities[k].entity
+  end
 
-  return sorted
+  return entities
 
 end
 
 function mining_depot:find_potential_items()
 
-
   local item = self.item
   if not item then self.potential = {} return end
-
-  local unsorted = {}
 
   local area = self:get_area()
   local find_entities_filtered = self.entity.surface.find_entities_filtered
 
-  for k, entity in pairs(find_entities_filtered{area = area, name = get_entities_for_products(item)}) do
-    insert(unsorted, entity)
-  end
+  local unsorted = find_entities_filtered{area = area, name = get_entities_for_products(item)}
 
   for k, entity in pairs(find_entities_filtered{area = area, type = "item-entity"}) do
     if entity.stack.name == item then
