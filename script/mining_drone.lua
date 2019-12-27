@@ -125,7 +125,7 @@ mining_drone.new = function(entity)
     force_index = entity.force.index,
     inventory = proxy_inventory()
   }
-
+  entity.ai_settings.path_resolution_modifier = 1
   setmetatable(drone, mining_drone.metatable)
 
   drone:add_lights()
@@ -396,6 +396,7 @@ function mining_drone:mine_entity(entity, count)
       type = defines.command.go_to_location,
       destination_entity = attack_proxy,
       distraction = defines.distraction.none,
+      --radius = entity.get_radius() + self.entity.get_radius(),
       pathfind_flags = {prefer_straight_paths = false, use_cache = false}
     },
     {
@@ -443,13 +444,13 @@ function mining_drone:return_to_depot()
 
   local corpse = depot.corpse
   if corpse and corpse.valid then
-    self:go_to_entity(corpse, 0.5)
+    self:go_to_entity(corpse, 0.75)
     return
   end
 
   local position = depot:get_spawn_position()
   if position then
-    self:go_to_position(position, 0.5)
+    self:go_to_position(position, 0.75)
     return
   end
 end

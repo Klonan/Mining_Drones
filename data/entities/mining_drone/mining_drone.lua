@@ -49,7 +49,7 @@ for k = 1, names.variation_count do
     --subgroup = "iron-units",
     healing_per_tick = 0.1,
     --minable = {result = name, mining_time = 2},
-    collision_box = {{-0.15, -0.15}, {0.15, 0.15}},
+    collision_box = {{-0.18, -0.18}, {0.18, 0.18}},
     collision_mask = util.ground_unit_collision_mask(),
     max_pursue_distance = 64,
     resistances = nil,
