@@ -307,7 +307,6 @@ function mining_drone:process_return_to_depot()
   end
 
   self:clear_inventory()
-  self:clear_estimated_count()
   self:request_order()
 
 end
@@ -422,7 +421,6 @@ end
 function mining_drone:cancel_command()
 
   self:clear_mining_target()
-  self:clear_estimated_count()
   self:clear_attack_proxy()
   self:clear_inventory(true)
   self:clear_depot()
@@ -503,14 +501,6 @@ function mining_drone:clear_inventory(destroy)
 
 end
 
-function mining_drone:clear_estimated_count()
-  --self:say(self.estimated_count or "no-count")
-  if self.estimated_count and self.depot then
-    self.depot.estimated_count = self.depot.estimated_count - self.estimated_count
-  end
-  self.estimated_count = nil
-end
-
 function mining_drone:clear_mining_target()
   if self.mining_target and self.mining_target.valid then
     if self.depot then
@@ -537,7 +527,6 @@ function mining_drone:handle_drone_deletion()
     self.depot:remove_drone(self, true)
   end
 
-  self:clear_estimated_count()
   self:clear_attack_proxy()
   self:clear_mining_target()
   self:clear_inventory(true)
@@ -660,13 +649,13 @@ end
 
 local fix_chests = function()
   local used_chests = {}
-  
+
   for unit_number, drone in pairs (script_data.drones) do
     if drone.inventory and drone.inventory.valid then
       used_chests[drone.inventory.entity_owner.unit_number] = true
     end
   end
-  
+
   local count = 0
   for k, chest in pairs (game.surfaces[1].find_entities_filtered{name = shared.proxy_chest_name}) do
     if not used_chests[chest.unit_number] then
