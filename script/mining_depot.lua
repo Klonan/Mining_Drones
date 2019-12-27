@@ -53,7 +53,7 @@ function mining_depot:get_product_amount(entity, randomize_ore, ignore_productiv
     amount = amount + bonus
 
     if randomize_ore then
-      amount = math.ceil((random() + 0.5) * amount)
+      amount = math.ceil(random((random() + 0.5) * amount))
     end
 
     amount = min(amount, entity.amount)
@@ -121,7 +121,6 @@ function mining_depot.new(entity)
     entity = entity,
     drones = {},
     potential = {},
-    estimated_count = 0,
     path_requests = {},
     surface_index = entity.surface.index,
     force_index = entity.force.index,
@@ -332,35 +331,48 @@ function mining_depot:update()
     return
   end
 
-  if self:is_full() then
-    return
-  end
-
   if not self:has_enough_fluid() then
     return
   end
 
-  local count = self:get_drone_item_count() - self:get_active_drone_count()
+  self:spawn_drones()
 
-  if count > 0 then
-    local output_space = self:get_output_space()
-    for k = 1, (min(count, max_spawn_per_update)) do
+end
 
-      if output_space - self.estimated_count <= 0 then break end
+local stack_count = 60
+local ceil = math.ceil
+local floor = math.floor
+local spawn_damping_ratio = 0.2
 
-      local entity = self:find_entity_to_mine()
-      if not entity then return end
+function mining_depot:get_should_spawn_drone_count(extra)
 
-      self:attempt_to_mine(entity)
+  local max_drones = self:get_drone_item_count()
+  local active = self:get_active_drone_count() - (extra and 1 or 0)
+  if active >= max_drones then return 0 end
 
-    end
-  elseif count < 0 then
-    for k = count, 0, 1 do
-      local index, drone = next(self.drones)
-      if drone then
-        drone:cancel_command()
-      end
-    end
+  local should_be_spawned = math.min(max_drones, ceil(max_drones * (1 - self:get_full_ratio())))
+
+  local should_spawn_count = should_be_spawned - active
+  return ceil(should_spawn_count * spawn_damping_ratio)
+end
+
+function mining_depot:spawn_drones()
+
+  local max_drones = self:get_drone_item_count()
+  local active = self:get_active_drone_count()
+
+  if active >= max_drones then
+    return
+  end
+
+  local should_spawn_count = self:get_should_spawn_drone_count()
+
+  if should_spawn_count <= 0 then return end
+
+  for k = 1, should_spawn_count do
+    local entity = self:find_entity_to_mine()
+    if not entity then return end
+    self:attempt_to_mine(entity)
   end
 
 end
@@ -432,8 +444,6 @@ end
 
 local insert = table.insert
 function mining_depot:sort_by_distance(entities)
-  local profiler = game.create_profiler()
-  local step_profiler = game.create_profiler()
 
   local origin = self.entity.position
   local x, y = origin.x, origin.y
@@ -446,22 +456,11 @@ function mining_depot:sort_by_distance(entities)
     entities[k] = {entity = entity, distance = distance(entity.position)}
   end
 
-  game.print{"", "Put into sorted list ", step_profiler}
-  step_profiler.reset()
-
   table.sort(entities, function (k1, k2) return k1.distance < k2.distance end )
-
-  game.print{"", "Sorted by Lua ", step_profiler}
-  step_profiler.reset()
 
   for k = 1, #entities do
     entities[k] = entities[k].entity
   end
-
-  game.print{"", "UnWinded ", step_profiler}
-  step_profiler.reset()
-
-  game.print{"", "sorted Total elapsed ", #entities, " ", profiler}
 
   return entities
 
@@ -469,11 +468,8 @@ end
 
 function mining_depot:find_potential_items()
 
-
   local item = self.item
   if not item then self.potential = {} return end
-
-  --local unsorted = {}
 
   local area = self:get_area()
   local find_entities_filtered = self.entity.surface.find_entities_filtered
@@ -521,11 +517,6 @@ function mining_depot:remove_drone(drone, remove_item)
     self:get_drone_inventory().remove{name = names.drone_name, count = 1}
   end
 
-  if drone.estimated_count then
-    self.estimated_count = self.estimated_count - drone.estimated_count
-    drone.estimated_count = nil
-  end
-
   local mining_target = drone.mining_target
   if mining_target and mining_target.valid then
     self:add_mining_target(mining_target)
@@ -569,10 +560,6 @@ function mining_depot:order_drone(drone, entity)
     self:take_fluid(needed_fluid)
   end
 
-  self.estimated_count = self.estimated_count + product_amount
-  drone.estimated_count = product_amount
-
-
   drone.entity.speed = self:get_drone_speed()
   drone:mine_entity(entity, mining_count)
 
@@ -597,7 +584,9 @@ function mining_depot:handle_order_request(drone)
     return
   end
 
-  if self:is_full() or self:get_active_drone_count() > self:get_drone_item_count() or not self:has_enough_fluid() then
+  local should_spawn_count = (self:get_should_spawn_drone_count(true))
+
+  if should_spawn_count <= 0 or not self:has_enough_fluid() then
     self:return_drone(drone)
     return
   end
@@ -628,8 +617,12 @@ function mining_depot:get_output_space()
   return (prototype.stack_size * (#inventory - 3)) - inventory.get_item_count(item)
 end
 
-function mining_depot:is_full()
-  return (self:get_output_space() - self.estimated_count) <= 0
+function mining_depot:get_full_ratio()
+  local inventory = self:get_output_inventory()
+  local item = self.item
+  if not item then return 1 end
+  local prototype = game.item_prototypes[item]
+  return inventory.get_item_count(item) / (prototype.stack_size * (#inventory))
 end
 
 function mining_depot:handle_path_request_finished(event)
@@ -638,7 +631,6 @@ function mining_depot:handle_path_request_finished(event)
   self.path_requests[event.id] = nil
 
   local product_amount = self:get_product_amount(entity)
-  self.estimated_count = self.estimated_count - product_amount
 
   if not event.path then
     --we can't reach it, don't spawn any miners.
@@ -784,8 +776,6 @@ function mining_depot:attempt_to_mine(entity)
   self.path_requests[path_request_id] = entity
 
   local product_amount = self:get_product_amount(entity)
-
-  self.estimated_count = self.estimated_count + product_amount
 
 end
 

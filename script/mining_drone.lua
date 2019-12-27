@@ -308,7 +308,6 @@ function mining_drone:process_return_to_depot()
   end
 
   self:clear_inventory()
-  self:clear_estimated_count()
   self:request_order()
 
 end
@@ -422,7 +421,6 @@ end
 
 function mining_drone:clear_things(unit_number)
   self:clear_mining_target()
-  self:clear_estimated_count()
   self:clear_attack_proxy()
   self:clear_inventory(true)
   self:clear_depot(unit_number)
@@ -506,14 +504,6 @@ function mining_drone:clear_inventory(destroy)
     self.inventory = nil
   end
 
-end
-
-function mining_drone:clear_estimated_count()
-  --self:say(self.estimated_count or "no-count")
-  if self.estimated_count and self.depot then
-    self.depot.estimated_count = self.depot.estimated_count - self.estimated_count
-  end
-  self.estimated_count = nil
 end
 
 function mining_drone:clear_mining_target()
