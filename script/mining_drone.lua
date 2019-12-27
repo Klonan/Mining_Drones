@@ -321,9 +321,8 @@ function mining_drone:process_failed_command()
   --self:oof()
   self.fail_count = (self.fail_count or 0) + 1
 
-  if self.fail_count == 1 then self.entity.ai_settings.path_resolution_modifier = -1 end
-  if self.fail_count == 3 then self.entity.ai_settings.path_resolution_modifier = 1 end
-  if self.fail_count == 4 then self.entity.ai_settings.path_resolution_modifier = 2 end
+  if self.fail_count == 2 then self.entity.ai_settings.path_resolution_modifier = 2 end
+  if self.fail_count == 4 then self.entity.ai_settings.path_resolution_modifier = 3 end
 
   if self.state == states.mining_entity then
 

@@ -53,7 +53,7 @@ function mining_depot:get_product_amount(entity, randomize_ore, ignore_productiv
     amount = amount + bonus
 
     if randomize_ore then
-      amount = math.ceil(random((random() + 0.5) * amount))
+      amount = math.ceil((random() + 0.5) * amount)
     end
 
     amount = min(amount, entity.amount)
@@ -770,8 +770,6 @@ function mining_depot:attempt_to_mine(entity)
 
   script_data.path_requests[path_request_id] = self
   self.path_requests[path_request_id] = entity
-
-  local product_amount = self:get_product_amount(entity)
 
 end
 
