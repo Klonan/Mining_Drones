@@ -56,7 +56,7 @@ local make_drone = function(name, tint)
     --subgroup = "iron-units",
     healing_per_tick = 0.1,
     --minable = {result = name, mining_time = 2},
-    collision_box = {{-0.15, -0.15}, {0.15, 0.15}},
+    collision_box = {{-0.18, -0.18}, {0.18, 0.18}},
     collision_mask = {"not-colliding-with-itself", "player-layer", "train-layer", "consider-tile-transitions"},
     max_pursue_distance = 64,
     resistances = nil,
