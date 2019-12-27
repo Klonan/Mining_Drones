@@ -53,7 +53,7 @@ function mining_depot:get_product_amount(entity, randomize_ore, ignore_productiv
     amount = amount + bonus
 
     if randomize_ore then
-      amount = math.ceil(random((random() + 0.5) * amount))
+      amount = math.ceil((random() + 0.5) * amount)
     end
 
     amount = min(amount, entity.amount)
@@ -339,7 +339,7 @@ function mining_depot:update()
 
 end
 
-local stack_count = 60
+local stack_count = 60 - 3
 local ceil = math.ceil
 local floor = math.floor
 local spawn_damping_ratio = 0.2
@@ -622,7 +622,7 @@ function mining_depot:get_full_ratio()
   local item = self.item
   if not item then return 1 end
   local prototype = game.item_prototypes[item]
-  return inventory.get_item_count(item) / (prototype.stack_size * (#inventory))
+  return inventory.get_item_count(item) / (prototype.stack_size * (#inventory - 3))
 end
 
 function mining_depot:handle_path_request_finished(event)
@@ -774,8 +774,6 @@ function mining_depot:attempt_to_mine(entity)
 
   script_data.path_requests[path_request_id] = self
   self.path_requests[path_request_id] = entity
-
-  local product_amount = self:get_product_amount(entity)
 
 end
 

@@ -125,7 +125,7 @@ mining_drone.new = function(entity)
     force_index = entity.force.index,
     inventory = proxy_inventory()
   }
-
+  entity.ai_settings.path_resolution_modifier = 1
   setmetatable(drone, mining_drone.metatable)
 
   --drone:add_lights()
@@ -322,9 +322,8 @@ function mining_drone:process_failed_command()
   --self:oof()
   self.fail_count = (self.fail_count or 0) + 1
 
-  if self.fail_count == 1 then self.entity.ai_settings.path_resolution_modifier = -1 end
-  if self.fail_count == 3 then self.entity.ai_settings.path_resolution_modifier = 1 end
-  if self.fail_count == 4 then self.entity.ai_settings.path_resolution_modifier = 2 end
+  if self.fail_count == 2 then self.entity.ai_settings.path_resolution_modifier = 2 end
+  if self.fail_count == 4 then self.entity.ai_settings.path_resolution_modifier = 3 end
 
   if self.state == states.mining_entity then
 
@@ -397,6 +396,7 @@ function mining_drone:mine_entity(entity, count)
       type = defines.command.go_to_location,
       destination_entity = attack_proxy,
       distraction = defines.distraction.none,
+      --radius = entity.get_radius() + self.entity.get_radius(),
       pathfind_flags = {prefer_straight_paths = false, use_cache = false}
     },
     {
