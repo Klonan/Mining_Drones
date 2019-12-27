@@ -336,7 +336,7 @@ function mining_depot:update()
 
 end
 
-local stack_count = 60
+local stack_count = 60 - 3
 local ceil = math.ceil
 local floor = math.floor
 local spawn_damping_ratio = 0.2
@@ -618,7 +618,7 @@ function mining_depot:get_full_ratio()
   local item = self.item
   if not item then return 1 end
   local prototype = game.item_prototypes[item]
-  return inventory.get_item_count(item) / (prototype.stack_size * (#inventory))
+  return inventory.get_item_count(item) / (prototype.stack_size * (#inventory - 3))
 end
 
 function mining_depot:handle_path_request_finished(event)

@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.12
+Date: 2019-12-27
+  Changes:
+    - Changed the logic around when to spawn drones, so now its proportional to how full the depot is. Basically, if it is half full, it will send at most half of its drones.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.11
 Date: 2019-12-25
   Changes:
