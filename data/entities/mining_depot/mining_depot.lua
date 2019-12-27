@@ -5,7 +5,7 @@ machine.localised_name = {name}
 local scale = 2
 util.recursive_hack_make_hr(machine)
 util.recursive_hack_scale(machine, scale)
-machine.collision_box = {{-1.25, -2.25},{1.25, 2.25}}
+machine.collision_box = {{-1.25, -2.5},{1.25, 2.25}}
 machine.selection_box = {{-1.5, -2.5},{1.5, 2.5}}
 machine.crafting_categories = {name}
 machine.crafting_speed = (1)
