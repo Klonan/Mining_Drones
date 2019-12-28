@@ -182,7 +182,8 @@ function mining_depot:spawn_drone()
     name = name,
     position = self:get_spawn_position(),
     force = entity.force,
-    create_build_effect_smoke = false
+    create_build_effect_smoke = false,
+    raise_built = true
   }
   local surface = entity.surface
   if not surface.can_place_entity(spawn_entity_data) then return end
@@ -669,7 +670,7 @@ function mining_depot:return_drone(drone)
   self:remove_drone(drone)
   drone:remove_from_list()
   drone:clear_inventory(true)
-  drone.entity.destroy()
+  drone.entity.destroy({raise_destroy = true})
   self:update_sticker()
 end
 
