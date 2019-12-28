@@ -17,7 +17,8 @@ local script_data =
   path_requests = {},
   global_taken = {},
   depot_highlights = {},
-  migrate_corpse = true
+  migrate_corpse = true,
+  migrate_recent = true
 }
 
 local main_products = {}
@@ -121,6 +122,7 @@ function mining_depot.new(entity)
     entity = entity,
     drones = {},
     potential = {},
+    recent = {},
     path_requests = {},
     surface_index = entity.surface.index,
     force_index = entity.force.index,
@@ -209,7 +211,7 @@ function mining_depot:update_sticker()
 
 
   if self.rendering and rendering.is_valid(self.rendering) then
-    rendering.set_text(self.rendering, self:get_active_drone_count().."/"..self:get_drone_item_count())
+    rendering.set_text(self.rendering, self:get_active_drone_count().."/"..self:get_drone_item_count().." - "..#self.potential.." - "..table_size(self.recent))
     return
   end
 
@@ -453,7 +455,7 @@ function mining_depot:sort_by_distance(entities)
     entities[k] = {entity = entity, distance = distance(entity.position)}
   end
 
-  table.sort(entities, function (k1, k2) return k1.distance < k2.distance end )
+  table.sort(entities, function (k1, k2) return k1.distance > k2.distance end )
 
   for k = 1, #entities do
     entities[k] = entities[k].entity
@@ -466,7 +468,11 @@ end
 function mining_depot:find_potential_items()
 
   local item = self.item
-  if not item then self.potential = {} return end
+  if not item then
+    self.potential = {}
+    self.recent = {}
+    return
+  end
 
   local area = self:get_area()
   local find_entities_filtered = self.entity.surface.find_entities_filtered
@@ -480,29 +486,60 @@ function mining_depot:find_potential_items()
   end
 
   self.potential = self:sort_by_distance(unsorted)
+  self.recent = {}
 
 end
 
 local insert = table.insert
 function mining_depot:find_entity_to_mine()
 
-  local entities = self.potential
-  if not next(entities) then return end
-
   local taken = script_data.global_taken[self.surface_index]
 
-  for k, entity in pairs (entities) do
+  local recent = self.recent
+
+  for k, entity in pairs (recent) do
+    recent[k] = nil
     if entity.valid then
+
       local index = unique_index(entity)
-      --entity.surface.create_entity{name = "flying-text", text = k, position = entity.position}
+
       if taken[index] then
-        insert(taken[index], {depot = self, entity = entity, index = k})
+        insert(taken[index], {depot = self, entity = entity})
       else
-        taken[index] = {{depot = self, entity = entity, index = k}}
+        taken[index] = {{depot = self, entity = entity}}
         return entity
       end
+
     end
-    entities[k] = nil
+  end
+
+  local entities = self.potential
+  if not entities[1] then return end
+
+  local size = #entities
+  while true do
+
+    local entity = entities[size]
+    entities[size] = nil
+
+    if not entity then break end
+
+    size = size - 1
+
+
+    if entity.valid then
+
+      local index = unique_index(entity)
+
+      if taken[index] then
+        insert(taken[index], {depot = self, entity = entity})
+      else
+        taken[index] = {{depot = self, entity = entity}}
+        return entity
+      end
+
+    end
+
   end
 
 end
@@ -668,13 +705,15 @@ function mining_depot:add_mining_target(entity, ignore_self)
   local taken = script_data.global_taken[self.surface_index]
   local index = unique_index(entity)
   local listening_depots = taken[index]
-
-  for k, unlock_depot in pairs(listening_depots) do
-    local depot = unlock_depot.depot
-    if not ignore_self or depot ~= self then
-      local entity = unlock_depot.entity
-      if entity.valid and depot.entity.valid then
-        depot.potential[unlock_depot.index] = entity
+  if listening_depots then
+    for k, unlock_depot in pairs(listening_depots) do
+      local depot = unlock_depot.depot
+      if not ignore_self or depot ~= self then
+        local entity = unlock_depot.entity
+        if entity.valid and depot.entity.valid then
+          insert(depot.recent, entity)
+          --depot.potential[unlock_depot.index] = entity
+        end
       end
     end
   end
@@ -864,6 +903,7 @@ lib.on_load = function()
 end
 
 lib.on_configuration_changed = function()
+
   if not script_data.migrate_corpse then
     script_data.migrate_corpse = true
     for k, bucket in pairs (script_data.depots) do
@@ -872,6 +912,18 @@ lib.on_configuration_changed = function()
       end
     end
   end
+
+  if not script_data.migrate_recent then
+    local profiler = game.create_profiler()
+    script_data.migrate_recent = true
+    for k, bucket in pairs (script_data.depots) do
+      for unit_number, depot in pairs (bucket) do
+        depot:find_potential_items()
+      end
+    end
+    game.print{"", "Resorted and optimized depot searching list: ", profiler}
+  end
+
 end
 
 return lib
