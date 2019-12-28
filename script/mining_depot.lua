@@ -663,14 +663,14 @@ function mining_depot:handle_path_request_finished(event)
   if not (entity and entity.valid) then return end
   self.path_requests[event.id] = nil
 
-  local product_amount = self:get_product_amount(entity)
 
-  if not event.path then
+  if not (event.path and self.entity.valid) then
     --we can't reach it, don't spawn any miners.
     self:add_mining_target(entity, true)
     return
   end
 
+  local product_amount = self:get_product_amount(entity)
   if self.fluid then
     local box = self:get_input_fluidbox()
     if not box then
