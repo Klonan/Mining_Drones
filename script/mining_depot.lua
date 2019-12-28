@@ -18,8 +18,15 @@ local script_data =
   global_taken = {},
   depot_highlights = {},
   migrate_corpse = true,
-  migrate_recent = true
+  migrate_recent = true,
+  migrate_unit_numbers = true
 }
+
+local entity_index = function(entity)
+  local number = entity.unit_number
+  if not number then return end
+  return -number
+end
 
 local main_products = {}
 local get_main_product = function(entity)
@@ -79,7 +86,7 @@ local offsets =
 }
 
 local add_to_bucket = function(depot)
-  local unit_number = depot.entity.unit_number
+  local unit_number = entity_index(depot.entity)
   local depots = script_data.depots
   local bucket = depots[unit_number % depot_update_rate]
   if not bucket then
@@ -196,7 +203,7 @@ function mining_depot:spawn_drone()
 
 
   local drone = mining_drone.new(unit)
-  self.drones[unit.unit_number] = drone
+  self.drones[entity_index(unit)] = drone
 
   drone:set_depot(self)
 
@@ -398,7 +405,7 @@ function mining_depot:is_spawn_blocked()
 end
 
 local unique_index = function(entity)
-  local unit_number = entity.unit_number
+  local unit_number = entity_index(entity)
   if unit_number then return unit_number end
   local position = entity.position
   return (position.x * 10000000) + position.y
@@ -556,7 +563,7 @@ function mining_depot:remove_drone(drone, remove_item)
   end
   drone.mining_target = nil
 
-  self.drones[drone.entity.unit_number] = nil
+  self.drones[entity_index(drone.entity)] = nil
   self:update_sticker()
 end
 
@@ -611,7 +618,6 @@ function mining_depot:take_fluid(amount)
 end
 
 function mining_depot:handle_order_request(drone)
-
   if not (drone.mining_target and drone.mining_target.valid) then
     self:return_drone(drone)
     return
@@ -726,11 +732,12 @@ function mining_depot:notify_global_unlock(unlock_data)
 end
 
 function mining_depot:remove_from_list()
-  local unit_number = self.entity.unit_number
+  local unit_number = entity_index(self.entity)
   script_data.depots[unit_number % depot_update_rate][unit_number] = nil
 end
 
 function mining_depot:handle_depot_deletion()
+  game.print("KILLING DEPOYTS")
   for unit_number, drone in pairs (self.drones) do
     drone:cancel_command()
   end
@@ -738,7 +745,7 @@ function mining_depot:handle_depot_deletion()
 end
 
 function mining_depot:take_drone(drone)
-  self.drones[drone.entity.unit_number] = drone
+  self.drones[entity_index(drone.entity)] = drone
   drone:set_depot(self)
 
   --drone:say("Assigned to a new depot!")
@@ -825,7 +832,7 @@ local on_entity_removed = function(event)
   if not (entity and entity.valid) then
     return
   end
-  local unit_number = entity.unit_number
+  local unit_number = entity_index(entity)
   if not unit_number then return end
 
   local bucket = script_data.depots[unit_number % depot_update_rate]
@@ -922,6 +929,24 @@ lib.on_configuration_changed = function()
       end
     end
     game.print{"", "Resorted and optimized depot searching list: ", profiler}
+  end
+
+  if not script_data.migrate_unit_numbers then
+    script_data.migrate_unit_numbers = true
+    local old_depots = script_data.depots
+    script_data.depots = {}
+    for k, bucket in pairs (old_depots) do
+      for k, depot in pairs (bucket) do
+        add_to_bucket(depot)
+        local new_drones = {}
+        for k, drone in pairs (depot.drones) do
+          if drone.entity.valid then
+            new_drones[entity_index(drone.entity)] = drone
+          end
+        end
+        depot.drones = new_drones
+      end
+    end
   end
 
 end

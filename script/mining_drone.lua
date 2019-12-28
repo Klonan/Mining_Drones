@@ -5,19 +5,26 @@ local default_bot_name = shared.drone_name.."-1"
 local script_data =
 {
   drones = {},
-  fix_chests = true
+  fix_chests = true,
+  migrate_unit_numbers = true
 }
 
 local mining_drone = {}
 
 mining_drone.metatable = {__index = mining_drone}
 
+local entity_index = function(entity)
+  local number = entity.unit_number
+  if not number then return end
+  return -number
+end
+
 local add_drone = function(drone)
-  script_data.drones[drone.entity.unit_number] = drone
+  script_data.drones[entity_index(drone.entity)] = drone
 end
 
 local remove_drone = function(drone)
-  script_data.drones[drone.entity.unit_number] = nil
+  script_data.drones[entity_index(drone.entity)] = nil
 end
 
 local proxy_inventory = function()
@@ -272,6 +279,7 @@ function mining_drone:process_mining()
 end
 
 function mining_drone:request_order()
+  --self:say("HI")
   self.depot:handle_order_request(self)
 end
 
@@ -510,9 +518,9 @@ function mining_drone:clear_mining_target()
   self.mining_target = nil
 end
 
-function mining_drone:clear_depot(unit_number)
+function mining_drone:clear_depot(entity_unit_number)
   if not self.depot then return end
-  self.depot.drones[self.entity.unit_number] = nil
+  self.depot.drones[entity_index(self.entity)] = nil
   self.depot:update_sticker()
   self.depot = nil
 end
@@ -599,11 +607,11 @@ function mining_drone:update_sticker()
 end
 
 local on_ai_command_completed = function(event)
-  local drone = script_data.drones[event.unit_number]
+  local drone = script_data.drones[-event.unit_number]
   if not drone then return end
   if not (drone.entity and drone.entity.valid) then
     error("Hi, why?")
-    script_data.drones[event.unit_number] = nil
+    script_data.drones[-event.unit_number] = nil
   end
   drone:update(event)
 end
@@ -612,7 +620,7 @@ local on_entity_removed = function(event)
   local entity = event.entity
   if not (entity and entity.valid) then return end
 
-  local unit_number = entity.unit_number
+  local unit_number = entity_index(entity)
   if not unit_number then return end
 
   local drone = script_data.drones[unit_number]
@@ -704,6 +712,18 @@ mining_drone.on_configuration_changed = function()
     script_data.fix_chests = true
     fix_chests()
   end
+
+  if not script_data.migrate_unit_numbers then
+    script_data.migrate_unit_numbers = true
+    local new_drones = {}
+    for k, drone in pairs (script_data.drones) do
+      if drone.entity.valid then
+        new_drones[entity_index(drone.entity)] = drone
+      end
+    end
+    script_data.drones = new_drones
+  end
+
 end
 
 return mining_drone
