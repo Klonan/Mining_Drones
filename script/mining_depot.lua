@@ -25,7 +25,7 @@ local script_data =
 local entity_index = function(entity)
   local number = entity.unit_number
   if not number then return end
-  return -number
+  return tostring(number)
 end
 
 local main_products = {}
@@ -737,10 +737,20 @@ function mining_depot:remove_from_list()
 end
 
 function mining_depot:handle_depot_deletion()
-  game.print("KILLING DEPOYTS")
+  --error(serpent.block(self.drones))
+  local string = "Order "
+  local count = 1
   for unit_number, drone in pairs (self.drones) do
+    string = string..count
+    string = string.." "
+    string = string..drone.entity.name
+    string = string.." "
+    string = string..unit_number
+    string = string.." "
+    count = count + 1
     drone:cancel_command()
   end
+  game.print(string)
   self:remove_corpse()
 end
 

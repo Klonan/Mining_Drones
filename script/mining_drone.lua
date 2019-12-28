@@ -16,7 +16,7 @@ mining_drone.metatable = {__index = mining_drone}
 local entity_index = function(entity)
   local number = entity.unit_number
   if not number then return end
-  return -number
+  return tostring(number)
 end
 
 local add_drone = function(drone)
@@ -607,11 +607,11 @@ function mining_drone:update_sticker()
 end
 
 local on_ai_command_completed = function(event)
-  local drone = script_data.drones[-event.unit_number]
+  local drone = script_data.drones[tostring(event.unit_number)]
   if not drone then return end
   if not (drone.entity and drone.entity.valid) then
     error("Hi, why?")
-    script_data.drones[-event.unit_number] = nil
+    script_data.drones[event.unit_number] = nil
   end
   drone:update(event)
 end
