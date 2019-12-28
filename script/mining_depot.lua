@@ -211,7 +211,7 @@ function mining_depot:update_sticker()
 
 
   if self.rendering and rendering.is_valid(self.rendering) then
-    rendering.set_text(self.rendering, self:get_active_drone_count().."/"..self:get_drone_item_count().." - "..#self.potential.." - "..table_size(self.recent))
+    rendering.set_text(self.rendering, self:get_active_drone_count().."/"..self:get_drone_item_count())
     return
   end
 
