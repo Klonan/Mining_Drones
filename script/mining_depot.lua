@@ -626,6 +626,12 @@ function mining_depot:get_full_ratio()
 end
 
 function mining_depot:handle_path_request_finished(event)
+
+  if not self.entity.valid then
+    self:add_mining_target(entity, true)
+    return
+  end
+
   local entity = self.path_requests[event.id]
   if not (entity and entity.valid) then return end
   self.path_requests[event.id] = nil
