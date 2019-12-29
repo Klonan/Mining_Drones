@@ -346,7 +346,12 @@ local spawn_damping_ratio = 0.2
 function mining_depot:get_should_spawn_drone_count(extra)
 
   local max_drones = self:get_drone_item_count()
-  local active = self:get_active_drone_count() - (extra and 1 or 0)
+
+  --Path finds in progress, don't over achieve
+  local path_requests = table_size(self.path_requests)
+
+  local active = (self:get_active_drone_count() - (extra and 1 or 0)) + path_requests
+
   if active >= max_drones then return 0 end
 
   local should_be_spawned = math.min(max_drones, ceil(max_drones * (1 - self:get_full_ratio())))
@@ -458,7 +463,11 @@ function mining_depot:sort_by_distance(entities)
   table.sort(entities, function (k1, k2) return k1.distance > k2.distance end )
 
   for k = 1, #entities do
+    local entity = entities[k].entity
     entities[k] = entities[k].entity
+    --local text = entity.surface.create_entity{name = "flying-text", position = entity.position, text = k}
+    --text.active = false
+    --text.color = {r = 1, g = k/#entities, b = k/#entities}
   end
 
   return entities
@@ -662,6 +671,11 @@ function mining_depot:handle_path_request_finished(event)
   local entity = self.path_requests[event.id]
   if not (entity and entity.valid) then return end
   self.path_requests[event.id] = nil
+
+  if event.try_again_later then
+    self:attempt_to_mine(entity)
+    return
+  end
 
 
   if not (event.path and self.entity.valid) then
