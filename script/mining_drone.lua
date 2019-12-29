@@ -681,10 +681,10 @@ end
 
 mining_drone.add_remote_interface = function()
   remote.add_interface( "Mining_Drones.mining_drone", {
-		get_count = function()
-			return #script_data.drones
-		end
-	})
+    get_count = function()
+      return #script_data.drones
+    end
+  })
 end
 
 mining_drone.events =
