@@ -669,8 +669,8 @@ end
 
 function mining_depot:handle_path_request_finished(event)
   local entity = self.path_requests[event.id]
-  if not (entity and entity.valid) then return end
   self.path_requests[event.id] = nil
+  if not (entity and entity.valid) then return end
 
   if event.try_again_later then
     self:attempt_to_mine(entity)
