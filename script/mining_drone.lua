@@ -682,7 +682,12 @@ end
 mining_drone.add_remote_interface = function()
   remote.add_interface( "Mining_Drones.mining_drone", {
     get_count = function()
-      return #script_data.drones
+			local count = 0
+			for _, drone in pairs(script_data.drones) do
+				count = count + 1
+			end
+
+			return count
     end
   })
 end
