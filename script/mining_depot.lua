@@ -18,7 +18,8 @@ local script_data =
   global_taken = {},
   depot_highlights = {},
   migrate_corpse = true,
-  migrate_recent = true
+  migrate_recent = true,
+  migrate_drones = true
 }
 
 local main_products = {}
@@ -196,7 +197,7 @@ function mining_depot:spawn_drone()
 
 
   local drone = mining_drone.new(unit)
-  self.drones[unit.unit_number] = drone
+  self.drones[unit.unit_number] = true
 
   drone:set_depot(self)
 
@@ -238,7 +239,8 @@ function mining_depot:desired_item_changed()
   self.fluid = self:get_required_fluid()
   self.had_rescan = nil
 
-  for k, drone in pairs(self.drones) do
+  for unit_number, bool in pairs(self.drones) do
+    local drone = mining_drone.get_drone(unit_number)
     drone:cancel_command()
   end
 
@@ -354,7 +356,7 @@ function mining_depot:get_should_spawn_drone_count(extra)
 
   if active >= max_drones then return 0 end
 
-  local should_be_spawned = math.min(max_drones, ceil(max_drones * (1 - self:get_full_ratio())))
+  local should_be_spawned = math.min(max_drones, ceil(max_drones * (1 - (self:get_full_ratio() ^ 2))))
 
   local should_spawn_count = should_be_spawned - active
   return ceil(should_spawn_count * spawn_damping_ratio)
@@ -745,20 +747,11 @@ function mining_depot:remove_from_list()
 end
 
 function mining_depot:handle_depot_deletion()
-  for unit_number, drone in pairs (self.drones) do
+  for unit_number, bool in pairs (self.drones) do
+    local drone = mining_drone.get_drone(unit_number)
     drone:cancel_command()
   end
   self:remove_corpse()
-end
-
-function mining_depot:take_drone(drone)
-  self.drones[drone.entity.unit_number] = drone
-  drone:set_depot(self)
-
-  --drone:say("Assigned to a new depot!")
-  if drone:is_returning_to_depot() then
-    drone:return_to_depot()
-  end
 end
 
 function mining_depot:get_all_depots()
@@ -936,6 +929,24 @@ lib.on_configuration_changed = function()
       end
     end
     game.print{"", "Resorted and optimized depot searching list: ", profiler}
+  end
+
+  if not script_data.migrate_drones then
+    script_data.migrate_drones = true
+    for k, bucket in pairs (script_data.depots) do
+      for unit_number, depot in pairs (bucket) do
+        for drone_unit_number, drone in pairs (depot.drones) do
+          depot.drones[drone_unit_number] = true
+        end
+      end
+    end
+  end
+
+  for k, bucket in pairs (script_data.depots) do
+    --Idk, things can happen, let the depots rescan if they want.
+    for unit_number, depot in pairs (bucket) do
+      depot.had_rescan = nil
+    end
   end
 
 end
