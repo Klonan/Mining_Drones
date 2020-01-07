@@ -736,6 +736,9 @@ function mining_depot:add_mining_target(entity, ignore_self)
       if not ignore_self or depot ~= self then
         local entity = unlock_depot.entity
         if entity.valid and depot.entity.valid then
+          if not depot.recent then
+            depot.recent = {}
+          end
           insert(depot.recent, entity)
           --depot.potential[unlock_depot.index] = entity
         end
