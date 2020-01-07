@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.14
+Date: 2019-12-28
+  Changes:
+    - Fixed that script path requests could say "try again later" and I would just not handle it. This should fix more cases of entities being mined out of order.
+---------------------------------------------------------------------------------------------------
+Version: 0.1.13
+Date: 2019-12-28
+  Changes:
+    - Changed the target picking logic to help prevent drones mining things out of order.
+    - This is also potentially a fix for some desyncs related to large lists. Serpent serialises them differently depending on length, and this fixes it (hopefully?).
+---------------------------------------------------------------------------------------------------
 Version: 0.1.12
 Date: 2019-12-27
   Changes:

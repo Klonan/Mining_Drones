@@ -719,4 +719,8 @@ mining_drone.on_configuration_changed = function()
   end
 end
 
+mining_drone.get_drone = function(unit_number)
+  return script_data.drones[unit_number]
+end
+
 return mining_drone
