@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.0
+Date: 2020-01-08
+  Changes:
+    - Drones will now have a color matching the resource they are mining.
+    - Fixed a desync with cyclic references and serpent serialisation.
+    - Added a remote interface to get the number of active drones.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.14
 Date: 2019-12-28
   Changes:
