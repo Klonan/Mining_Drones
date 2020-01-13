@@ -187,9 +187,9 @@ local recipe =
   enabled = true,
   ingredients =
   {
-    {"iron-plate", 20},
-    {"iron-gear-wheel", 5},
-    {"iron-stick", 5},
+    {"iron-plate", 50},
+    {"iron-gear-wheel", 10},
+    {"iron-stick", 20},
   },
   energy_required = 5,
   result = name

@@ -28,40 +28,8 @@ local empty_attack_parameters = function()
   }
 end
 
-local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics"}
-
-local make_proxy = function(size)
-
-  local attack_proxy =
-  {
-    type = "simple-entity",
-    name = shared.attack_proxy_name..size,
-    icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
-    icon_size = 32,
-    flags = proxy_flags,
-    order = "zzzzzzz",
-    max_health = shared.mining_damage * 1000000,
-    collision_box = {{-size/2, -size/2}, {size/2, size/2}},
-    collision_mask = {"colliding-with-tiles-only"},
-    selection_box = nil,
-    pictures =
-    {
-      {
-        filename = "__base__/graphics/entity/ship-wreck/small-ship-wreck-a.png",
-        width = 1,
-        height= 1
-      },
-    }
-  }
-
-  data:extend{attack_proxy}
-end
-
-for k = 1, 10 do
-  make_proxy(k)
-end
-
-
+--local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics"}
+local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"}
 
 local recipes = data.raw.recipe
 local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
@@ -313,15 +281,12 @@ local make_tree_proxy = function(tree)
       entity_name = tree.corpse
     })
   end
-  --error(serpent.block(tree))
 
   if tree.variations and tree.variations[1].leaf_generation then
-    --table.insert(dying_trigger, tree.variations[1].leaf_generation)
     table.insert(damaged_trigger, tree.variations[1].leaf_generation)
   end
 
   if tree.variations and tree.variations[1].branch_generation then
-    --table.insert(dying_trigger, tree.variations[1].branch_generation)
     table.insert(damaged_trigger, tree.variations[1].branch_generation)
   end
 

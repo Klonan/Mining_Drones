@@ -6,6 +6,9 @@ end
 
 local sound = data.raw.tile["grass-1"].walking_sound
 
+--local mining_drone_flags = {"placeable-off-grid", "hidden", "not-in-kill-statistics"}
+local mining_drone_flags = {"placeable-off-grid", "hidden"}
+
 local shuffle = function(n, v)
   --local n = n or 0.5
   --log("Shuffling: "..n..v)
@@ -47,7 +50,7 @@ local make_drone = function(name, tint)
     icon = base.icon,
     icon_size = base.icon_size,
     icons = base.icons,
-    flags = {"placeable-off-grid", "hidden", "not-in-kill-statistics"},
+    flags = mining_drone_flags,
     map_color = {r ^ 0.5, g ^ 0.5, b ^ 0.5, 0.5},
     enemy_map_color = {r = 1},
     max_health = 150,

@@ -885,6 +885,11 @@ local on_selected_entity_changed = function(event)
   }
 end
 
+function mining_depot:check_for_rescan()
+  if self.item == self:get_desired_item() and self.fluid == self:get_required_fluid() then return end
+  self:desired_item_changed()
+end
+
 local lib = {}
 
 lib.events =
@@ -904,7 +909,7 @@ lib.events =
 
   [defines.events.on_tick] = on_tick,
 
-  --[defines.events.on_selected_entity_changed] = on_selected_entity_changed,
+  [defines.events.on_selected_entity_changed] = on_selected_entity_changed,
 
 }
 
@@ -958,6 +963,7 @@ lib.on_configuration_changed = function()
     --Idk, things can happen, let the depots rescan if they want.
     for unit_number, depot in pairs (bucket) do
       depot.had_rescan = nil
+      depot:check_for_rescan()
     end
   end
 
