@@ -79,7 +79,7 @@ local items = data.raw.item
 local make_recipes = function(entity)
   if is_stupid(entity) then return end
   if not entity.minable then return end
-  log(entity.name)
+  --log(entity.name)
 
   if entity.minable.result then
     local name = entity.minable.result or entity.minable.result[1]
@@ -316,7 +316,7 @@ local make_size_proxy = function(size)
     flags = proxy_flags,
     order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,
-    collision_box = tree.collision_box,
+    collision_box = {{-size/2, -size/2}, {size/2, size/2}},
     collision_mask = {"colliding-with-tiles-only"},
     selection_box = nil,
     run_animation = empty_rotated_animation(),
@@ -332,5 +332,5 @@ local make_size_proxy = function(size)
 end
 
 for k = 1, 10 do
-  make_proxy(k)
+  make_size_proxy(k)
 end
