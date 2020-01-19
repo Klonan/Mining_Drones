@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.1
+Date: 2020-01-19
+  Changes:
+    - Fixed base game pathfinder crashes due to drone collision mask.
+    - Fix error with missing attack proxy prototypes.
+    - Fix error with some mods with certain tint definitions.
+---------------------------------------------------------------------------------------------------
 Version: 0.2.0
 Date: 2020-01-13
   Changes:
