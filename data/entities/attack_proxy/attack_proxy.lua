@@ -304,3 +304,33 @@ for k, tree in pairs (data.raw.tree) do
     make_tree_proxy(tree)
   end
 end
+
+local make_size_proxy = function(size)
+
+  local attack_proxy =
+  {
+    type = "unit",
+    name = shared.attack_proxy_name..size,
+    icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
+    icon_size = 32,
+    flags = proxy_flags,
+    order = "zzzzzz",
+    max_health = shared.mining_damage * 1000000,
+    collision_box = tree.collision_box,
+    collision_mask = {"colliding-with-tiles-only"},
+    selection_box = nil,
+    run_animation = empty_rotated_animation(),
+    attack_parameters = empty_attack_parameters(),
+    movement_speed = 0,
+    distance_per_frame = 0,
+    pollution_to_join_attack = 0,
+    distraction_cooldown = 0,
+    vision_distance = 0
+  }
+
+  data:extend{attack_proxy}
+end
+
+for k = 1, 10 do
+  make_proxy(k)
+end
