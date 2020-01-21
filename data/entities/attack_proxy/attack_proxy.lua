@@ -28,8 +28,8 @@ local empty_attack_parameters = function()
   }
 end
 
---local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics"}
-local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"}
+local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics"}
+--local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"}
 
 local recipes = data.raw.recipe
 local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)

@@ -909,7 +909,7 @@ lib.events =
 
   [defines.events.on_tick] = on_tick,
 
-  [defines.events.on_selected_entity_changed] = on_selected_entity_changed,
+  --[defines.events.on_selected_entity_changed] = on_selected_entity_changed,
 
 }
 
