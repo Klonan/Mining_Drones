@@ -17,6 +17,7 @@ local script_data =
   path_requests = {},
   global_taken = {},
   depot_highlights = {},
+  ignore_rocks = false,
   migrate_corpse = true,
   migrate_recent = true,
   migrate_drones = true
@@ -418,14 +419,18 @@ local insert = table.insert
 local get_entities_for_products = function(item)
   local names = {}
   for name, prototype in pairs(game.entity_prototypes) do
-    local properties = prototype.mineable_properties
-    if properties.minable and properties.products then
-      for k, product in pairs (properties.products) do
-        if product.name == item then
-          insert(names, name)
-          break
+    if not (script_data.ignore_rocks and prototype.type == "simple-entity") then
+
+      local properties = prototype.mineable_properties
+      if properties.minable and properties.products then
+        for k, product in pairs (properties.products) do
+          if product.name == item then
+            insert(names, name)
+            break
+          end
         end
       end
+
     end
   end
   return names
@@ -890,6 +895,16 @@ function mining_depot:check_for_rescan()
   self:desired_item_changed()
 end
 
+local rescan_all_depots = function()
+  local profiler = game.create_profiler()
+  for k, bucket in pairs (script_data.depots) do
+    for unit_number, depot in pairs (bucket) do
+      depot:find_potential_items()
+    end
+  end
+  game.print{"", "Mining drones: Rescanned mining targets. ", profiler}
+end
+
 local lib = {}
 
 lib.events =
@@ -938,14 +953,17 @@ lib.on_configuration_changed = function()
   end
 
   if not script_data.migrate_recent then
-    local profiler = game.create_profiler()
     script_data.migrate_recent = true
-    for k, bucket in pairs (script_data.depots) do
-      for unit_number, depot in pairs (bucket) do
-        depot:find_potential_items()
-      end
-    end
-    game.print{"", "Resorted and optimized depot searching list: ", profiler}
+    rescan_all_depots()
+  end
+
+  if script_data.ignore_rocks == nil then
+    script_data.ignore_rocks = false
+  end
+
+  if script_data.ignore_rocks ~= settings.startup.ignore_rocks.value then
+    script_data.ignore_rocks = settings.startup.ignore_rocks.value
+    rescan_all_depots()
   end
 
   if not script_data.migrate_drones then
