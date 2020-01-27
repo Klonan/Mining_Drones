@@ -241,6 +241,7 @@ function mining_depot:desired_item_changed()
 
   self.item = self:get_desired_item()
   self.fluid = self:get_required_fluid()
+  self.output_amount = self:get_output_amount()
   self.had_rescan = nil
 
   for unit_number, bool in pairs(self.drones) do
@@ -661,6 +662,12 @@ function mining_depot:get_desired_item()
   return recipe.products[1].name
 end
 
+function mining_depot:get_output_amount()
+  local recipe = self.entity.get_recipe()
+  if not recipe then return end
+  return recipe.products[1].amount
+end
+
 function mining_depot:get_output_space()
   local inventory = self:get_output_inventory()
   local item = self.item
@@ -673,8 +680,7 @@ function mining_depot:get_full_ratio()
   local inventory = self:get_output_inventory()
   local item = self.item
   if not item then return 1 end
-  local prototype = game.item_prototypes[item]
-  return inventory.get_item_count(item) / (prototype.stack_size * (#inventory - 3))
+  return inventory.get_item_count(item) / self.output_amount
 end
 
 function mining_depot:handle_path_request_finished(event)

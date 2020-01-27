@@ -37,8 +37,8 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
   local recipe_name = "mine-"..item_prototype.name
   if recipes[recipe_name] then return end
   local results = {}
-  for k = 1, 60 do
-    results[k] = {type = "item", name = item_prototype.name, amount = item_prototype.stack_size, show_details_in_recipe_tooltip = false}
+  for k = 1, 2 do
+    results[k] = {type = "item", name = item_prototype.name, amount = item_prototype.stack_size * 100, show_details_in_recipe_tooltip = false}
   end
   local recipe =
   {
@@ -53,11 +53,16 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
       {type = "item", name = names.drone_name, amount = 1},
       fluid_ingredient
     },
-    results = results,
+    results =
+    {
+      {type = "item", name = item_prototype.name, amount = math.min(item_prototype.stack_size * 100, (2 ^ 16) - 1), show_details_in_recipe_tooltip = false},
+      {type = "item", name = item_prototype.name, amount = (2 ^ 16) -1, show_details_in_recipe_tooltip = false} --overflow stack...
+    },
     category = names.mining_depot,
     subgroup = "extraction-machine",
     overload_multiplier = 100,
     hide_from_player_crafting = true,
+    main_product = "",
     allow_decomposition = false,
     allow_as_intermediate = false,
     allow_intermediates = true
