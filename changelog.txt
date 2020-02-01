@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.2
+Date: 2020-02-01
+  Changes:
+    - Fix that Factorio engine decided that assembling machines needs to have fluidboxes shown to work in blueprints.
+---------------------------------------------------------------------------------------------------
 Version: 0.3.1
 Date: 2020-02-01
   Changes:

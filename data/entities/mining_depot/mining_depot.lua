@@ -26,7 +26,7 @@ machine.fluid_boxes =
     pipe_connections = {{ type="input-output", position = {0, 3} }},
     pipe_covers = pipecoverspictures(),
   },
-  off_when_no_fluid_recipe = true
+  off_when_no_fluid_recipe = false
 }
 machine.scale_entity_info_icon = true
 machine.energy_usage = "1W"
