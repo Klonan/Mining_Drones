@@ -1,8 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.3.1
-Date: 2020-01-26
+Date: 2020-02-01
   Changes:
-    - Added mod setting to ignore rocks.
+    - Added a startup mod setting to ignore rocks.
+    - Changed how the depot hold resources, so it works smoother and has a large overflow buffer so you don't lose ore.
+    - Reduced depot stack size to 5.
+    - Increased each drone inventory size from 1 stack to 10 stacks (it only really matters with crazy high productivity).
 ---------------------------------------------------------------------------------------------------
 Version: 0.3.0
 Date: 2020-01-24
