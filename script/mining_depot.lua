@@ -20,7 +20,9 @@ local script_data =
   ignore_rocks = false,
   migrate_corpse = true,
   migrate_recent = true,
-  migrate_drones = true
+  migrate_drones = true,
+  migrate_output_amount = true
+
 }
 
 local main_products = {}
@@ -129,7 +131,8 @@ function mining_depot.new(entity)
     surface_index = entity.surface.index,
     force_index = entity.force.index,
     item = nil,
-    fluid = nil
+    fluid = nil,
+    stack_count
   }
   setmetatable(depot, depot_metatable)
 
@@ -668,14 +671,6 @@ function mining_depot:get_output_amount()
   return recipe.products[1].amount
 end
 
-function mining_depot:get_output_space()
-  local inventory = self:get_output_inventory()
-  local item = self.item
-  if not item then return 0 end
-  local prototype = game.item_prototypes[item]
-  return (prototype.stack_size * (#inventory - 3)) - inventory.get_item_count(item)
-end
-
 function mining_depot:get_full_ratio()
   local inventory = self:get_output_inventory()
   local item = self.item
@@ -897,7 +892,11 @@ local on_selected_entity_changed = function(event)
 end
 
 function mining_depot:check_for_rescan()
-  if self.item == self:get_desired_item() and self.fluid == self:get_required_fluid() then return end
+  if self.item == self:get_desired_item()
+  and self.fluid == self:get_required_fluid()
+  and self.output_amount == self:get_output_amount() then
+    return
+  end
   self:desired_item_changed()
 end
 
@@ -972,6 +971,14 @@ lib.on_configuration_changed = function()
     rescan_all_depots()
   end
 
+  for k, bucket in pairs (script_data.depots) do
+    --Idk, things can happen, let the depots rescan if they want.
+    for unit_number, depot in pairs (bucket) do
+      depot.had_rescan = nil
+      depot:check_for_rescan()
+    end
+  end
+
   if not script_data.migrate_drones then
     script_data.migrate_drones = true
     for k, bucket in pairs (script_data.depots) do
@@ -983,13 +990,21 @@ lib.on_configuration_changed = function()
     end
   end
 
-  for k, bucket in pairs (script_data.depots) do
-    --Idk, things can happen, let the depots rescan if they want.
-    for unit_number, depot in pairs (bucket) do
-      depot.had_rescan = nil
-      depot:check_for_rescan()
+  if not script_data.migrate_output_amount then
+    script_data.migrate_output_amount = true
+    game.print("Mining Drones: I changed how the depot inventories worked, which means if it was full it was lose all the items. So as compensation, all depots are filled to max this one time.")
+    for k, bucket in pairs (script_data.depots) do
+      for unit_number, depot in pairs (bucket) do
+        if not depot.output_amount then
+          depot.output_amount = depot:get_output_amount()
+          if depot.item then
+            depot:get_output_inventory().insert({name = depot.item, count = depot.output_amount})
+          end
+        end
+      end
     end
   end
+
 
 end
 

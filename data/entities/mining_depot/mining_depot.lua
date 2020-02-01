@@ -26,15 +26,7 @@ machine.fluid_boxes =
     pipe_connections = {{ type="input-output", position = {0, 3} }},
     pipe_covers = pipecoverspictures(),
   },
-  {
-    production_type = "output",
-    pipe_picture = nil,
-    pipe_covers = nil,
-    base_area = 1,
-    base_level = 1,
-    pipe_connections = {{ type="input-output", position = {0, -3} }},
-  },
-  off_when_no_fluid_recipe = false
+  off_when_no_fluid_recipe = true
 }
 machine.scale_entity_info_icon = true
 machine.energy_usage = "1W"
@@ -49,7 +41,7 @@ machine.icon = util.path("data/entities/mining_depot/depot-icon.png")
 machine.icon_size = 216
 machine.radius_visualisation_specification =
 {
-  sprite = 
+  sprite =
   {
     filename = "__base__/graphics/entity/electric-mining-drill/electric-mining-drill-radius-visualization.png",
     width = 10,
@@ -171,7 +163,7 @@ local item =
   subgroup = "extraction-machine",
   order = "za"..name,
   place_result = name,
-  stack_size = 50
+  stack_size = 5
 }
 
 local category = {
