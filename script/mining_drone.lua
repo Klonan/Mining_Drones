@@ -248,7 +248,6 @@ function mining_drone:process_mining()
 
   end
 
-  self:update_sticker()
   if target.type == "resource" then
     local resource_amount = target.amount
     if target.initial_amount then
@@ -294,16 +293,9 @@ function mining_drone:process_return_to_depot()
 
   local inventory = self.inventory
   if not inventory.is_empty() then
-    local destination_inventory = depot:get_output_inventory()
-    local stack = inventory[1]
-    if (stack and stack.valid and stack.valid_for_read) then
-      local count = stack.count
-      local inserted = destination_inventory.insert(stack)
-      --if inserted == count then
-      --  stack.clear()
-      --else
-      --  stack.count  = count - inserted
-      --end
+    local insert = depot:get_output_inventory().insert
+    for name, count in pairs (inventory.get_contents()) do
+      insert({name = name, count = count})
     end
   end
 
@@ -487,17 +479,10 @@ function mining_drone:clear_attack_proxy()
 end
 
 function mining_drone:clear_inventory(destroy)
+
   if not self.inventory.valid then return end
 
-  --local stack = self.inventory[1]
-  --if stack and stack.valid and stack.valid_for_read then
-  --  self:spill(stack)
-  --end
-  -- Lets not spill it, looks messy. Just clear it.
-
   self.inventory.clear()
-  self:update_sticker()
-
 
   if destroy then
     self.inventory.entity_owner.destroy()
@@ -518,7 +503,6 @@ end
 function mining_drone:clear_depot(unit_number)
   if not self.depot then return end
   self.depot.drones[unit_number or self.entity.unit_number] = nil
-  self.depot:update_sticker()
   self.depot = nil
 end
 
@@ -535,66 +519,6 @@ end
 
 function mining_drone:is_returning_to_depot()
   return self.state == states.return_to_depot
-end
-
-local insert = table.insert
-
-function mining_drone:update_sticker()
-  if true then return end
-
-  local stack = self.inventory[1]
-
-  if not (stack and stack.valid and stack.valid_for_read) then
-    if self.renderings then
-      rendering.destroy(self.renderings[1])
-      rendering.destroy(self.renderings[2])
-      self.renderings = nil
-    end
-    return
-  end
-  --if true then return end
-  local name = stack.name
-
-  if self.renderings then
-
-    if self.renderings.name ~= name then
-      rendering.set_sprite(self.renderings[2], "item/"..name)
-      self.renderings.name = name
-    end
-
-    return
-  end
-
-  self.renderings = {name = name}
-
-  local drone = self.entity
-  local surface = drone.surface
-  local forces = {drone.force}
-
-  insert(self.renderings, rendering.draw_sprite
-  {
-    sprite = "utility/entity_info_dark_background",
-    target = drone,
-    surface = surface,
-    forces = forces,
-    only_in_alt_mode = true,
-    target_offset = {0, -0.5},
-    x_scale = 0.5,
-    y_scale = 0.5,
-  })
-
-  insert(self.renderings, rendering.draw_sprite
-  {
-    sprite = "item/"..name,
-    target = drone,
-    surface = surface,
-    forces = forces,
-    only_in_alt_mode = true,
-    target_offset = {0, -0.5},
-    x_scale = 0.5,
-    y_scale = 0.5,
-  })
-
 end
 
 local on_ai_command_completed = function(event)
