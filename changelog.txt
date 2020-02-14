@@ -3,6 +3,7 @@ Version: 0.3.3
 Date: 2020-02-14
   Changes:
     - Fix the mod setting to ignore rocks not being initialised properly in a new game.
+    - Added raised event for when finishing off a resource patch. (I didn't do it for infinite ores, if someone needs that let me know.)
 ---------------------------------------------------------------------------------------------------
 Version: 0.3.2
 Date: 2020-02-01
