@@ -936,6 +936,7 @@ lib.events =
 
 lib.on_init = function()
   global.mining_depot = global.mining_depot or script_data
+  script_data.ignore_rocks = settings.startup.ignore_rocks.value
 end
 
 lib.on_load = function()
