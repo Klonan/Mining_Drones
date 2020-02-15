@@ -33,18 +33,26 @@ local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "n
 
 local recipes = data.raw.recipe
 local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
+
   if not item_prototype then return end
+
   local recipe_name = "mine-"..item_prototype.name
-  if recipes[recipe_name] then return end
-  local results = {}
-  for k = 1, 2 do
-    results[k] = {type = "item", name = item_prototype.name, amount = item_prototype.stack_size * 100, show_details_in_recipe_tooltip = false}
+  if fluid_ingredient then
+    recipe_name = recipe_name.."-with-"..fluid_ingredient.name
   end
+
+  if recipes[recipe_name] then return end
+
+  local localised_name = {"mine", item_prototype.localised_name or {"item-name."..item_prototype.name}}
+  if fluid_ingredient then
+    localised_name = {"mine-with-fluid", item_prototype.localised_name or {"item-name."..item_prototype.name}, data.raw.fluid[fluid_ingredient.name].localised_name or {"fluid-name."..fluid_ingredient.name}}
+  end
+  
   local recipe =
   {
     type = "recipe",
     name = recipe_name,
-    localised_name = {"", "Mine ", item_prototype.localised_name or {"item-name."..item_prototype.name}},
+    localised_name = localised_name,
     icon = item_prototype.icon,
     icon_size = item_prototype.icon_size,
     icons = item_prototype.icons,
@@ -59,7 +67,7 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
       {type = "item", name = item_prototype.name, amount = (2 ^ 16) -1, show_details_in_recipe_tooltip = false} --overflow stack...
     },
     category = names.mining_depot,
-    subgroup = "extraction-machine",
+    subgroup = (fluid_ingredient and "smelting-machine") or "extraction-machine",
     overload_multiplier = 100,
     hide_from_player_crafting = true,
     main_product = "",

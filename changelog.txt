@@ -3,6 +3,7 @@ Version: 0.3.4
 Date: 2020-02-15
   Changes:
     - Some more robust checking of some things.
+    - Added support for mining angels infinite iron ores and things. This messes up sulfuric acid recipe so you will need to set those depots to mine again.
 ---------------------------------------------------------------------------------------------------
 Version: 0.3.3
 Date: 2020-02-14

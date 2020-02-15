@@ -999,14 +999,10 @@ lib.on_configuration_changed = function()
 
   if not script_data.migrate_output_amount then
     script_data.migrate_output_amount = true
-    game.print("Mining Drones: I changed how the depot inventories worked, which means if it was full it was lose all the items. So as compensation, all depots are filled to max this one time.")
     for k, bucket in pairs (script_data.depots) do
       for unit_number, depot in pairs (bucket) do
         if not depot.output_amount then
           depot.output_amount = depot:get_output_amount()
-          if depot.item then
-            depot:get_output_inventory().insert({name = depot.item, count = depot.output_amount})
-          end
         end
       end
     end
