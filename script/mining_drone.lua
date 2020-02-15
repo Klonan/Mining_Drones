@@ -20,6 +20,23 @@ local remove_drone = function(drone)
   script_data.drones[drone.entity.unit_number] = nil
 end
 
+local get_drone = function(unit_number)
+
+  local drone = script_data.drones[unit_number]
+  
+  if not drone then
+    return
+  end
+
+  if not drone.entity.valid then
+    drone:clear_things(unit_number)
+    return
+  end
+
+  return drone
+
+end
+
 local proxy_inventory = function()
   local chest = game.surfaces[1].create_entity{name = shared.proxy_chest_name, position = {1000000, 1000000}, force = "neutral"}
   return chest.get_output_inventory()
@@ -523,12 +540,8 @@ function mining_drone:is_returning_to_depot()
 end
 
 local on_ai_command_completed = function(event)
-  local drone = script_data.drones[event.unit_number]
+  local drone = get_drone(event.unit_number)
   if not drone then return end
-  if not (drone.entity and drone.entity.valid) then
-    error("Hi, why?")
-    script_data.drones[event.unit_number] = nil
-  end
   drone:update(event)
 end
 
@@ -539,7 +552,7 @@ local on_entity_removed = function(event)
   local unit_number = entity.unit_number
   if not unit_number then return end
 
-  local drone = script_data.drones[unit_number]
+  local drone = get_drone(unit_number)
   if not drone then return end
 
   if event.force and event.force.valid then
@@ -644,9 +657,7 @@ mining_drone.on_configuration_changed = function()
   end
 end
 
-mining_drone.get_drone = function(unit_number)
-  return script_data.drones[unit_number]
-end
+mining_drone.get_drone = get_drone
 
 mining_drone.get_drone_count = function()
   return table_size(script_data.drones)

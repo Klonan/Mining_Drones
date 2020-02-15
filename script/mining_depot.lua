@@ -132,7 +132,7 @@ function mining_depot.new(entity)
     force_index = entity.force.index,
     item = nil,
     fluid = nil,
-    stack_count
+    stack_count = nil
   }
   setmetatable(depot, depot_metatable)
 
@@ -249,8 +249,12 @@ function mining_depot:desired_item_changed()
 
   for unit_number, bool in pairs(self.drones) do
     local drone = mining_drone.get_drone(unit_number)
-    drone:cancel_command()
+    if drone then
+      drone:cancel_command()
+    end
   end
+
+  self.drones = {}
 
   self:find_potential_items()
 
@@ -311,10 +315,11 @@ function mining_depot:update()
   local entity = self.entity
   if not (entity and entity.valid) then return end
 
+  self:update_sticker()
+
   local item = self:get_desired_item()
   if item ~= self.item then
     self:desired_item_changed()
-    self:update_sticker()
     return
   end
 
@@ -695,7 +700,6 @@ function mining_depot:handle_path_request_finished(event)
     return
   end
 
-
   if not (event.path and self.entity.valid) then
     --we can't reach it, don't spawn any miners.
     self:add_mining_target(entity, true)
@@ -756,20 +760,20 @@ function mining_depot:add_mining_target(entity, ignore_self)
   taken[index] = nil
 end
 
-function mining_depot:notify_global_unlock(unlock_data)
-
-end
-
 function mining_depot:remove_from_list()
   local unit_number = self.entity.unit_number
   script_data.depots[unit_number % depot_update_rate][unit_number] = nil
 end
 
-function mining_depot:handle_depot_deletion()
+function mining_depot:handle_depot_deletion(unit_number)
   for unit_number, bool in pairs (self.drones) do
     local drone = mining_drone.get_drone(unit_number)
-    drone:cancel_command()
+    if drone then
+      drone:cancel_command()
+    end
   end
+  self.drones = nil
+  self.path_requests = nil
   self:remove_corpse()
 end
 
@@ -859,6 +863,7 @@ local on_entity_removed = function(event)
   local depot = bucket[unit_number]
   if not depot then return end
   depot:handle_depot_deletion(unit_number)
+  bucket[unit_number] = nil
 
 end
 
