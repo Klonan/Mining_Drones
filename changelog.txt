@@ -3,6 +3,8 @@ Version: 0.3.6
 Date: 2020-02-16
   Changes:
     - Fix script error if a path request finishes just after the depot recipe is changed.
+    - Removed the proxy chest system. Should help performance and be less weird in some cases.
+    - Fixed that path requests were not added back to valid mining targets when a depot is cleared.
 ---------------------------------------------------------------------------------------------------
 Version: 0.3.5
 Date: 2020-02-16
