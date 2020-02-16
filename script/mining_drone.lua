@@ -37,11 +37,6 @@ local get_drone = function(unit_number)
 
 end
 
-local proxy_inventory = function()
-  local chest = game.surfaces[1].create_entity{name = shared.proxy_chest_name, position = {1000000, 1000000}, force = "neutral"}
-  return chest.get_output_inventory()
-end
-
 local get_drone_mining_speed = function()
   return 0.5
 end
@@ -132,7 +127,7 @@ local product_amount = function(product)
 end
 
 
-mining_drone.new = function(entity)
+mining_drone.new = function(entity, depot)
 
   --if entity.name ~= shared.drone_name then error("what are you playing at") end
 
@@ -140,7 +135,8 @@ mining_drone.new = function(entity)
   {
     entity = entity,
     force_index = entity.force.index,
-    inventory = proxy_inventory()
+    depot = depot,
+    stack = {name = false, count = false}
   }
   entity.ai_settings.path_resolution_modifier = 1
   setmetatable(drone, mining_drone.metatable)
@@ -220,8 +216,8 @@ function mining_drone:process_mining()
 
     local stack = target.stack
     if stack.name == item then
-      local amount = self.inventory.insert({name = stack.name, count = stack.count})
-      item_flow(item, amount)
+      self.stack = {name = stack.name, count = stack.count}
+      item_flow(item, stack.count)
     else
       self:spill{name = stack.name, count = stack.count}
     end
@@ -251,13 +247,13 @@ function mining_drone:process_mining()
         pollute(target.position, pollution_per_ore * count)
         pollution_flow(default_bot_name, pollution_per_ore * count)
 
-        if product.name == item then
-          --self:say(count.." + "..bonus_amount)
+        local count = count + bonus_amount
 
-          local amount = self.inventory.insert({name = product.name, count = count + bonus_amount})
-          item_flow(item, amount)
+        if product.name == item then
+          self.stack = {name = product.name, count = count}
+          item_flow(item, count)
         else
-          self:spill{name = product.name, count = count + bonus_amount}
+          self:spill{name = product.name, count = count}
         end
 
       end
@@ -309,15 +305,11 @@ function mining_drone:process_return_to_depot()
     return
   end
 
-  local inventory = self.inventory
-  if not inventory.is_empty() then
-    local insert = depot:get_output_inventory().insert
-    for name, count in pairs (inventory.get_contents()) do
-      insert({name = name, count = count})
-    end
+  if self.stack and self.stack.name == depot.item then
+    depot:get_output_inventory().insert(self.stack)
+    self.stack = nil
   end
 
-  self:clear_inventory()
   self:request_order()
 
 end
@@ -424,15 +416,9 @@ function mining_drone:mine_entity(entity, count)
   }
 end
 
-
-function mining_drone:set_depot(depot)
-  self.depot = depot
-end
-
 function mining_drone:clear_things(unit_number)
   self:clear_mining_target()
   self:clear_attack_proxy()
-  self:clear_inventory(true)
   self:clear_depot(unit_number)
   self:remove_from_list(unit_number)
 end
@@ -494,19 +480,6 @@ end
 function mining_drone:clear_attack_proxy()
   local destroyed = self.attack_proxy and self.attack_proxy.valid and self.attack_proxy.destroy()
   self.attack_proxy = nil
-end
-
-function mining_drone:clear_inventory(destroy)
-
-  if not self.inventory.valid then return end
-
-  self.inventory.clear()
-
-  if destroy then
-    self.inventory.entity_owner.destroy()
-    self.inventory = nil
-  end
-
 end
 
 function mining_drone:clear_mining_target()
@@ -617,6 +590,19 @@ local fix_chests = function()
   game.print("Mining drone migration: fixed chest count "..count)
 end
 
+local migrate_chests = function()
+  game.print("Mining drone removing proxy inventories.")
+  for unit_number, drone in pairs (script_data.drones) do
+    if drone.inventory and drone.inventory.valid then
+      local contents = drone.inventory.get_contents()
+      local name, count = next(contents)
+      drone.stack = {name = name, count = count}
+      drone.inventory.entity_owner.destroy()
+      drone.inventory = nil
+    end
+  end
+end
+
 
 
 mining_drone.events =
@@ -651,9 +637,15 @@ end
 mining_drone.on_configuration_changed = function()
   make_unselectable()
   validate_proxy_orders()
+  
   if not script_data.fix_chests then
     script_data.fix_chests = true
     fix_chests()
+  end
+
+  if not script_data.migrate_chests then
+    script_data.migrate_chests = true
+    migrate_chests()
   end
 end
 

@@ -206,10 +206,8 @@ function mining_depot:spawn_drone()
   --self:get_drone_inventory().remove({name = names.drone_name, count = 1})
 
 
-  local drone = mining_drone.new(unit)
+  local drone = mining_drone.new(unit, self)
   self.drones[unit.unit_number] = true
-
-  drone:set_depot(self)
 
   self:update_sticker()
   return drone
@@ -747,7 +745,6 @@ end
 function mining_depot:return_drone(drone)
   self:remove_drone(drone)
   drone:remove_from_list()
-  drone:clear_inventory(true)
   drone.entity.destroy()
   self:update_sticker()
 end
@@ -780,10 +777,16 @@ function mining_depot:remove_from_list()
   script_data.depots[unit_number % depot_update_rate][unit_number] = nil
 end
 
+function mining_depot:clear_path_requests()
+  for k, entity in pairs (self.path_requests) do
+    self:add_mining_target(entity, true)
+  end
+  self.path_requests = {}
+end
+
 function mining_depot:handle_depot_deletion(unit_number)
   self:cancel_all_orders()
   self.drones = nil
-  self.path_requests = nil
   self:remove_corpse()
 end
 
