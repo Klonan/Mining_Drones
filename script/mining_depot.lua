@@ -778,8 +778,10 @@ function mining_depot:remove_from_list()
 end
 
 function mining_depot:clear_path_requests()
+  local global_requests = script_data.path_requests
   for k, entity in pairs (self.path_requests) do
     self:add_mining_target(entity, true)
+    global_requests[k] = nil
   end
   self.path_requests = {}
 end
