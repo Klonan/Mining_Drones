@@ -21,7 +21,8 @@ local script_data =
   migrate_corpse = true,
   migrate_recent = true,
   migrate_drones = true,
-  migrate_output_amount = true
+  migrate_output_amount = true,
+  migrate_desync_maybe = true
 
 }
 
@@ -240,6 +241,16 @@ function mining_depot:update_sticker()
 
 end
 
+function mining_depot:cancel_all_orders()
+  for unit_number, bool in pairs(self.drones) do
+    local drone = mining_drone.get_drone(unit_number)
+    if drone then
+      drone:cancel_command()
+    end
+  end
+  self.drones = {}
+end
+
 function mining_depot:desired_item_changed()
 
   self.item = self:get_desired_item()
@@ -247,14 +258,7 @@ function mining_depot:desired_item_changed()
   self.output_amount = self:get_output_amount()
   self.had_rescan = nil
 
-  for unit_number, bool in pairs(self.drones) do
-    local drone = mining_drone.get_drone(unit_number)
-    if drone then
-      drone:cancel_command()
-    end
-  end
-
-  self.drones = {}
+  self:cancel_all_orders()
 
   self:find_potential_items()
 
@@ -311,6 +315,8 @@ end
 
 local min = math.min
 function mining_depot:update()
+
+  --game.print(tostring(next(self.recent)))
 
   local entity = self.entity
   if not (entity and entity.valid) then return end
@@ -421,7 +427,7 @@ local unique_index = function(entity)
   local unit_number = entity.unit_number
   if unit_number then return unit_number end
   local position = entity.position
-  return (position.x * 10000000) + position.y
+  return position.x.."-"..position.y
 end
 
 local insert = table.insert
@@ -545,6 +551,7 @@ function mining_depot:find_entity_to_mine()
   if not entities[1] then return end
 
   local size = #entities
+  --game.print(size)
   while true do
 
     local entity = entities[size]
@@ -750,8 +757,7 @@ function mining_depot:add_mining_target(entity, ignore_self)
           if not depot.recent then
             depot.recent = {}
           end
-          insert(depot.recent, entity)
-          --depot.potential[unlock_depot.index] = entity
+          depot.recent[index] = entity
         end
       end
     end
@@ -766,12 +772,7 @@ function mining_depot:remove_from_list()
 end
 
 function mining_depot:handle_depot_deletion(unit_number)
-  for unit_number, bool in pairs (self.drones) do
-    local drone = mining_drone.get_drone(unit_number)
-    if drone then
-      drone:cancel_command()
-    end
-  end
+  self:cancel_all_orders()
   self.drones = nil
   self.path_requests = nil
   self:remove_corpse()
@@ -916,6 +917,17 @@ local rescan_all_depots = function()
   game.print{"", "Mining drones: Rescanned mining targets. ", profiler}
 end
 
+local clear_global_taken = function()
+  for k, bucket in pairs (script_data.depots) do
+    for unit_number, depot in pairs (bucket) do
+      depot:cancel_all_orders()
+    end
+  end
+  for k, surface in pairs (script_data.global_taken) do
+    script_data.global_taken[k] = {}
+  end
+end
+
 local lib = {}
 
 lib.events =
@@ -966,6 +978,12 @@ lib.on_configuration_changed = function()
 
   if not script_data.migrate_recent then
     script_data.migrate_recent = true
+    rescan_all_depots()
+  end
+
+  if not script_data.migrate_desync_maybe then
+    script_data.migrate_desync_maybe = true
+    clear_global_taken()
     rescan_all_depots()
   end
 
