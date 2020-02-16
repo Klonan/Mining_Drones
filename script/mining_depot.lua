@@ -182,8 +182,10 @@ end
 function mining_depot:spawn_drone()
   local entity = self.entity
 
+  local recipe = entity.get_recipe()
+  if not recipe then return end
 
-  local name = self.entity.get_recipe().name..names.drone_name..random(variation_count)
+  local name = recipe.name..names.drone_name..random(variation_count)
 
   local spawn_entity_data =
   {
@@ -731,6 +733,13 @@ function mining_depot:handle_path_request_finished(event)
   end
 
   local drone = self:spawn_drone()
+
+  if not drone then
+    --For some reason, we can't spawn a drone
+      self:add_mining_target(entity)
+      return
+  end
+
   self:order_drone(drone, entity)
 
 end
