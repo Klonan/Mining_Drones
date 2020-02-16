@@ -5,7 +5,8 @@ local default_bot_name = shared.drone_name
 local script_data =
 {
   drones = {},
-  fix_chests = true
+  fix_chests = true,
+  migrate_chests = true
 }
 
 local mining_drone = {}
