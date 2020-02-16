@@ -305,7 +305,7 @@ function mining_drone:process_return_to_depot()
     return
   end
 
-  if self.stack and and self.stack.count > 0 and self.stack.name == depot.item then
+  if self.stack and self.stack.count > 0 and self.stack.name == depot.item then
     depot:get_output_inventory().insert(self.stack)
     self.stack = nil
   end
