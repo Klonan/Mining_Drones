@@ -38,7 +38,7 @@ recursive_hack_animation_speed = function(array, scale)
   for k, v in pairs (array) do
     if type(v) == "table" then
       if is_sprite_def(v) then
-        v.animation_speed = v.animation_speed * scale
+        v.animation_speed = (v.animation_speed or 1) * scale
       end
       recursive_hack_animation_speed(v, scale)
     end
