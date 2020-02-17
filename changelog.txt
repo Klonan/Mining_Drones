@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.7
+Date: 2020-02-17
+  Changes:
+    - Fix script error related to nil stack.
+    - Fix data error when a character animation had no animation speed defined.
+---------------------------------------------------------------------------------------------------
 Version: 0.3.6
 Date: 2020-02-16
   Changes:
