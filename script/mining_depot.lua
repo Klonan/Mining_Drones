@@ -337,13 +337,18 @@ function mining_depot:update()
       --Drones are still mining, so they can be holding the targets.
       return
     end
-    if not self.had_rescan then
-      self.had_rescan = true
-      self:find_potential_items()
+    
+    if self.had_rescan then
+      self:add_no_items_alert()
       return
     end
-    self:add_no_items_alert()
-    return
+
+    self:find_potential_items()
+    if not next(self.potential) then
+      --We searched and found nothing. Don't bother searching again. (But if we do find something, then we keep working and can rescan again later)
+      self.had_rescan = true
+    end
+
   end
 
   if self:is_spawn_blocked() then
@@ -921,6 +926,15 @@ function mining_depot:check_for_rescan()
   self:desired_item_changed()
 end
 
+local cancel_all_depots = function()
+  for k, bucket in pairs (script_data.depots) do
+    for unit_number, depot in pairs (bucket) do
+      depot:cancel_all_orders()
+      depot:update_sticker()
+    end
+  end
+end
+
 local rescan_all_depots = function()
   local profiler = game.create_profiler()
   for k, bucket in pairs (script_data.depots) do
@@ -929,6 +943,11 @@ local rescan_all_depots = function()
     end
   end
   game.print{"", "Mining drones: Rescanned mining targets. ", profiler}
+end
+
+local reset_all_depots = function()
+  cancel_all_depots()
+  rescan_all_depots()
 end
 
 local clear_global_taken = function()
@@ -1041,6 +1060,10 @@ lib.on_configuration_changed = function()
   end
 
 
+end
+
+lib.add_commands = function()
+  commands.add_command("mining-depots-rescan", "Forces all mining depots to cancel all orders and refresh their target list", reset_all_depots)
 end
 
 return lib
