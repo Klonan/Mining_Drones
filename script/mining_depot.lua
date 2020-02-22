@@ -30,8 +30,8 @@ local main_products = {}
 local get_main_product = function(entity)
   local cached = main_products[entity.name]
   if cached then return cached end
-
-  cached = entity.prototype.mineable_properties.products[1]
+  local products = entity.prototype.mineable_properties.products
+  cached = products[1]
   main_products[entity.name] = cached
   return cached
 
@@ -337,7 +337,7 @@ function mining_depot:update()
       --Drones are still mining, so they can be holding the targets.
       return
     end
-    
+
     if self.had_rescan then
       self:add_no_items_alert()
       return
@@ -516,7 +516,14 @@ function mining_depot:find_potential_items()
   local area = self:get_area()
   local find_entities_filtered = self.entity.surface.find_entities_filtered
 
-  local unsorted = find_entities_filtered{area = area, name = get_entities_for_products(item)}
+  local names = get_entities_for_products(item)
+  local unsorted
+  if next(names) then
+    unsorted = find_entities_filtered{area = area, name = names}
+  else
+    unsorted = {}
+  end
+
 
   for k, entity in pairs(find_entities_filtered{area = area, type = "item-entity"}) do
     if entity.stack.name == item then
