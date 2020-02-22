@@ -436,13 +436,13 @@ local unique_index = function(entity)
 end
 
 local insert = table.insert
-local get_entities_for_products = function(item)
+local get_entities_for_products = function(item, fluid)
   local names = {}
   for name, prototype in pairs(game.entity_prototypes) do
     if not (script_data.ignore_rocks and prototype.type == "simple-entity") then
 
       local properties = prototype.mineable_properties
-      if properties.minable and properties.products then
+      if properties.minable and properties.products and properties.required_fluid == fluid then
         for k, product in pairs (properties.products) do
           if product.name == item then
             insert(names, name)
@@ -516,7 +516,7 @@ function mining_depot:find_potential_items()
   local area = self:get_area()
   local find_entities_filtered = self.entity.surface.find_entities_filtered
 
-  local names = get_entities_for_products(item)
+  local names = get_entities_for_products(item, self.fluid and self.fluid.name)
   local unsorted
   if next(names) then
     unsorted = find_entities_filtered{area = area, name = names}
