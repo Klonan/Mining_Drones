@@ -331,7 +331,7 @@ function mining_depot:update()
 
   if not item then return end
 
-  if not next(self.potential) then
+  if not self:has_mining_targets() then
     --Nothing to mine, nothing to do...
     if next(self.drones) then
       --Drones are still mining, so they can be holding the targets.
@@ -405,6 +405,10 @@ function mining_depot:spawn_drones()
     self:attempt_to_mine(entity)
   end
 
+end
+
+function mining_depot:has_mining_targets()
+  return next(self.recent) or next(self.potential)
 end
 
 function mining_depot:has_enough_fluid()
