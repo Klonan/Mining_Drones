@@ -79,7 +79,7 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
   local map_color = (entity.type == "tree" and {r = 0.19, g = 0.39, b = 0.19, a = 0.40}) or entity.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 0.5 }
   for k = 1, shared.variation_count do
     --log("Making drone "..r..g..b)
-    make_drone(recipe_name..shared.drone_name..k, map_color)
+    make_drone(recipe_name..shared.drone_name..k, map_color, item_prototype.localised_name or {"item-name."..item_prototype.name})
   end
 end
 
@@ -159,6 +159,9 @@ local mining_wood_trigger =
   }
 }
 
+
+local sound_enabled = not settings.startup.mute_drones.value
+
 local make_resource_attack_proxy = function(resource)
 
   local attack_proxy =
@@ -184,9 +187,8 @@ local make_resource_attack_proxy = function(resource)
 
   local damaged_trigger =
   {
-    axe_mining_ore_trigger
+    sound_enabled and axe_mining_ore_trigger or nil
   }
-  attack_proxy.damaged_trigger_effect = damaged_trigger
 
   local particle = resource.minable.mining_particle
   if particle then
@@ -216,6 +218,10 @@ local make_resource_attack_proxy = function(resource)
       initial_vertical_speed_deviation = 0.035,
       offset_deviation = resource.selection_box
     }
+  end
+
+  if next(damaged_trigger) then
+    attack_proxy.damaged_trigger_effect = damaged_trigger
   end
 
   data:extend{attack_proxy}
@@ -263,9 +269,8 @@ local make_tree_proxy = function(tree)
 
   local damaged_trigger =
   {
-    mining_wood_trigger
+    sound_enabled and mining_wood_trigger or nil
   }
-  attack_proxy.damaged_trigger_effect = damaged_trigger
 
   local particle = tree.minable and tree.minable.mining_particle
   if particle then
@@ -282,6 +287,10 @@ local make_tree_proxy = function(tree)
       initial_vertical_speed_deviation = 0.025,
       offset_deviation = tree.selection_box
     })
+  end
+
+  if next(damaged_trigger) then
+    attack_proxy.damaged_trigger_effect = damaged_trigger
   end
 
 

@@ -19,7 +19,9 @@ local shuffle = function(n, v)
   return math.min(math.max(n + variance, 0), 1)
 end
 
-local make_drone = function(name, tint)
+local sound_enabled = not settings.startup.mute_drones.value
+
+local make_drone = function(name, tint, item)
   --log(serpent.block{name = name, tint = tint})
   local base = util.copy(data.raw.character.character)
   --for k, layer in pairs (base.animations[1].idle_with_gun.layers) do
@@ -52,7 +54,7 @@ local make_drone = function(name, tint)
   {
     type = "unit",
     name = bot_name,
-    localised_name = {name},
+    localised_name = {"", {"mining-drone"}, " (", item or "eh", ")"},
     icon = base.icon,
     icon_size = base.icon_size,
     icons = base.icons,
@@ -86,41 +88,6 @@ local make_drone = function(name, tint)
       warmup = math.floor(19 * random_mining_speed),
       cooldown = math.floor((26 - 19) * random_mining_speed),
       range = 0.5,
-      --min_attack_distance = 1,
-      --projectile_creation_distance = 0.5,
-      --lead_target_for_projectile_speed = 1,
-      old_sound =
-      {
-        variations =
-        {
-          {
-            filename = "__core__/sound/axe-mining-ore-1.ogg",
-            volume = 0.75
-          },
-          {
-            filename = "__core__/sound/axe-mining-ore-2.ogg",
-            volume = 0.75
-          },
-          {
-            filename = "__core__/sound/axe-mining-ore-3.ogg",
-            volume = 0.75
-          },
-          {
-            filename = "__core__/sound/axe-mining-ore-4.ogg",
-            volume = 0.75
-          },
-          {
-            filename = "__core__/sound/axe-mining-ore-5.ogg",
-            volume = 0.75
-          }
-        },
-        aggregation =
-        {
-          max_count = 2,
-          remove = true,
-          count_already_playing = true
-        }
-      },
       ammo_type =
       {
         category = util.ammo_category("mining-drone"),
@@ -181,7 +148,7 @@ local make_drone = function(name, tint)
       }
     },
     running_sound_animation_positions = {5, 16},
-    walking_sound =
+    walking_sound = sound_enabled and
     {
       aggregation =
       {
@@ -189,7 +156,7 @@ local make_drone = function(name, tint)
         remove = true
       },
       variations = sound
-    }
+    } or nil
   }
 --error(serpent.block(base.animations[1].running))
 
