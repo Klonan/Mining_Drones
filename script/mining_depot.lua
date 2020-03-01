@@ -256,7 +256,6 @@ function mining_depot:desired_item_changed()
   self.item = self:get_desired_item()
   self.fluid = self:get_required_fluid()
   self.output_amount = self:get_output_amount()
-  self.had_rescan = nil
 
   self:cancel_all_orders()
 
@@ -333,21 +332,19 @@ function mining_depot:update()
 
   if not self:has_mining_targets() then
     --Nothing to mine, nothing to do...
+
     if next(self.drones) then
       --Drones are still mining, so they can be holding the targets.
       return
     end
 
-    if self.had_rescan then
+    if not self.mined_any then
+      -- Last time we rescanned, and we didn't mine anything, so lets give up.
       self:add_no_items_alert()
       return
     end
 
     self:find_potential_items()
-    if not next(self.potential) then
-      --We searched and found nothing. Don't bother searching again. (But if we do find something, then we keep working and can rescan again later)
-      self.had_rescan = true
-    end
 
   end
 
@@ -364,9 +361,9 @@ function mining_depot:update()
 
 end
 
-local stack_count = 60 - 3
 local ceil = math.ceil
 local floor = math.floor
+local min = math.min
 local spawn_damping_ratio = 0.2
 
 function mining_depot:get_should_spawn_drone_count(extra)
@@ -380,7 +377,7 @@ function mining_depot:get_should_spawn_drone_count(extra)
 
   if active >= max_drones then return 0 end
 
-  local should_be_spawned = math.min(max_drones, ceil(max_drones * (1 - (self:get_full_ratio() ^ 2))))
+  local should_be_spawned = min(max_drones, ceil(max_drones * (1 - (self:get_full_ratio() ^ 2))))
 
   local should_spawn_count = should_be_spawned - active
   return ceil(should_spawn_count * spawn_damping_ratio)
@@ -514,6 +511,7 @@ function mining_depot:find_potential_items()
   if not item then
     self.potential = {}
     self.recent = {}
+    self.mined_any = nil
     return
   end
 
@@ -537,6 +535,7 @@ function mining_depot:find_potential_items()
 
   self.potential = self:sort_by_distance(unsorted)
   self.recent = {}
+  self.mined_any = nil
 
 end
 
@@ -614,6 +613,10 @@ end
 --self.potential[drone.desired_item][unique_index(target)] = target
 
 function mining_depot:order_drone(drone, entity)
+
+  if not self.mined_any then
+    self.mined_any = true
+  end
 
   local product_amount = self:get_product_amount(entity, true, true)
   local mining_count = 1
@@ -1043,7 +1046,6 @@ lib.on_configuration_changed = function()
   for k, bucket in pairs (script_data.depots) do
     --Idk, things can happen, let the depots rescan if they want.
     for unit_number, depot in pairs (bucket) do
-      depot.had_rescan = nil
       depot:check_for_rescan()
     end
   end
