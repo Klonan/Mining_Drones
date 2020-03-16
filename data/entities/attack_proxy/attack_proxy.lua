@@ -34,14 +34,16 @@ local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "n
 local recipes = data.raw.recipe
 local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
 
-  if not item_prototype then return end
+  if not item_prototype then
+    log(entity.name)
+    return
+  end
+
 
   local recipe_name = "mine-"..item_prototype.name
   if fluid_ingredient then
     recipe_name = recipe_name.."-with-"..fluid_ingredient.name
   end
-
-  if recipes[recipe_name] then return end
 
   local localised_name = {"mine", item_prototype.localised_name or {"item-name."..item_prototype.name}}
   if fluid_ingredient then
@@ -89,20 +91,26 @@ local is_stupid = function(entity)
 end
 
 local items = data.raw.item
+local tools = data.raw.tool
+local get_item = function(name)
+  if items[name] then return items[name] end
+  if tools[name] then return tools[name] end
+end
+
 local make_recipes = function(entity)
-  if is_stupid(entity) then return end
+  
   if not entity.minable then return end
-  --log(entity.name)
+  if is_stupid(entity) then return end
 
   if entity.minable.result then
     local name = entity.minable.result or entity.minable.result[1]
-    make_depot_recipe(entity, items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+    make_depot_recipe(entity, get_item(name), entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
   end
 
   if entity.minable.results then
     for k, result in pairs (entity.minable.results) do
       local name = result.name or result[1]
-      make_depot_recipe(entity, items[name], entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+      make_depot_recipe(entity, get_item(name), entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
     end
   end
 end
@@ -163,7 +171,6 @@ local mining_wood_trigger =
 local sound_enabled = not settings.startup.mute_drones.value
 
 local make_resource_attack_proxy = function(resource)
-
   local attack_proxy =
   {
     type = "unit",
