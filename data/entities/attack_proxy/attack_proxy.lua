@@ -35,7 +35,6 @@ local recipes = data.raw.recipe
 local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
 
   if not item_prototype then
-    log(entity.name)
     return
   end
 
@@ -98,7 +97,7 @@ local get_item = function(name)
 end
 
 local make_recipes = function(entity)
-  
+
   if not entity.minable then return end
   if is_stupid(entity) then return end
 
