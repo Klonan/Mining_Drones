@@ -77,6 +77,7 @@ local make_drone = function(name, tint, item)
     distraction_cooldown = (15),
     move_while_shooting = false,
     can_open_gates = true,
+    not_controllable = true,
     ai_settings =
     {
       do_separation = false

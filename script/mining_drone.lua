@@ -547,14 +547,6 @@ function mining_drone:remove_from_list(unit_number)
   end
 end
 
-local make_unselectable = function()
-  if remote.interfaces["unit_control"] then
-    for k = 1, shared.variation_count do
-      remote.call("unit_control", "register_unit_unselectable", shared.drone_name.."-"..k)
-    end
-  end
-end
-
 local validate_proxy_orders = function()
   --local count = 0
   for unit_number, drone in pairs (script_data.drones) do
@@ -632,11 +624,9 @@ end
 mining_drone.on_init = function()
   global.mining_drone = global.mining_drone or script_data
   game.map_settings.path_finder.use_path_cache = false
-  make_unselectable()
 end
 
 mining_drone.on_configuration_changed = function()
-  make_unselectable()
   validate_proxy_orders()
   
   if not script_data.fix_chests then
