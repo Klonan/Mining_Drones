@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.14
+Date: 2020-03-17
+  Changes:
+    - Fixed some dodgy mining targets showing up.
+    - Fixed units being selectable in some circumstances with the unit control mod.
+---------------------------------------------------------------------------------------------------
 Version: 0.3.13
 Date: 2020-03-16
   Changes:
