@@ -48,6 +48,10 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
   if fluid_ingredient then
     localised_name = {"mine-with-fluid", item_prototype.localised_name or {"item-name."..item_prototype.name}, data.raw.fluid[fluid_ingredient.name].localised_name or {"fluid-name."..fluid_ingredient.name}}
   end
+
+  if recipes[recipe_name] then
+    recipes[recipe_name].order = recipes[recipe_name].order.."\n "..entity.name
+  end
   
   local recipe =
   {
@@ -74,7 +78,8 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
     main_product = "",
     allow_decomposition = false,
     allow_as_intermediate = false,
-    allow_intermediates = true
+    allow_intermediates = true,
+    order = entity.name
   }
   data:extend{recipe}
   local map_color = (entity.type == "tree" and {r = 0.19, g = 0.39, b = 0.19, a = 0.40}) or entity.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 0.5 }
@@ -85,8 +90,8 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
 end
 
 local is_stupid = function(entity)
-  --Thanks NPE
-  return entity.name:find("wreckage")
+  --Thanks NPE and dectorio!
+  return entity.name:find("wreck") or entity.name:find("dect")
 end
 
 local items = data.raw.item
