@@ -655,22 +655,23 @@ mining_drone.on_init = function()
 end
 
 mining_drone.on_configuration_changed = function()
-  validate_proxy_orders()
+  
+  if not script_data.migrate_depot_reference then
+    script_data.migrate_depot_reference = true
+    migrate_depot_reference()
+  end
   
   if not script_data.fix_chests then
     script_data.fix_chests = true
     fix_chests()
   end
-
+  
   if not script_data.migrate_chests then
     script_data.migrate_chests = true
     migrate_chests()
   end
 
-  if not script_data.migrate_depot_reference then
-    script_data.migrate_depot_reference = true
-    migrate_depot_reference()
-  end
+  validate_proxy_orders()
 end
 
 mining_drone.get_drone = get_drone
