@@ -23,8 +23,15 @@ local script_data =
   migrate_drones = true,
   migrate_output_amount = true,
   migrate_desync_maybe = true
-
 }
+
+
+local get_mining_depot = function(unit_number)
+  local bucket = script_data.depots[unit_number % depot_update_rate]
+  return bucket and bucket[unit_number]
+end
+
+mining_drone.get_mining_depot = get_mining_depot
 
 local main_products = {}
 local get_main_product = function(entity)
@@ -974,6 +981,7 @@ local clear_global_taken = function()
     script_data.global_taken[k] = {}
   end
 end
+
 
 local lib = {}
 

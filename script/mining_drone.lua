@@ -6,10 +6,15 @@ local script_data =
 {
   drones = {},
   fix_chests = true,
-  migrate_chests = true
+  migrate_chests = true,
+  migrate_depot_reference = true
 }
 
 local mining_drone = {}
+
+mining_drone.get_mining_depot = function(self)
+  error("Try to use get_depot before set up?")
+end
 
 mining_drone.metatable = {__index = mining_drone}
 
@@ -136,7 +141,7 @@ mining_drone.new = function(entity, depot)
   {
     entity = entity,
     force_index = entity.force.index,
-    depot = depot,
+    depot = depot.entity.unit_number,
     --stack = {name = false, count = false}
   }
   entity.ai_settings.path_resolution_modifier = 1
@@ -147,6 +152,11 @@ mining_drone.new = function(entity, depot)
   add_drone(drone)
 
   return drone
+end
+
+function mining_drone:get_depot()
+  if not self.depot then return end
+  return mining_drone.get_mining_depot(self.depot)
 end
 
 function mining_drone:add_lights()
@@ -204,7 +214,13 @@ function mining_drone:process_mining()
   end
 
 
-  local item = self.depot.item
+  local depot = self:get_depot()
+  if not depot then 
+    self:cancel_command()
+    return
+  end
+
+  local item = depot.item
   if not item then
     --self:say("I don't know what I want")
     self:return_to_depot()
@@ -287,13 +303,13 @@ function mining_drone:process_mining()
 end
 
 function mining_drone:request_order()
-  self.depot:handle_order_request(self)
+  self:get_depot():handle_order_request(self)
 end
 
 local distance = util.distance
 function mining_drone:process_return_to_depot()
 
-  local depot = self.depot
+  local depot = self:get_depot()
 
   if not (depot and depot.entity.valid) then
     --self:say("My depot isn't valid!")
@@ -436,7 +452,7 @@ function mining_drone:return_to_depot()
   self.state = states.return_to_depot
   self:clear_attack_proxy()
 
-  local depot = self.depot
+  local depot = self:get_depot()
 
   if not (depot and depot.entity.valid) then
     self:cancel_command()
@@ -485,8 +501,8 @@ end
 
 function mining_drone:clear_mining_target()
   if self.mining_target and self.mining_target.valid then
-    if self.depot then
-      self.depot:add_mining_target(self.mining_target)
+    if self:get_depot() then
+      self:get_depot():add_mining_target(self.mining_target)
     end
   end
   self.mining_target = nil
@@ -494,15 +510,15 @@ end
 
 function mining_drone:clear_depot(unit_number)
   if not self.depot then return end
-  self.depot.drones[unit_number or self.entity.unit_number] = nil
+  self:get_depot().drones[unit_number or self.entity.unit_number] = nil
   self.depot = nil
 end
 
 function mining_drone:handle_drone_deletion()
   if not self.entity.valid then error("Hi, i am not handled.") end
 
-  if self.depot then
-    self.depot:remove_drone(self, true)
+  if self:get_depot() then
+    self:get_depot():remove_drone(self, true)
   end
 
   self:clear_things()
@@ -596,6 +612,18 @@ local migrate_chests = function()
   end
 end
 
+local migrate_depot_reference = function()
+  for k, drone in pairs (script_data.drones) do
+    if drone.depot.entity.valid then
+      drone.depot = drone.depot.entity.unit_number
+    else
+      drone.depot = nil
+      drone:cancel_command()
+    end
+    drone:get_depot()
+  end
+end
+
 
 
 mining_drone.events =
@@ -637,6 +665,11 @@ mining_drone.on_configuration_changed = function()
   if not script_data.migrate_chests then
     script_data.migrate_chests = true
     migrate_chests()
+  end
+
+  if not script_data.migrate_depot_reference then
+    script_data.migrate_depot_reference = true
+    migrate_depot_reference()
   end
 end
 
