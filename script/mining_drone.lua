@@ -374,18 +374,38 @@ function mining_drone:wait(ticks)
   {
     type = defines.command.wander,
     ticks_to_wait = ticks,
-    distraction = defines.distraction.none
+    distraction = defines.distraction.by_damage
   }
+end
+
+function mining_drone:process_distracted_command()
+  if self.state == states.mining_entity then
+    -- We were in the middle of attacking the proxy, go mine it.
+    self:attack_mining_proxy()
+    return
+  end
+
+  if self.state == states.return_to_depot then
+    -- We were walking home, lets walk home again.
+    self:return_to_depot()
+    return
+  end
 end
 
 function mining_drone:update(event)
   if not self.entity.valid then return end
 
+  
   if event.result ~= defines.behavior_result.success then
     self:process_failed_command()
     return
   end
 
+  if event.was_distracted then
+    self:process_distracted_command()
+    return
+  end
+  
   if self.state == states.mining_entity then
     self:process_mining()
     return
@@ -401,27 +421,28 @@ function mining_drone:say(text)
   self.entity.surface.create_entity{name = "flying-text", position = self.entity.position, text = text}
 end
 
-function mining_drone:mine_entity(entity, count)
-  self.mining_count = count or 1
-  self.mining_target = entity
-  self.state = states.mining_entity
-  local attack_proxy = self:make_attack_proxy(entity, self.mining_count)
-  self.attack_proxy = attack_proxy
-  local command = {}
+function mining_drone:attack_mining_proxy()
+
+  local attack_proxy = self.attack_proxy
+  if not (attack_proxy and attack_proxy.valid) then
+    --dunno
+    self:return_to_depot()
+    return
+  end
 
   local commands =
   {
     {
       type = defines.command.go_to_location,
       destination_entity = attack_proxy,
-      distraction = defines.distraction.none,
+      distraction = defines.distraction.by_damage,
       --radius = entity.get_radius() + self.entity.get_radius(),
       pathfind_flags = {prefer_straight_paths = false, use_cache = false}
     },
     {
       type = defines.command.attack,
       target = attack_proxy,
-      distraction = defines.distraction.none
+      distraction = defines.distraction.by_damage
     }
   }
   self.entity.set_command
@@ -429,8 +450,21 @@ function mining_drone:mine_entity(entity, count)
     type = defines.command.compound,
     structure_type = defines.compound_command.return_last,
     commands = commands,
-    distraction = defines.distraction.none
+    distraction = defines.distraction.by_damage
   }
+
+end
+
+function mining_drone:mine_entity(entity, count)
+  self.mining_count = count or 1
+  self.mining_target = entity
+  self.state = states.mining_entity
+
+  local attack_proxy = self:make_attack_proxy(entity, self.mining_count)
+  self.attack_proxy = attack_proxy
+
+  self:attack_mining_proxy()
+  
 end
 
 function mining_drone:clear_things(unit_number)
@@ -478,7 +512,7 @@ function mining_drone:go_to_position(position, radius)
     type = defines.command.go_to_location,
     destination = position,
     radius = radius or 1,
-    distraction = defines.distraction.none,
+    distraction = defines.distraction.by_damage,
     pathfind_flags = {prefer_straight_paths = false, use_cache = false},
   }
 end
@@ -489,7 +523,7 @@ function mining_drone:go_to_entity(entity, radius)
     type = defines.command.go_to_location,
     destination_entity = entity,
     radius = radius or 1,
-    distraction = defines.distraction.none,
+    distraction = defines.distraction.by_damage,
     pathfind_flags = {prefer_straight_paths = false, use_cache = false}
   }
 end
@@ -624,6 +658,23 @@ local migrate_depot_reference = function()
   end
 end
 
+local on_unit_added_to_group = function(event)
+  game.print("ON GROUP EVENT")
+  local entity = event.unit
+  if not (entity and entity.valid) then return end
+
+  local drone = get_drone(entity.unit_number)
+  if not drone then return end
+
+  local group = event.group
+  if not (group and group.valid) then return end
+  game.print("HOT "..group.group_number)
+  group.destroy()
+
+  drone:process_distracted_command()
+
+end
+
 
 
 mining_drone.events =
@@ -640,6 +691,8 @@ mining_drone.events =
   [defines.events.script_raised_destroy] = on_entity_removed,
 
   [defines.events.on_ai_command_completed] = on_ai_command_completed,
+
+  [defines.events.on_unit_added_to_group] = on_unit_added_to_group,
 }
 
 mining_drone.on_load = function()
