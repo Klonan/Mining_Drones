@@ -659,7 +659,7 @@ local migrate_depot_reference = function()
 end
 
 local on_unit_added_to_group = function(event)
-  game.print("ON GROUP EVENT")
+  --game.print("ON GROUP EVENT")
   local entity = event.unit
   if not (entity and entity.valid) then return end
 
@@ -668,7 +668,7 @@ local on_unit_added_to_group = function(event)
 
   local group = event.group
   if not (group and group.valid) then return end
-  game.print("HOT "..group.group_number)
+  --game.print("HOT "..group.group_number)
   group.destroy()
 
   drone:process_distracted_command()
