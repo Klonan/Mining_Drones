@@ -1018,6 +1018,9 @@ lib.on_load = function()
       setmetatable(depot, depot_metatable)
     end
   end
+  for path_request_id, depot in pairs (script_data.path_requests) do
+    setmetatable(depot, depot_metatable)
+  end
 end
 
 lib.on_configuration_changed = function()
