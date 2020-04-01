@@ -30,16 +30,17 @@ local make_drone = function(name, tint, item)
 
   --util.recursive_hack_runtime_tint(base, false)
   local random_height = gaussian(90, 10) / 100
-
-
-  local r, g, b = tint.r or tint[1], tint.g or tint[2], tint.b or tint[3]
-  if r > 1 then r = r / 255 end
-  if g > 1 then g = g / 255 end
-  if b > 1 then b = b / 255 end
-  local mask_tint = {r ^ 2, g ^ 2, b ^ 2, shuffle(0.5, 0.5)}
-
   util.recursive_hack_scale(base, random_height)
 
+  local r, g, b = tint.r or tint[1], tint.g or tint[2], tint.b or tint[3]
+
+  if (r > 1 or g > 1 or b > 1) then
+    r = r / 255
+    g = g / 255
+    b = b / 255
+  end
+
+  local mask_tint = {r ^ 2, g ^ 2, b ^ 2, shuffle(0.5, 0.5)}
   util.recursive_hack_tint(base, mask_tint, true)
 
   util.recursive_hack_animation_speed(base.animations[1].mining_with_tool, 1/0.9)

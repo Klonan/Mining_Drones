@@ -50,7 +50,8 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
   end
 
   if recipes[recipe_name] then
-    recipes[recipe_name].order = recipes[recipe_name].order.."\n "..entity.name
+    --recipes[recipe_name].order = recipes[recipe_name].order.."\n "..entity.name
+    return
   end
   
   local recipe =
