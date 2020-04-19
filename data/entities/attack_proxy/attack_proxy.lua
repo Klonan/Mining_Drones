@@ -32,21 +32,36 @@ local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "n
 --local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"}
 
 local recipes = data.raw.recipe
-local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
+local make_depot_recipe = function(entity)
 
-  if not item_prototype then
-    return
+  local results = {}
+  local required_fluid = entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10}
+
+  
+  if entity.minable.results then
+    results = entity.minable.results
+  elseif entity.minable.result then
+    if type(entity.minable.result) == "string" then
+      results = {{name = entity.minable.result, amount = 1}}
+    else
+      results = {entity.minable.result}
+    end
   end
 
+  local recipe_name = "mine"
 
-  local recipe_name = "mine-"..item_prototype.name
+  for k, product in pairs (results) do
+    recipe_name = recipe_name.."-"..product.name
+  end
+
+  local recipe_name = "mine-"..entity.name
   if fluid_ingredient then
     recipe_name = recipe_name.."-with-"..fluid_ingredient.name
   end
 
-  local localised_name = {"mine", item_prototype.localised_name or {"item-name."..item_prototype.name}}
+  local localised_name = {"mine", entity.localised_name or {"entity-name."..entity.name}}
   if fluid_ingredient then
-    localised_name = {"mine-with-fluid", item_prototype.localised_name or {"item-name."..item_prototype.name}, data.raw.fluid[fluid_ingredient.name].localised_name or {"fluid-name."..fluid_ingredient.name}}
+    localised_name = {"mine-with-fluid", entity.localised_name or {"entity-name."..entity.name}, data.raw.fluid[fluid_ingredient.name].localised_name or {"fluid-name."..fluid_ingredient.name}}
   end
 
   if recipes[recipe_name] then
@@ -59,19 +74,15 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
     type = "recipe",
     name = recipe_name,
     localised_name = localised_name,
-    icon = item_prototype.dark_background_icon or item_prototype.icon,
-    icon_size = item_prototype.icon_size,
-    icons = item_prototype.icons,
+    icon = entity.dark_background_icon or entity.icon,
+    icon_size = entity.icon_size,
+    icons = entity.icons,
     ingredients =
     {
       {type = "item", name = names.drone_name, amount = 1},
       fluid_ingredient
     },
-    results =
-    {
-      {type = "item", name = item_prototype.name, amount = math.min(item_prototype.stack_size * 100, (2 ^ 16) - 1), show_details_in_recipe_tooltip = false},
-      {type = "item", name = item_prototype.name, amount = (2 ^ 16) -1, show_details_in_recipe_tooltip = false} --overflow stack...
-    },
+    results = results,
     category = names.mining_depot,
     subgroup = (fluid_ingredient and "smelting-machine") or "extraction-machine",
     overload_multiplier = 100,
@@ -83,10 +94,11 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
     order = entity.name
   }
   data:extend{recipe}
+
   local map_color = (entity.type == "tree" and {r = 0.19, g = 0.39, b = 0.19, a = 0.40}) or entity.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 0.5 }
   for k = 1, shared.variation_count do
     --log("Making drone "..r..g..b)
-    make_drone(recipe_name..shared.drone_name..k, map_color, item_prototype.localised_name or {"item-name."..item_prototype.name})
+    make_drone(recipe_name..shared.drone_name..k, map_color, entity.localised_name or {"entity-name."..entity.name})
   end
 end
 
@@ -107,17 +119,8 @@ local make_recipes = function(entity)
   if not entity.minable then return end
   if is_stupid(entity) then return end
 
-  if entity.minable.result then
-    local name = entity.minable.result or entity.minable.result[1]
-    make_depot_recipe(entity, get_item(name), entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
-  end
+  make_depot_recipe(entity)
 
-  if entity.minable.results then
-    for k, result in pairs (entity.minable.results) do
-      local name = result.name or result[1]
-      make_depot_recipe(entity, get_item(name), entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
-    end
-  end
 end
 
 local count = 0
@@ -248,14 +251,6 @@ for k, resource in pairs (data.raw.resource) do
   end
 end
 
-for k, rock in pairs (data.raw["simple-entity"]) do
-  if rock.minable then
-    make_recipes(rock)
-    make_resource_attack_proxy(rock)
-  end
-end
-
-
 local make_tree_proxy = function(tree)
 
   local attack_proxy =
@@ -334,8 +329,8 @@ end
 
 for k, tree in pairs (data.raw.tree) do
   if tree.minable then
-    make_recipes(tree)
-    make_tree_proxy(tree)
+    --make_tree_recipes(tree)
+    --make_tree_proxy(tree)
   end
 end
 
