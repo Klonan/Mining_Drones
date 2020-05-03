@@ -842,7 +842,7 @@ local on_tick = function(event)
   if bucket then
     for unit_number, depot in pairs (bucket) do
       if not (depot.entity.valid) then
-        bucket[unit_number] = nil
+        depot:handle_depot_deletion(unit_number)
       else
         depot:update()
       end
@@ -1057,7 +1057,11 @@ lib.on_configuration_changed = function()
   for k, bucket in pairs (script_data.depots) do
     --Idk, things can happen, let the depots rescan if they want.
     for unit_number, depot in pairs (bucket) do
-      depot:check_for_rescan()
+      if depot.entity.valid then
+        depot:check_for_rescan()
+      else
+        depot:handle_depot_deletion(unit_number)
+      end
     end
   end
 
