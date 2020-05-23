@@ -287,8 +287,7 @@ function mining_drone:process_mining()
         target.amount = resource_amount - self.mining_count
     else
       self:clear_mining_target()
-      script.raise_event(defines.events.on_resource_depleted, {entity = target})
-      target.destroy()
+      target.deplete()
     end
   else
     self:clear_mining_target()
