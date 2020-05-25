@@ -425,7 +425,9 @@ function mining_depot:has_enough_fluid()
 end
 
 function mining_depot:get_input_fluidbox()
-  return self.entity.fluidbox[1]
+  local fluidbox = self.entity.fluidbox
+  if #fluidbox == 0 then return end
+  return fluidbox[1]
 end
 
 function mining_depot:get_drone_item_count()
