@@ -29,7 +29,7 @@ end
 local get_drone = function(unit_number)
 
   local drone = script_data.drones[unit_number]
-  
+
   if not drone then
     return
   end
@@ -215,7 +215,7 @@ function mining_drone:process_mining()
 
 
   local depot = self:get_depot()
-  if not depot then 
+  if not depot then
     self:cancel_command()
     return
   end
@@ -373,7 +373,7 @@ function mining_drone:wait(ticks)
   {
     type = defines.command.wander,
     ticks_to_wait = ticks,
-    distraction = defines.distraction.by_damage
+    distraction = defines.distraction.none
   }
 end
 
@@ -394,7 +394,7 @@ end
 function mining_drone:update(event)
   if not self.entity.valid then return end
 
-  
+
   if event.result ~= defines.behavior_result.success then
     self:process_failed_command()
     return
@@ -404,7 +404,7 @@ function mining_drone:update(event)
     self:process_distracted_command()
     return
   end
-  
+
   if self.state == states.mining_entity then
     self:process_mining()
     return
@@ -434,14 +434,14 @@ function mining_drone:attack_mining_proxy()
     {
       type = defines.command.go_to_location,
       destination_entity = attack_proxy,
-      distraction = defines.distraction.by_damage,
+      distraction = defines.distraction.none,
       --radius = entity.get_radius() + self.entity.get_radius(),
       pathfind_flags = {prefer_straight_paths = false, use_cache = false}
     },
     {
       type = defines.command.attack,
       target = attack_proxy,
-      distraction = defines.distraction.by_damage
+      distraction = defines.distraction.none
     }
   }
   self.entity.set_command
@@ -449,7 +449,7 @@ function mining_drone:attack_mining_proxy()
     type = defines.command.compound,
     structure_type = defines.compound_command.return_last,
     commands = commands,
-    distraction = defines.distraction.by_damage
+    distraction = defines.distraction.none
   }
 
 end
@@ -463,7 +463,7 @@ function mining_drone:mine_entity(entity, count)
   self.attack_proxy = attack_proxy
 
   self:attack_mining_proxy()
-  
+
 end
 
 function mining_drone:clear_things(unit_number)
@@ -511,7 +511,7 @@ function mining_drone:go_to_position(position, radius)
     type = defines.command.go_to_location,
     destination = position,
     radius = radius or 1,
-    distraction = defines.distraction.by_damage,
+    distraction = defines.distraction.none,
     pathfind_flags = {prefer_straight_paths = false, use_cache = false},
   }
 end
@@ -522,7 +522,7 @@ function mining_drone:go_to_entity(entity, radius)
     type = defines.command.go_to_location,
     destination_entity = entity,
     radius = radius or 1,
-    distraction = defines.distraction.by_damage,
+    distraction = defines.distraction.none,
     pathfind_flags = {prefer_straight_paths = false, use_cache = false}
   }
 end
@@ -707,17 +707,17 @@ mining_drone.on_init = function()
 end
 
 mining_drone.on_configuration_changed = function()
-  
+
   if not script_data.migrate_depot_reference then
     script_data.migrate_depot_reference = true
     migrate_depot_reference()
   end
-  
+
   if not script_data.fix_chests then
     script_data.fix_chests = true
     fix_chests()
   end
-  
+
   if not script_data.migrate_chests then
     script_data.migrate_chests = true
     migrate_chests()

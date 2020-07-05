@@ -3,6 +3,7 @@ Version: 0.3.23
 Date: 2020-07-05
   Changes:
     - Fixed compatibility with DirtyMining.
+    - Mining drones won't try to fight anymore.
 ---------------------------------------------------------------------------------------------------
 Version: 0.3.22
 Date: 2020-05-26
