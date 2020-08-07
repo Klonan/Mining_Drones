@@ -494,13 +494,13 @@ function mining_drone:return_to_depot()
 
   local corpse = depot.corpse
   if corpse and corpse.valid then
-    self:go_to_entity(corpse, 0.75)
+    self:go_to_entity(corpse, 0.35)
     return
   end
 
   local position = depot:get_spawn_position()
   if position then
-    self:go_to_position(position, 0.75)
+    self:go_to_position(position, 0.35)
     return
   end
 end
