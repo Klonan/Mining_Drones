@@ -715,7 +715,8 @@ function mining_depot:get_full_ratio()
   local inventory = self:get_output_inventory()
   local item = self.item
   if not item then return 1 end
-  return inventory.get_item_count(item) / self.output_amount
+  local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
+  return inventory.get_item_count(item) / min(48000, ceil(self.output_amount * productivity))
 end
 
 function mining_depot:handle_path_request_finished(event)
