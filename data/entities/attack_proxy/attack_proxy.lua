@@ -53,7 +53,7 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
     --recipes[recipe_name].order = recipes[recipe_name].order.."\n "..entity.name
     return
   end
-  
+
   local recipe =
   {
     type = "recipe",
@@ -70,7 +70,8 @@ local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
     results =
     {
       {type = "item", name = item_prototype.name, amount = math.min(item_prototype.stack_size * 100, (2 ^ 16) - 1), show_details_in_recipe_tooltip = false},
-      {type = "item", name = item_prototype.name, amount = (2 ^ 16) -1, show_details_in_recipe_tooltip = false} --overflow stack...
+      {type = "item", name = item_prototype.name, amount = (2 ^ 16) -1, show_details_in_recipe_tooltip = false},
+      {type = "item", name = item_prototype.name, amount = (2 ^ 16) -1, show_details_in_recipe_tooltip = false}
     },
     category = names.mining_depot,
     subgroup = (fluid_ingredient and "smelting-machine") or "extraction-machine",
