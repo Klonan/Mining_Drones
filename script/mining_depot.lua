@@ -15,14 +15,7 @@ local script_data =
 {
   depots = {},
   path_requests = {},
-  global_taken = {},
-  depot_highlights = {},
-  ignore_rocks = false,
-  migrate_corpse = true,
-  migrate_recent = true,
-  migrate_drones = true,
-  migrate_output_amount = true,
-  migrate_desync_maybe = true
+  global_taken = {}
 }
 
 
@@ -192,7 +185,7 @@ function mining_depot:spawn_drone()
   local recipe = entity.get_recipe()
   if not recipe then return end
 
-  local name = recipe.name..names.drone_name..random(variation_count)
+  local name = self.target_resource_name..names.drone_name..random(variation_count)
 
   local spawn_entity_data =
   {
@@ -231,7 +224,7 @@ function mining_depot:update_sticker()
     return
   end
 
-  if not self.item then return end
+  if not self.target_resource_name then return end
 
   self.rendering = draw_text
   {
@@ -258,15 +251,15 @@ function mining_depot:cancel_all_orders()
   self.drones = {}
 end
 
-function mining_depot:desired_item_changed()
+function mining_depot:target_name_changed()
 
-  self.item = self:get_desired_item()
+  self.target_resource_name = self:get_target_resource_name()
   self.fluid = self:get_required_fluid()
   self.output_amount = self:get_output_amount()
 
   self:cancel_all_orders()
 
-  self:find_potential_items()
+  self:find_potential_targets()
 
   if self.rendering then
     rendering.destroy(self.rendering)
@@ -329,9 +322,9 @@ function mining_depot:update()
 
   self:update_sticker()
 
-  local item = self:get_desired_item()
-  if item ~= self.item then
-    self:desired_item_changed()
+  local item = self:get_target_resource_name()
+  if item ~= self.target_resource_name then
+    self:target_name_changed()
     return
   end
 
@@ -351,7 +344,7 @@ function mining_depot:update()
       return
     end
 
-    self:find_potential_items()
+    self:find_potential_targets()
 
   end
 
@@ -372,6 +365,8 @@ local ceil = math.ceil
 local floor = math.floor
 local min = math.min
 local spawn_damping_ratio = 0.2
+local target_amount_per_drone = 100
+local max_target_amount = 65000 / 250
 
 function mining_depot:get_should_spawn_drone_count(extra)
 
@@ -384,10 +379,19 @@ function mining_depot:get_should_spawn_drone_count(extra)
 
   if active >= max_drones then return 0 end
 
-  local should_be_spawned = min(max_drones, ceil(max_drones * (1 - (self:get_full_ratio() ^ 2))))
+  local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
+  local current_target_item_count = math.min(productivity * target_amount_per_drone, max_target_amount) * max_drones
+  local current_item_count = self:get_max_output_amount()
 
-  local should_spawn_count = should_be_spawned - active
-  return ceil(should_spawn_count * spawn_damping_ratio)
+  local ratio = 1 - ((current_item_count / current_target_item_count) ^ 2)
+  --self:say(ratio)
+
+  return math.ceil(ratio * max_drones) - active
+
+end
+
+function mining_depot:say(text)
+  self.entity.surface.create_entity{name = "flying-text", position = self.entity.position, text = text}
 end
 
 function mining_depot:spawn_drones()
@@ -514,10 +518,10 @@ function mining_depot:sort_by_distance(entities)
 
 end
 
-function mining_depot:find_potential_items()
+function mining_depot:find_potential_targets()
 
-  local item = self.item
-  if not item then
+  local target_name = self.target_resource_name
+  if not target_name then
     self.potential = {}
     self.recent = {}
     self.mined_any = nil
@@ -528,19 +532,12 @@ function mining_depot:find_potential_items()
   local find_entities_filtered = self.entity.surface.find_entities_filtered
 
   local names = get_entities_for_products(item, self.fluid and self.fluid.name)
-  local unsorted
-  if next(names) then
-    unsorted = find_entities_filtered{area = area, name = names}
-  else
-    unsorted = {}
-  end
-
-
-  for k, entity in pairs(find_entities_filtered{area = area, type = "item-entity"}) do
-    if entity.stack.name == item then
-      insert(unsorted, entity)
-    end
-  end
+  local unsorted = self.entity.surface.find_entities_filtered
+  {
+    type = "resource",
+    area = self:get_area(),
+    name = target_name
+  }
 
   self.potential = self:sort_by_distance(unsorted)
   self.recent = {}
@@ -699,10 +696,11 @@ function mining_depot:get_drone_inventory()
   return self.entity.get_inventory(defines.inventory.assembling_machine_input)
 end
 
-function mining_depot:get_desired_item()
+function mining_depot:get_target_resource_name()
   local recipe = self.entity.get_recipe()
   if not recipe then return end
-  return recipe.products[1].name
+  local name = recipe.name:sub(("mine-"):len() + 1, recipe.name:len())
+  return name
 end
 
 function mining_depot:get_output_amount()
@@ -713,10 +711,19 @@ end
 
 function mining_depot:get_full_ratio()
   local inventory = self:get_output_inventory()
-  local item = self.item
+  local item = self.target_resource_name
   if not item then return 1 end
   local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
   return inventory.get_item_count(item) / min(48000, ceil(self.output_amount * productivity))
+end
+
+function mining_depot:get_max_output_amount()
+  local inventory = self:get_output_inventory()
+  local amount = 0
+  for k, product in pairs (self.entity.get_recipe().products) do
+    amount = math.max(amount, inventory.get_item_count(product.name))
+  end
+  return amount
 end
 
 function mining_depot:handle_path_request_finished(event)
@@ -912,43 +919,11 @@ local on_entity_removed = function(event)
 
 end
 
-local highlight_color = {r = 0, g = 0.1, b = 0, a = 0.1}
-local on_selected_entity_changed = function(event)
-  local player = game.get_player(event.player_index)
-
-  local highlight = script_data.depot_highlights[event.player_index]
-  if highlight then
-    rendering.destroy(highlight)
-    script_data.depot_highlights[event.player_index] = nil
-  end
-
-  local entity = player.selected
-  if not (entity and entity.valid) then return end
-
-  if entity.name ~= names.mining_depot then return end
-
-  local area = get_depot_area(entity)
-  script_data.depot_highlights[event.player_index] = rendering.draw_rectangle
-  {
-    surface = entity.surface,
-    players = {player},
-    filled = true,
-    color = highlight_color,
-    draw_on_ground = true,
-    target = entity,
-    only_in_alt_mode = false,
-    left_top = area[1],
-    right_bottom = area[2]
-  }
-end
-
 function mining_depot:check_for_rescan()
-  if self.item == self:get_desired_item()
-  and self.fluid == self:get_required_fluid()
-  and self.output_amount == self:get_output_amount() then
+  if self.target_resource_name == self:get_target_resource_name() then
     return
   end
-  self:desired_item_changed()
+  self:target_name_changed()
 end
 
 local cancel_all_depots = function()
@@ -964,7 +939,7 @@ local rescan_all_depots = function()
   local profiler = game.create_profiler()
   for k, bucket in pairs (script_data.depots) do
     for unit_number, depot in pairs (bucket) do
-      depot:find_potential_items()
+      depot:find_potential_targets()
     end
   end
   game.print{"", "Mining drones: Rescanned mining targets. ", profiler}
@@ -1004,9 +979,7 @@ lib.events =
   [defines.events.on_entity_died] = on_entity_removed,
   [defines.events.script_raised_destroy] = on_entity_removed,
 
-  [defines.events.on_tick] = on_tick,
-
-  --[defines.events.on_selected_entity_changed] = on_selected_entity_changed,
+  [defines.events.on_tick] = on_tick
 
 }
 

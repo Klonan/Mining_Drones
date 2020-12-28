@@ -1,12 +1,10 @@
 local mining_technologies = require("script/mining_technologies")
-local pollution_per_ore = 0.2
+local pollution_per_mine = 0.2
 local default_bot_name = shared.drone_name
 
 local script_data =
 {
   drones = {},
-  fix_chests = true,
-  migrate_chests = true,
   migrate_depot_reference = true
 }
 
@@ -142,12 +140,11 @@ mining_drone.new = function(entity, depot)
     entity = entity,
     force_index = entity.force.index,
     depot = depot.entity.unit_number,
+    inventory = game.create_inventory(20)
     --stack = {name = false, count = false}
   }
   entity.ai_settings.path_resolution_modifier = 1
   setmetatable(drone, mining_drone.metatable)
-
-  --drone:add_lights()
 
   add_drone(drone)
 
@@ -157,35 +154,6 @@ end
 function mining_drone:get_depot()
   if not self.depot then return end
   return mining_drone.get_mining_depot(self.depot)
-end
-
-function mining_drone:add_lights()
-  local entity = self.entity
-
-  rendering.draw_light
-  {
-    sprite = "mining-drone-light",
-    oriented = true,
-    target = entity,
-    target_offset = {0, 0},
-    surface = entity.surface,
-    minimum_darkness = 0.3,
-    intensity = 0.6,
-    scale = 2
-  }
-
-  --rendering.draw_light
-  --{
-  --  sprite = "utility/light_medium",
-  --  oriented = false,
-  --  target = entity,
-  --  target_offset = {0, 0},
-  --  surface = entity.surface,
-  --  minimum_darkness = 0.3,
-  --  intensity = 0.4,
-  --  scale = 2.5,
-  --}
-
 end
 
 function mining_drone:spill(stack)
@@ -213,91 +181,32 @@ function mining_drone:process_mining()
     return self:return_to_depot()
   end
 
-
   local depot = self:get_depot()
   if not depot then
     self:cancel_command()
     return
   end
 
-  local item = depot.item
-  if not item then
-    --self:say("I don't know what I want")
-    self:return_to_depot()
-    return
-  end
 
-  local item_flow = self.entity.force.item_production_statistics.on_flow
+  local pollute = self.entity.surface.pollute
+  local pollution_flow = game.pollution_statistics.on_flow
 
-  if target.type == "item-entity" then
+  pollute(target.position, pollution_per_mine)
+  pollution_flow(default_bot_name, pollution_per_mine)
 
-    local stack = target.stack
-    if stack.name == item then
-      self.stack = {name = stack.name, count = stack.count}
-      item_flow(item, stack.count)
-    else
-      self:spill{name = stack.name, count = stack.count}
-    end
+  if target.type ~= "resource" then error("HUEHRUEH") end
 
-  else
-
-    local pollute = self.entity.surface.pollute
-    local pollution_flow = game.pollution_statistics.on_flow
-
-    local productivity_bonus_chance = self:get_productivity_probability()
-    local bonus_amount = 0
-    if productivity_bonus_chance > 0 then
-      for k = 1, self.mining_count do
-        local chance = productivity_bonus_chance
-        while chance > 0 do
-          if random() < productivity_bonus_chance then
-            bonus_amount = bonus_amount + 1
-          end
-          chance = chance - 1
-        end
-      end
-    end
-
-    for k, product in pairs (get_products(target)) do
-      local count = product_amount(product) * self.mining_count
-      if count > 0 then
-        pollute(target.position, pollution_per_ore * count)
-        pollution_flow(default_bot_name, pollution_per_ore * count)
-
-        local count = count + bonus_amount
-
-        if product.name == item then
-          self.stack = {name = product.name, count = count}
-          item_flow(item, count)
-        else
-          self:spill{name = product.name, count = count}
-        end
-
-      end
-    end
-
-  end
-
-  if target.type == "resource" then
-    local resource_amount = target.amount
-    if target.initial_amount then
-      --It is infinite
-      target.amount = max(resource_amount - self.mining_count, target.prototype.minimum_resource_amount)
-    elseif resource_amount > self.mining_count then
-        target.amount = resource_amount - self.mining_count
+  local mine_opts = {inventory = self.inventory}
+  for k = 1, self.mining_count do
+    if target.valid then
+      target.mine(mine_opts)
     else
       self:clear_mining_target()
-      target.deplete()
+      break
     end
-  else
-    self:clear_mining_target()
-    target.destroy()
   end
-
   self.mining_count = nil
   self:return_to_depot()
-
-
 
 end
 
@@ -321,10 +230,23 @@ function mining_drone:process_return_to_depot()
     return
   end
 
-  if self.stack and (self.stack.count or 0) > 0 and self.stack.name == depot.item then
-    depot:get_output_inventory().insert(self.stack)
-    self.stack = nil
+  local target_inventory = depot:get_output_inventory()
+  local productivity_bonus = 1 + mining_technologies.get_productivity_bonus(self.force_index)
+  local chance = productivity_bonus % 1
+  productivity_bonus = productivity_bonus - chance
+
+  if chance > math.random() then
+    productivity_bonus = productivity_bonus + 1
   end
+
+  local item_flow = self.entity.force.item_production_statistics.on_flow
+  for name, count in pairs (self.inventory.get_contents()) do
+    local real_count = math.ceil(count * productivity_bonus)
+    target_inventory.insert({name = name, count = real_count})
+    item_flow(name, real_count)
+  end
+
+  self.inventory.clear()
 
   self:request_order()
 
@@ -613,38 +535,6 @@ local validate_proxy_orders = function()
   --game.print(count)
 end
 
-local fix_chests = function()
-  local used_chests = {}
-
-  for unit_number, drone in pairs (script_data.drones) do
-    if drone.inventory and drone.inventory.valid then
-      used_chests[drone.inventory.entity_owner.unit_number] = true
-    end
-  end
-
-  local count = 0
-  for k, chest in pairs (game.surfaces[1].find_entities_filtered{name = shared.proxy_chest_name}) do
-    if not used_chests[chest.unit_number] then
-      chest.destroy()
-      count = count + 1
-    end
-  end
-  game.print("Mining drone migration: fixed chest count "..count)
-end
-
-local migrate_chests = function()
-  game.print("Mining drone removing proxy inventories.")
-  for unit_number, drone in pairs (script_data.drones) do
-    if drone.inventory and drone.inventory.valid then
-      local contents = drone.inventory.get_contents()
-      local name, count = next(contents)
-      drone.stack = {name = name, count = count}
-      drone.inventory.entity_owner.destroy()
-      drone.inventory = nil
-    end
-  end
-end
-
 local migrate_depot_reference = function()
   for k, drone in pairs (script_data.drones) do
     if drone.depot.entity.valid then
@@ -711,16 +601,6 @@ mining_drone.on_configuration_changed = function()
   if not script_data.migrate_depot_reference then
     script_data.migrate_depot_reference = true
     migrate_depot_reference()
-  end
-
-  if not script_data.fix_chests then
-    script_data.fix_chests = true
-    fix_chests()
-  end
-
-  if not script_data.migrate_chests then
-    script_data.migrate_chests = true
-    migrate_chests()
   end
 
   validate_proxy_orders()
