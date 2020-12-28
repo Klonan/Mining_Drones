@@ -31,71 +31,6 @@ end
 local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics", "not-repairable"}
 --local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"}
 
-local recipes = data.raw.recipe
-local make_depot_recipe = function(entity, item_prototype, fluid_ingredient)
-
-  if not item_prototype then
-    return
-  end
-
-
-  local recipe_name = "mine-"..item_prototype.name
-  if fluid_ingredient then
-    recipe_name = recipe_name.."-with-"..fluid_ingredient.name
-  end
-
-  local localised_name = {"mine", item_prototype.localised_name or {"item-name."..item_prototype.name}}
-  if fluid_ingredient then
-    localised_name = {"mine-with-fluid", item_prototype.localised_name or {"item-name."..item_prototype.name}, data.raw.fluid[fluid_ingredient.name].localised_name or {"fluid-name."..fluid_ingredient.name}}
-  end
-
-  if recipes[recipe_name] then
-    --recipes[recipe_name].order = recipes[recipe_name].order.."\n "..entity.name
-    return
-  end
-
-  local recipe =
-  {
-    type = "recipe",
-    name = recipe_name,
-    localised_name = localised_name,
-    icon = item_prototype.dark_background_icon or item_prototype.icon,
-    icon_size = item_prototype.icon_size,
-    icons = item_prototype.icons,
-    ingredients =
-    {
-      {type = "item", name = names.drone_name, amount = 1},
-      fluid_ingredient
-    },
-    results =
-    {
-      {type = "item", name = item_prototype.name, amount = math.min(item_prototype.stack_size * 100, (2 ^ 16) - 1), show_details_in_recipe_tooltip = false},
-      {type = "item", name = item_prototype.name, amount = (2 ^ 16) -1, show_details_in_recipe_tooltip = false},
-      {type = "item", name = item_prototype.name, amount = (2 ^ 16) -1, show_details_in_recipe_tooltip = false}
-    },
-    category = names.mining_depot,
-    subgroup = (fluid_ingredient and "smelting-machine") or "extraction-machine",
-    overload_multiplier = 100,
-    hide_from_player_crafting = true,
-    main_product = "",
-    allow_decomposition = false,
-    allow_as_intermediate = false,
-    allow_intermediates = true,
-    order = entity.name
-  }
-  data:extend{recipe}
-  local map_color = (entity.type == "tree" and {r = 0.19, g = 0.39, b = 0.19, a = 0.40}) or entity.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 0.5 }
-  for k = 1, shared.variation_count do
-    --log("Making drone "..r..g..b)
-    make_drone(recipe_name..shared.drone_name..k, map_color, item_prototype.localised_name or {"item-name."..item_prototype.name})
-  end
-end
-
-local is_stupid = function(entity)
-  --Thanks NPE and dectorio!
-  return entity.name:find("wreck") or entity.name:find("dect")
-end
-
 local items = data.raw.item
 local tools = data.raw.tool
 local get_item = function(name)
@@ -106,23 +41,62 @@ end
 local make_recipes = function(entity)
 
   if not entity.minable then return end
-  if is_stupid(entity) then return end
 
-  if entity.minable.result then
-    local name = entity.minable.result or entity.minable.result[1]
-    make_depot_recipe(entity, get_item(name), entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
+  local results = entity.minable.results or {{entity.minable.result}}
+  if not next(results) then return end
+  local fluid = entity.minable.required_fluid
+
+  local recipe_name = "mine-"..entity.name
+
+  local localised_name = {"mine", entity.localised_name or {"entity-name."..entity.name}}
+
+  local recipe_results = {}
+  for k, result in pairs (results) do
+    local name = result.name or result[1]
+    local item_prototype = get_item(name)
+    if item_prototype then
+      table.insert(recipe_results, {type = "item", name = name, amount = (2 ^ 16) - 1, show_details_in_recipe_tooltip = false})
+    end
   end
 
-  if entity.minable.results then
-    for k, result in pairs (entity.minable.results) do
-      local name = result.name or result[1]
-      make_depot_recipe(entity, get_item(name), entity.minable.required_fluid and {type = "fluid", name = entity.minable.required_fluid, amount = entity.minable.fluid_amount * 10})
-    end
+  --error(serpent.block{results = results, recipe_results = recipe_results})
+
+  if not next(recipe_results) then return end
+
+  local recipe =
+  {
+    type = "recipe",
+    name = recipe_name,
+    localised_name = localised_name,
+    icon = entity.dark_background_icon or entity.icon,
+    icon_size = entity.icon_size,
+    icons = entity.icons,
+    icon_mipmap = entity.icon_mipmap,
+    ingredients =
+    {
+      {type = "item", name = names.drone_name, amount = 1},
+      fluid and {type = "fluid", name = fluid, amount = entity.minable.fluid_amount * 10}
+    },
+    results = recipe_results,
+    category = names.mining_depot,
+    subgroup = "extraction-machine",
+    overload_multiplier = 100,
+    hide_from_player_crafting = true,
+    main_product = "",
+    allow_decomposition = false,
+    allow_as_intermediate = false,
+    allow_intermediates = true,
+    order = entity.order or entity.name
+  }
+  data:extend{recipe}
+
+  local map_color = entity.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 0.5 }
+  for k = 1, shared.variation_count do
+    make_drone(entity.name..shared.drone_name..k, map_color, entity.localised_name or {"entity-name."..entity.name})
   end
 end
 
 local count = 0
-
 
 local axe_mining_ore_trigger =
 {
@@ -247,125 +221,4 @@ for k, resource in pairs (data.raw.resource) do
     make_recipes(resource)
     make_resource_attack_proxy(resource)
   end
-end
-
-for k, rock in pairs (data.raw["simple-entity"]) do
-  if rock.minable then
-    make_recipes(rock)
-    make_resource_attack_proxy(rock)
-  end
-end
-
-
-local make_tree_proxy = function(tree)
-
-  local attack_proxy =
-  {
-    type = "unit",
-    name = shared.attack_proxy_name..tree.name,
-    icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
-    icon_size = 32,
-    flags = proxy_flags,
-    order = "zzzzzz",
-    max_health = shared.mining_damage * 1000000,
-    collision_box = tree.collision_box,
-    collision_mask = {"colliding-with-tiles-only"},
-    selection_box = nil,
-    run_animation = empty_rotated_animation(),
-    attack_parameters = empty_attack_parameters(),
-    movement_speed = 0,
-    distance_per_frame = 0,
-    pollution_to_join_attack = 0,
-    distraction_cooldown = 0,
-    vision_distance = 0
-  }
-
-  local damaged_trigger =
-  {
-    sound_enabled and mining_wood_trigger or nil
-  }
-
-  local particle = tree.minable and tree.minable.mining_particle
-  if particle then
-    table.insert(damaged_trigger,
-    {
-      type = "create-particle",
-      repeat_count = 3,
-      particle_name = particle,
-      entity_name = particle,
-      initial_height = 0,
-      speed_from_center = 0.025,
-      speed_from_center_deviation = 0.025,
-      initial_vertical_speed = 0.025,
-      initial_vertical_speed_deviation = 0.025,
-      offset_deviation = tree.selection_box
-    })
-  end
-
-  if next(damaged_trigger) then
-    attack_proxy.damaged_trigger_effect = damaged_trigger
-  end
-
-
-  local dying_trigger = {}
-
-  if tree.corpse then
-    table.insert(dying_trigger,
-    {
-      type = "create-entity",
-      entity_name = tree.corpse
-    })
-  end
-
-  if tree.variations and tree.variations[1].leaf_generation then
-    table.insert(damaged_trigger, tree.variations[1].leaf_generation)
-  end
-
-  if tree.variations and tree.variations[1].branch_generation then
-    table.insert(damaged_trigger, tree.variations[1].branch_generation)
-  end
-
-  if dying_trigger[1] then
-    attack_proxy.dying_trigger_effect = dying_trigger
-  end
-
-  data:extend{attack_proxy}
-  count = count + 1
-end
-
-for k, tree in pairs (data.raw.tree) do
-  if tree.minable then
-    make_recipes(tree)
-    make_tree_proxy(tree)
-  end
-end
-
-local make_size_proxy = function(size)
-
-  local attack_proxy =
-  {
-    type = "unit",
-    name = shared.attack_proxy_name..size,
-    icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
-    icon_size = 32,
-    flags = proxy_flags,
-    order = "zzzzzz",
-    max_health = shared.mining_damage * 1000000,
-    collision_box = {{-size/2, -size/2}, {size/2, size/2}},
-    collision_mask = {"colliding-with-tiles-only"},
-    selection_box = nil,
-    run_animation = empty_rotated_animation(),
-    attack_parameters = empty_attack_parameters(),
-    movement_speed = 0,
-    distance_per_frame = 0,
-    pollution_to_join_attack = 0,
-    distraction_cooldown = 0,
-    vision_distance = 0
-  }
-
-  data:extend{attack_proxy}
-end
-
-for k = 1, 10 do
-  make_size_proxy(k)
 end
