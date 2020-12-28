@@ -103,6 +103,11 @@ local axe_mining_ore_trigger =
   type = "play-sound",
   sound =
   {
+    aggregation =
+    {
+      max_count = 3,
+      remove = true
+    },
     variations =
     {
       {

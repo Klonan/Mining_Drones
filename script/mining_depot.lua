@@ -15,7 +15,8 @@ local script_data =
 {
   depots = {},
   path_requests = {},
-  global_taken = {}
+  global_taken = {},
+  request_queue = {},
 }
 
 
@@ -131,6 +132,7 @@ function mining_depot.new(entity)
     path_requests = {},
     surface_index = entity.surface.index,
     force_index = entity.force.index,
+    unit_number = entity.unit_number,
     item = nil,
     fluid = nil,
     stack_count = nil
@@ -374,6 +376,10 @@ function mining_depot:get_should_spawn_drone_count(extra)
 
   --Path finds in progress, don't over achieve
   local path_requests = table_size(self.path_requests)
+  local request_queue = script_data.request_queue[self.unit_number]
+  if request_queue then
+    path_requests = path_requests + table_size(request_queue)
+  end
 
   local active = (self:get_active_drone_count() - (extra and 1 or 0)) + path_requests
 
@@ -846,6 +852,22 @@ function mining_depot:get_active_drone_count()
   return table_size(self.drones)
 end
 
+local process_request_queue = function()
+  if next(script_data.path_requests) then return end
+  for depot_unit_number, entities in pairs (script_data.request_queue) do
+    local depot = get_mining_depot(depot_unit_number)
+    if depot then
+      local entity_index, entity = next(entities)
+      if entity then
+        depot:request_path(entity)
+        entities[entity_index] = nil
+      end
+    else
+      script_data.request_queue[depot_unit_number] = nil
+    end
+  end
+end
+
 local on_tick = function(event)
 
   local bucket = script_data.depots[event.tick % depot_update_rate]
@@ -858,6 +880,10 @@ local on_tick = function(event)
         depot:update()
       end
     end
+  end
+
+  if event.tick % 13 == 0 then
+    process_request_queue()
   end
 
 end
@@ -873,8 +899,20 @@ local get_box_and_mask = function()
 end
 
 local flags = {cache = false, low_priority = false}
+
 function mining_depot:attempt_to_mine(entity)
 
+  local depot_queue = script_data.request_queue[self.unit_number]
+  if not depot_queue then
+    depot_queue = {}
+    script_data.request_queue[self.unit_number] = depot_queue
+  end
+
+  table.insert(depot_queue, entity)
+
+end
+
+function mining_depot:request_path(entity)
   --Will make a path request, and if it passes, send a drone to go mine it.
   local box, mask = get_box_and_mask()
   local path_request_id = self.entity.surface.request_path
@@ -1001,26 +1039,6 @@ lib.on_load = function()
 end
 
 lib.on_configuration_changed = function()
-
-  if not script_data.migrate_corpse then
-    script_data.migrate_corpse = true
-    for k, bucket in pairs (script_data.depots) do
-      for unit_number, depot in pairs (bucket) do
-        depot:add_corpse()
-      end
-    end
-  end
-
-  if not script_data.migrate_recent then
-    script_data.migrate_recent = true
-    rescan_all_depots()
-  end
-
-  if not script_data.migrate_desync_maybe then
-    script_data.migrate_desync_maybe = true
-    clear_global_taken()
-    rescan_all_depots()
-  end
 
   if script_data.ignore_rocks == nil then
     script_data.ignore_rocks = false
