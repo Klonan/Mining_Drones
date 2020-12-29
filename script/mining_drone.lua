@@ -102,8 +102,15 @@ function mining_drone:make_attack_proxy(entity, count)
 
   local number_of_ticks = (mining_time / self:get_mining_speed()) * 60
   local number_of_hits = math.ceil(number_of_ticks / interval)
-
-  local proxy = entity.surface.create_entity{name = get_proxy_name(entity), position = entity.position, force = "neutral"}
+  local position = entity.position
+  local radius = entity.get_radius() * 0.707
+  if radius > 0.5 then
+    local r2 = math.random() * (radius ^ 2)
+    local angle = math.random() * math.pi * 2
+    position.x = position.x + (r2^0.5) * math.cos(angle)
+    position.y = position.y + (r2^0.5) * math.sin(angle)
+  end
+  local proxy = entity.surface.create_entity{name = get_proxy_name(entity), position = position, force = "neutral"}
   proxy.health = number_of_hits * damage
   proxy.active = false
   return proxy

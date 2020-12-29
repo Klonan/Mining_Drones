@@ -15,7 +15,7 @@ local script_data =
 {
   depots = {},
   path_requests = {},
-  global_taken = {},
+  targeted_resources = {},
   request_queue = {},
 }
 
@@ -139,8 +139,8 @@ function mining_depot.new(entity)
   }
   setmetatable(depot, depot_metatable)
 
-  if not script_data.global_taken[depot.surface_index] then
-    script_data.global_taken[depot.surface_index] = {}
+  if not script_data.targeted_resources[depot.surface_index] then
+    script_data.targeted_resources[depot.surface_index] = {}
   end
 
   depot:add_corpse()
@@ -449,10 +449,7 @@ function mining_depot:is_spawn_blocked()
 end
 
 local unique_index = function(entity)
-  local unit_number = entity.unit_number
-  if unit_number then return unit_number end
-  local position = entity.position
-  return position.x.."-"..position.y
+  return script.register_on_entity_destroyed(entity)
 end
 
 local insert = table.insert
@@ -506,15 +503,27 @@ function mining_depot:sort_by_distance(entities)
     return ((x - position.x) ^ 2 + (y - position.y) ^ 2)
   end
 
+  local targeted_resources = script_data.targeted_resources[self.surface_index]
+
   for k, entity in pairs (entities) do
-    entities[k] = {entity = entity, distance = distance(entity.position)}
+    local index = unique_index(entity)
+    if not targeted_resources[index] then
+      targeted_resources[index] =
+      {
+        entity = entity,
+        depots = {},
+        max_mining = math.ceil(entity.get_radius() ^ 2),
+        mining = 0
+      }
+    end
+    entities[k] = {distance = distance(entity.position), index = index}
   end
 
   table.sort(entities, function (k1, k2) return k1.distance > k2.distance end )
 
   for k = 1, #entities do
-    local entity = entities[k].entity
-    entities[k] = entities[k].entity
+    --local entity = entities[k].entity
+    entities[k] = entities[k].index
     --local text = entity.surface.create_entity{name = "flying-text", position = entity.position, text = k}
     --text.active = false
     --text.color = {r = 1, g = k/#entities, b = k/#entities}
@@ -534,10 +543,6 @@ function mining_depot:find_potential_targets()
     return
   end
 
-  local area = self:get_area()
-  local find_entities_filtered = self.entity.surface.find_entities_filtered
-
-  local names = get_entities_for_products(item, self.fluid and self.fluid.name)
   local unsorted = self.entity.surface.find_entities_filtered
   {
     type = "resource",
@@ -554,24 +559,23 @@ end
 local insert = table.insert
 function mining_depot:find_entity_to_mine()
 
-  local taken = script_data.global_taken[self.surface_index]
+  local targeted_resources = script_data.targeted_resources[self.surface_index]
 
   local recent = self.recent
 
-  for k, entity in pairs (recent) do
-    recent[k] = nil
-    if entity.valid then
-
-      local index = unique_index(entity)
-
-      if taken[index] then
-        insert(taken[index], {depot = self, entity = entity})
-      else
-        taken[index] = {{depot = self, entity = entity}}
-        return entity
+  for entity_index, bool in pairs (recent) do
+    local target_data = targeted_resources[entity_index]
+    if target_data.entity.valid then
+      target_data.depots[self.unit_number] = true
+      if target_data.mining < target_data.max_mining then
+        target_data.mining = target_data.mining + 1
+        if target_data.mining >= target_data.max_mining then
+          recent[entity_index] = nil
+        end
+        return target_data.entity
       end
-
     end
+    recent[entity_index] = nil
   end
 
   local entities = self.potential
@@ -581,26 +585,24 @@ function mining_depot:find_entity_to_mine()
   --game.print(size)
   while true do
 
-    local entity = entities[size]
+    local entity_index = entities[size]
+    if not entity_index then break end
+
+    local target_data = targeted_resources[entity_index]
+    if target_data.entity.valid then
+      target_data.depots[self.unit_number] = true
+      if target_data.mining < target_data.max_mining then
+        target_data.mining = target_data.mining + 1
+        if target_data.mining >= target_data.max_mining then
+          entities[size] = nil
+        end
+        return target_data.entity
+      end
+    end
+
     entities[size] = nil
 
-    if not entity then break end
-
     size = size - 1
-
-
-    if entity.valid then
-
-      local index = unique_index(entity)
-
-      if taken[index] then
-        insert(taken[index], {depot = self, entity = entity})
-      else
-        taken[index] = {{depot = self, entity = entity}}
-        return entity
-      end
-
-    end
 
   end
 
@@ -793,25 +795,25 @@ end
 
 local insert = table.insert
 function mining_depot:add_mining_target(entity, ignore_self)
-  local taken = script_data.global_taken[self.surface_index]
+  local targeted_resources = script_data.targeted_resources[self.surface_index]
   local index = unique_index(entity)
-  local listening_depots = taken[index]
-  if listening_depots then
-    for k, unlock_depot in pairs(listening_depots) do
-      local depot = unlock_depot.depot
-      if not ignore_self or depot ~= self then
-        local entity = unlock_depot.entity
-        if entity.valid and depot.entity.valid then
-          if not depot.recent then
-            depot.recent = {}
-          end
-          depot.recent[index] = entity
-        end
+  local target_data = targeted_resources[index]
+  target_data.mining = target_data.mining - 1
+
+  if target_data.mining < 0 then
+    error("HUHEKR?")
+  end
+
+  for depot_index, bool in pairs(target_data.depots) do
+    if not ignore_self or depot_index ~= self.unit_number then
+      local depot = get_mining_depot(depot_index)
+      if not depot.recent then
+        depot.recent = {}
       end
+      depot.recent[index] = true
     end
   end
 
-  taken[index] = nil
 end
 
 function mining_depot:remove_from_list()
@@ -988,14 +990,14 @@ local reset_all_depots = function()
   rescan_all_depots()
 end
 
-local clear_global_taken = function()
+local clear_targeted_resources = function()
   for k, bucket in pairs (script_data.depots) do
     for unit_number, depot in pairs (bucket) do
       depot:cancel_all_orders()
     end
   end
-  for k, surface in pairs (script_data.global_taken) do
-    script_data.global_taken[k] = {}
+  for k, surface in pairs (script_data.targeted_resources) do
+    script_data.targeted_resources[k] = {}
   end
 end
 
