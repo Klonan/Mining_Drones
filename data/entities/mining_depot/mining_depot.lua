@@ -5,12 +5,12 @@ machine.localised_name = {name}
 local scale = 2
 util.recursive_hack_make_hr(machine)
 util.recursive_hack_scale(machine, scale)
-machine.collision_box = {{-1.25, -2.25},{1.25, 2.25}}
-machine.selection_box = {{-1.5, -2.5},{1.5, 2.5}}
+machine.collision_box = {{-1.25, -3.25},{1.25, 1.25}}
+machine.selection_box = {{-1.5, -3.5},{1.5, 1.5}}
 machine.crafting_categories = {name}
 machine.crafting_speed = (1)
 machine.ingredient_count = nil
-machine.collision_mask = {"item-layer", "object-layer", "water-tile", "player-layer", "resource-layer"}
+machine.collision_mask = {"item-layer", "object-layer", "water-tile", "resource-layer"}
 machine.allowed_effects = {"consumption", "speed", "pollution"}
 machine.module_specification =nil
 machine.minable = {result = name, mining_time = 1}
@@ -18,14 +18,14 @@ machine.flags = {"placeable-neutral", "player-creation"}
 machine.next_upgrade = nil
 machine.fluid_boxes =
 {
-  {
-    production_type = "input",
-    pipe_picture = assembler2pipepictures(),
-    base_area = 10,
-    base_level = -1,
-    pipe_connections = {{ type="input-output", position = {0, 3} }},
-    pipe_covers = pipecoverspictures(),
-  },
+  --{
+  --  production_type = "input",
+  --  pipe_picture = assembler2pipepictures(),
+  --  base_area = 10,
+  --  base_level = -1,
+  --  pipe_connections = {{ type="input-output", position = {0, 1.5} }},
+  --  pipe_covers = pipecoverspictures(),
+  --},
   off_when_no_fluid_recipe = false
 }
 machine.scale_entity_info_icon = true
@@ -51,106 +51,77 @@ machine.radius_visualisation_specification =
   offset = {0, -43}
 }
 
-local base = function(shift)
-  return
-  {
-    filename = util.path("data/entities/mining_depot/depot-base.png"),
-    width = 474,
-    height = 335,
-    frame_count = 1,
-    scale = 0.45,
-    shift = shift
-  }
-end
-
-local h_chest = function(shift)
-  return
-  {
-    filename = util.path("data/entities/mining_depot/depot-chest-h.png"),
-    width = 190,
-    height = 126,
-    frame_count = 1,
-    scale = 0.5,
-    shift = shift
-  }
-end
-local h_shadow = function(shift)
-  return
-  {
-    filename = util.path("data/entities/mining_depot/depot-chest-h-shadow.png"),
-    width = 192,
-    height = 99,
-    frame_count = 1,
-    scale = 0.5,
-    shift = shift,
-    draw_as_shadow = true
-  }
-end
-
-local v_chest = function(shift)
-  return
-  {
-    filename = util.path("data/entities/mining_depot/depot-chest-v.png"),
-    width = 136,
-    height = 189,
-    frame_count = 1,
-    scale = 0.4,
-    shift = shift
-  }
-end
-
-local v_shadow = function(shift)
-  return
-  {
-    filename = util.path("data/entities/mining_depot/depot-chest-v-shadow.png"),
-    width = 150,
-    height = 155,
-    frame_count = 1,
-    scale = 0.4,
-    shift = shift,
-    draw_as_shadow = true
-  }
-end
-
-machine.animation =
+local animation =
 {
   north =
   {
     layers =
     {
-      base{0, -0.5},
-      h_shadow{0.2, 1.5},
-      h_chest{0, 1.5},
-
+      {
+        filename = util.path("data/entities/mining_depot/depot-north.png"),
+        width = 3*64,
+        height = 5*64,
+        frame_count = 1,
+        scale = 0.5,
+        shift = {0, -1}
+      }
     }
   },
   south =
   {
     layers =
     {
-      h_shadow{0.2, -1.5},
-      h_chest{0, -1.5},
-      base{0, 1},
+      {
+        filename = util.path("data/entities/mining_depot/depot-south.png"),
+        width = 3*64,
+        height = 5*64,
+        frame_count = 1,
+        scale = 0.5,
+        shift = {0, 1}
+      }
     }
   },
   east =
   {
     layers =
     {
-      v_shadow{-1.3, 0},
-      v_chest{-1.5, 0},
-      base{0.5, 0.2},
+      {
+        filename = util.path("data/entities/mining_depot/depot-east.png"),
+        width = 5*64,
+        height = 3*64,
+        frame_count = 1,
+        scale = 0.5,
+        shift = {1, 0}
+      }
     }
   },
   west =
   {
     layers =
     {
-      v_shadow{1.7, 0},
-      v_chest{1.5, 0},
-      base{-0.5, 0.2},
+      {
+        filename = util.path("data/entities/mining_depot/depot-west.png"),
+        width = 5*64,
+        height = 3*64,
+        frame_count = 1,
+        scale = 0.5,
+        shift = {-1, 0}
+      }
     }
   },
+}
+
+machine.animation = nil
+machine.working_visualisations =
+{
+  {
+    always_draw = true,
+    render_layer = "floor",
+    north_animation = animation.north,
+    south_animation = animation.south,
+    east_animation = animation.east,
+    west_animation = animation.west,
+  }
 }
 
 local item =
@@ -212,6 +183,13 @@ local caution_corpse =
   remove_on_tile_placement = false
 }
 
+local box =
+{
+  type = "highlight-box",
+  name = "mining-depot-collision-box",
+  collision_mask = {"player-layer"}
+}
+
 data:extend
 {
   machine,
@@ -219,7 +197,8 @@ data:extend
   category,
   recipe,
   caution_sprite,
-  caution_corpse
+  caution_corpse,
+  box
 }
 
 --error(count)

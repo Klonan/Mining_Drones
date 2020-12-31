@@ -94,10 +94,6 @@ function mining_drone:get_mining_speed()
   return 0.5 * (1 + mining_technologies.get_mining_speed_bonus(self.force_index))
 end
 
-function mining_drone:get_productivity_probability()
-  return mining_technologies.get_productivity_bonus(self.force_index)
-end
-
 function mining_drone:make_attack_proxy()
 
   --Health is set so it will take just enough mining_damage at exactly the right time
@@ -125,7 +121,9 @@ end
 local states =
 {
   mining_entity = 1,
-  return_to_depot = 2
+  return_to_depot = 2,
+  spawning = 3,
+  despawning = 4
 }
 
 mining_drone.new = function(entity, depot)
@@ -136,12 +134,22 @@ mining_drone.new = function(entity, depot)
     unit_number = entity.unit_number,
     force_index = entity.force.index,
     depot = depot.entity.unit_number,
-    inventory = game.create_inventory(20)
+    inventory = game.create_inventory(20),
+    state = states.spawning
   }
-  entity.ai_settings.path_resolution_modifier = 1
+  entity.ai_settings.path_resolution_modifier = 0
   setmetatable(drone, mining_drone.metatable)
 
   add_drone(drone)
+
+  entity.set_command
+  {
+    type = defines.command.go_to_location,
+    destination_entity = depot.corpse,
+    distraction = defines.distraction.none,
+    pathfind_flags = {prefer_straight_paths = false, use_cache = false},
+    radius = 0.1
+  }
 
   return drone
 end
@@ -198,17 +206,39 @@ function mining_drone:request_order()
 end
 
 local distance = util.distance
-function mining_drone:process_return_to_depot()
+function mining_drone:distance(position)
+  return distance(self.entity.position, position)
+end
+
+function mining_drone:move_to_return()
 
   local depot = self:get_depot()
-
   if not (depot and depot.entity.valid) then
     --self:say("My depot isn't valid!")
     self:cancel_command()
     return
   end
 
-  if distance(self.entity.position, depot:get_spawn_position()) > 1 then
+  self.state = states.despawning
+  local position = depot:get_spawn_position()
+  if self:distance(position) > 0.5 then
+    self:go_to_position(position, 0.1)
+    return
+  end
+
+  return true
+end
+
+function mining_drone:process_return_to_depot()
+
+  local depot = self:get_depot()
+  if not (depot and depot.entity.valid) then
+    --self:say("My depot isn't valid!")
+    self:cancel_command()
+    return
+  end
+
+  if self:distance(depot:get_drop_position()) > 1 then
     self:return_to_depot()
     return
   end
@@ -221,6 +251,7 @@ function mining_drone:process_return_to_depot()
   if chance > random() then
     productivity_bonus = productivity_bonus + 1
   end
+
 
   local item_flow = self.entity.force.item_production_statistics.on_flow
   for name, count in pairs (self.inventory.get_contents()) do
@@ -239,8 +270,8 @@ function mining_drone:process_failed_command()
 
   self.fail_count = (self.fail_count or 0) + 1
 
-  if self.fail_count == 2 then self.entity.ai_settings.path_resolution_modifier = 2 end
-  if self.fail_count == 4 then self.entity.ai_settings.path_resolution_modifier = 3 end
+  if self.fail_count == 2 then self.entity.ai_settings.path_resolution_modifier = 1 end
+  if self.fail_count == 4 then self.entity.ai_settings.path_resolution_modifier = 2 end
 
   if self.state == states.mining_entity then
 
@@ -261,6 +292,22 @@ function mining_drone:process_failed_command()
       return self:wait(random(25, 45))
     end
     --self:say("I can't return to my depot!")
+    self:cancel_command()
+    return
+  end
+
+  if self.state == states.spawning then
+    if self.fail_count <= 5 then
+      return self:wait(random(25, 45))
+    end
+    self:cancel_command()
+    return
+  end
+
+  if self.state == states.despawning then
+    if self.fail_count <= 5 then
+      return self:wait(random(25, 45))
+    end
     self:cancel_command()
     return
   end
@@ -300,6 +347,16 @@ function mining_drone:update(event)
 
   if event.was_distracted then
     self:process_distracted_command()
+    return
+  end
+
+  if self.state == states.spawning then
+    self:request_order()
+    return
+  end
+
+  if self.state == states.despawning then
+    self:request_order()
     return
   end
 
@@ -394,11 +451,6 @@ function mining_drone:return_to_depot()
     return
   end
 
-  local position = depot:get_spawn_position()
-  if position then
-    self:go_to_position(position, 0.35)
-    return
-  end
 end
 
 function mining_drone:go_to_position(position, radius)

@@ -15,4 +15,12 @@ data.variation_count = 20
 data.mining_speed_technology = "mining-drone-mining-speed"
 data.mining_productivity_technology = "mining-drone-productivity"
 
+data.depots =
+{
+  ["mining-depot"] =
+  {
+    radius = 40
+  }
+}
+
 return data

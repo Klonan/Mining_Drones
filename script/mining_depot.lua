@@ -4,11 +4,20 @@ local mining_drone = require("script/mining_drone")
 local mining_technologies = require("script/mining_technologies")
 
 local depot_update_rate = 60
+local path_queue_rate = 13
 local mining_depot = {}
 local depot_metatable = {__index = mining_depot}
 local depot_range = 40
 local variation_count = shared.variation_count
 local default_bot_name = names.drone_name
+
+
+
+local make_wall = function(entity)
+
+
+
+end
 
 local script_data =
 {
@@ -67,6 +76,102 @@ local add_to_bucket = function(depot)
   bucket[unit_number] = depot
 end
 
+local collide_box = function()
+  return
+  {
+    left_top = {x = -1.5, y = -1.5},
+    right_bottom = {x = 1.5, y = 1.5}
+  }
+end
+
+local wall_thickness = 0.75
+local wall_padding = 0.25
+local front_gap = 2
+local box_name = "mining-depot-collision-box"
+local render_player_index = 42069
+
+function mining_depot:add_wall()
+  local direction = self.entity.direction
+  local box = collide_box()
+  local position = self.entity.position
+  box.left_top.x = position.x + box.left_top.x + wall_padding
+  box.right_bottom.x = position.x + box.right_bottom.x - wall_padding
+  box.left_top.y = position.y + box.left_top.y + wall_padding
+  box.right_bottom.y = position.y + box.right_bottom.y - wall_padding
+  local position = {0,0}
+  local boxes = {}
+  local surface = self.entity.surface
+
+  if direction ~= 0 then
+    table.insert(boxes, surface.create_entity
+    {
+      name = box_name,
+      bounding_box =
+      {
+        {box.left_top.x, box.left_top.y},
+        {box.right_bottom.x, box.left_top.y + wall_thickness},
+      },
+      position = position,
+      render_player_index = render_player_index
+    })
+  end
+
+  if direction ~= 2 then
+    table.insert(boxes, surface.create_entity
+    {
+      name = box_name,
+      bounding_box =
+      {
+        {box.right_bottom.x - wall_thickness, box.left_top.y},
+        {box.right_bottom.x, box.right_bottom.y},
+      },
+      position = position,
+      render_player_index = render_player_index
+    })
+  end
+
+  if direction ~= 4 then
+    table.insert(boxes, surface.create_entity
+    {
+      name = box_name,
+      bounding_box =
+      {
+        {box.left_top.x, box.right_bottom.y - wall_thickness},
+        {box.right_bottom.x, box.right_bottom.y},
+      },
+      position = position,
+      render_player_index = render_player_index
+    })
+  end
+
+  if direction ~= 6 then
+    table.insert(boxes, surface.create_entity
+    {
+      name = box_name,
+      bounding_box =
+      {
+        {box.left_top.x, box.left_top.y},
+        {box.left_top.x + wall_thickness, box.right_bottom.y},
+      },
+      position = position,
+      render_player_index = render_player_index
+    })
+  end
+
+  self.boxes = boxes
+
+end
+
+function mining_depot:clear_wall()
+  if not self.boxes then return end
+  for k, entity in pairs (self.boxes) do
+    if entity.valid then
+      entity.destroy()
+    end
+  end
+  self.boxes = nil
+end
+
 function mining_depot:add_corpse()
 
   if self.corpse and self.corpse.valid then
@@ -77,7 +182,7 @@ function mining_depot:add_corpse()
   local corpse = self.entity.surface.create_entity
   {
     name = "caution-corpse",
-    position = self:get_spawn_position(),
+    position = self:get_drop_position(),
     force = "neutral"
   }
   corpse.corpse_expires = false
@@ -116,6 +221,7 @@ function mining_depot.new(entity)
   end
 
   depot:add_corpse()
+  depot:add_wall()
 
   add_to_bucket(depot)
 
@@ -134,7 +240,7 @@ local on_built_entity = function(event)
 
 end
 
-function mining_depot:get_spawn_position()
+function mining_depot:get_drop_position()
   local offset = offsets[self.entity.direction]
   local position = self.entity.position
   position.x = position.x + offset[1]
@@ -151,6 +257,10 @@ local drone_base_speed = 0.05
 
 function mining_depot:get_drone_speed()
   return (drone_base_speed * (1 + mining_technologies.get_walking_speed_bonus(self.force_index))) * get_speed_variance()
+end
+
+function mining_depot:get_spawn_position()
+  return self.entity.position
 end
 
 function mining_depot:spawn_drone()
@@ -365,7 +475,7 @@ function mining_depot:get_should_spawn_drone_count(extra)
   local ratio = 1 - ((current_item_count / current_target_item_count) ^ 2)
   --self:say(ratio)
 
-  return math.ceil(ratio * max_drones) - active
+  return math.min(math.ceil(ratio * max_drones) - active, math.ceil(depot_update_rate / path_queue_rate))
 
 end
 
@@ -418,7 +528,7 @@ function mining_depot:get_drone_item_count()
 end
 
 function mining_depot:is_spawn_blocked()
-  return not self.entity.surface.can_place_entity{name = default_bot_name, position = self:get_spawn_position()}
+  return not self.entity.surface.can_place_entity{name = default_bot_name, position = self:get_drop_position()}
 end
 
 local unique_index = function(entity)
@@ -722,11 +832,15 @@ function mining_depot:handle_path_request_finished(event)
       return
   end
 
-  self:order_drone(drone, entity)
+  drone.mining_target = entity
+  drone.entity.speed = self:get_drone_speed()
 
 end
 
 function mining_depot:return_drone(drone)
+  if not drone:move_to_return() then
+    return
+  end
   self:remove_drone(drone)
   drone:clear_things()
   drone.entity.destroy()
@@ -776,6 +890,7 @@ function mining_depot:handle_depot_deletion()
   self:cancel_all_orders()
   self.drones = nil
   self:remove_corpse()
+  self:clear_wall()
 end
 
 function mining_depot:get_all_depots()
@@ -826,7 +941,7 @@ local on_tick = function(event)
     end
   end
 
-  if event.tick % 13 == 0 then
+  if event.tick % path_queue_rate == 0 then
     process_request_queue()
   end
 
@@ -863,7 +978,7 @@ function mining_depot:request_path(entity)
   {
     bounding_box = box,
     collision_mask = mask,
-    start = self:get_spawn_position(),
+    start = self:get_drop_position(),
     goal = entity.position,
     force = self.entity.force,
     radius = entity.get_radius() + 0.5,

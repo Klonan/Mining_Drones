@@ -86,7 +86,8 @@ local make_recipes = function(entity)
     allow_decomposition = false,
     allow_as_intermediate = false,
     allow_intermediates = true,
-    order = entity.order or entity.name
+    order = entity.order or entity.name,
+    allow_inserter_overload = false
   }
   data:extend{recipe}
 
