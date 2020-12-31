@@ -335,6 +335,17 @@ function mining_drone:process_distracted_command()
     self:return_to_depot()
     return
   end
+
+  if self.state == states.spawning then
+    self:request_order()
+    return
+  end
+
+  if self.state == states.despawning then
+    self:request_order()
+    return
+  end
+
 end
 
 function mining_drone:update(event)
