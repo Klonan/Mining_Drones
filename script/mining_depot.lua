@@ -48,7 +48,7 @@ end
 
 local offsets = {}
 for name, depot in pairs (shared.depots) do
-  local offset = {depot.drop_offset[1], depot.drop_offset[2] - 0.5}
+  local offset = {depot.drop_offset[1], depot.drop_offset[2]}
   local depot_offset = {}
   depot_offset[defines.direction.north] = {offset[1], offset[2]}
   depot_offset[defines.direction.south] = {-offset[1], -offset[2]}
@@ -585,6 +585,8 @@ function mining_depot:get_area()
   local radius = self:get_radius()
   local direction = directions[self.entity.direction]
   local radius_offset = {direction[1] * radius, direction[2] * radius}
+  radius_offset[1] = radius_offset[1] + (0.5 * direction[1])
+  radius_offset[2] = radius_offset[2] + (0.5 * direction[2])
   origin.x = origin.x + drop_offset[1] + radius_offset[1]
   origin.y = origin.y + drop_offset[2] + radius_offset[2]
   return util.area(origin, radius)
