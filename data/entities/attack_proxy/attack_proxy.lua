@@ -80,14 +80,15 @@ local make_recipes = function(entity)
     results = recipe_results,
     category = names.mining_depot,
     subgroup = "extraction-machine",
-    overload_multiplier = 100,
+    --overload_multiplier = 100,
     hide_from_player_crafting = true,
     main_product = "",
     allow_decomposition = false,
     allow_as_intermediate = false,
     allow_intermediates = true,
     order = entity.order or entity.name,
-    allow_inserter_overload = false
+    allow_inserter_overload = false,
+    energy_required = 1.166
   }
   data:extend{recipe}
 

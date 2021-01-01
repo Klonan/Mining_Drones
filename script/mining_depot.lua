@@ -7,17 +7,8 @@ local depot_update_rate = 60
 local path_queue_rate = 13
 local mining_depot = {}
 local depot_metatable = {__index = mining_depot}
-local depot_range = 40
 local variation_count = shared.variation_count
 local default_bot_name = names.drone_name
-
-
-
-local make_wall = function(entity)
-
-
-
-end
 
 local script_data =
 {
@@ -26,7 +17,6 @@ local script_data =
   targeted_resources = {},
   request_queue = {},
 }
-
 
 local get_mining_depot = function(unit_number)
   local bucket = script_data.depots[unit_number % depot_update_rate]
@@ -56,14 +46,20 @@ function mining_depot:get_mining_count(entity)
   return min(3 + random(2 + bonus), entity.amount)
 end
 
+local offsets = {}
+for name, depot in pairs (shared.depots) do
+  local offset = {depot.drop_offset[1], depot.drop_offset[2] - 0.5}
+  local depot_offset = {}
+  depot_offset[defines.direction.north] = {offset[1], offset[2]}
+  depot_offset[defines.direction.south] = {-offset[1], -offset[2]}
+  depot_offset[defines.direction.east] = {-offset[2], -offset[1]}
+  depot_offset[defines.direction.west] = {offset[2], offset[1]}
+  offsets[name] = depot_offset
+end
 
-local offsets =
-{
-  [defines.direction.north] = {0, -2.75},
-  [defines.direction.south] = {0, 2.75},
-  [defines.direction.east] = {2.75, 0},
-  [defines.direction.west] = {-2.75, 0},
-}
+function mining_depot:get_drop_offset()
+  return offsets[self.entity.name][self.entity.direction]
+end
 
 local add_to_bucket = function(depot)
   local unit_number = depot.unit_number
@@ -227,6 +223,19 @@ function mining_depot.new(entity)
 
   entity.active = false
 
+  --[[
+    local area = depot:get_area()
+    rendering.draw_rectangle
+    {
+      color = {0.5, 0.5, 0, 0.5},
+      filled = true,
+      left_top = area[1],
+      right_bottom = area[2],
+      surface = entity.surface,
+      draw_on_ground = true
+    }
+  ]]
+
   return depot
 end
 
@@ -241,7 +250,7 @@ local on_built_entity = function(event)
 end
 
 function mining_depot:get_drop_position()
-  local offset = offsets[self.entity.direction]
+  local offset = self:get_drop_offset()
   local position = self.entity.position
   position.x = position.x + offset[1]
   position.y = position.y + offset[2]
@@ -390,7 +399,7 @@ function mining_depot:add_spawn_blocked_alert(string)
     sprite = "utility/warning_icon",
     forces = {self.entity.force},
     time_to_live = 30,
-    target_offset = offsets[self.entity.direction],
+    target_offset = self:get_drop_offset(),
     x_scale = 0.5,
     y_scale = 0.5,
     render_layer = "entity-info-icon-above"
@@ -556,24 +565,29 @@ local get_entities_for_products = function(item, fluid)
   return names
 end
 
-local directions =
-{
-  [defines.direction.north] = {0, -(depot_range + 2.5)},
-  [defines.direction.south] = {0, (depot_range + 2.5)},
-  [defines.direction.east] = {(depot_range + 2.5), 0},
-  [defines.direction.west] = {-(depot_range + 2.5), 0},
-}
 
-local get_depot_area = function(entity)
-  local origin = entity.position
-  local direction = directions[entity.direction]
-  origin.x = origin.x + direction[1]
-  origin.y = origin.y + direction[2]
-  return util.area(origin, depot_range)
+function mining_depot:get_radius()
+  local depot = shared.depots[self.entity.name]
+  return depot.radius or error("POOP")
 end
 
+local directions =
+{
+  [defines.direction.north] = {0, -1},
+  [defines.direction.south] = {0, 1},
+  [defines.direction.east] = {1, 0},
+  [defines.direction.west] = {-1, 0},
+}
+
 function mining_depot:get_area()
-  return get_depot_area(self.entity)
+  local origin = self.entity.position
+  local drop_offset = self:get_drop_offset()
+  local radius = self:get_radius()
+  local direction = directions[self.entity.direction]
+  local radius_offset = {direction[1] * radius, direction[2] * radius}
+  origin.x = origin.x + drop_offset[1] + radius_offset[1]
+  origin.y = origin.y + drop_offset[2] + radius_offset[2]
+  return util.area(origin, radius)
 end
 
 local insert = table.insert

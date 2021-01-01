@@ -19,7 +19,9 @@ data.depots =
 {
   ["mining-depot"] =
   {
-    radius = 40
+    radius = 25 + 0.5,
+    capacity = 50,
+    drop_offset = {0, -3}
   }
 }
 

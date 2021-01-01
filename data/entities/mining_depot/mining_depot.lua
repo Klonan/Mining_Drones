@@ -1,5 +1,6 @@
 local machine = util.copy(data.raw["assembling-machine"]["assembling-machine-3"])
 local name = names.mining_depot
+local depots = names.depots
 machine.name = name
 machine.localised_name = {name}
 local scale = 2
@@ -8,7 +9,7 @@ util.recursive_hack_scale(machine, scale)
 machine.collision_box = {{-1.25, -3.25},{1.25, 1.25}}
 machine.selection_box = {{-1.5, -3.5},{1.5, 1.5}}
 machine.crafting_categories = {name}
-machine.crafting_speed = (1)
+machine.crafting_speed = depots["mining-depot"].capacity - 1
 machine.ingredient_count = nil
 machine.collision_mask = {"item-layer", "object-layer", "water-tile", "resource-layer"}
 machine.allowed_effects = {"consumption", "speed", "pollution"}
@@ -39,6 +40,8 @@ machine.energy_source =
 }
 machine.icon = util.path("data/entities/mining_depot/depot-icon.png")
 machine.icon_size = 216
+local radius = depots["mining-depot"].radius
+local drop_offset = depots["mining-depot"].drop_offset
 machine.radius_visualisation_specification =
 {
   sprite =
@@ -47,8 +50,8 @@ machine.radius_visualisation_specification =
     width = 10,
     height = 10
   },
-  distance = 40.5,
-  offset = {0, -43}
+  distance =  radius,
+  offset = {drop_offset[1], (drop_offset[2] - radius) - 0.5}
 }
 
 local animation =
