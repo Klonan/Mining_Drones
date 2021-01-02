@@ -4,6 +4,114 @@ local depots = names.depots
 local radius = depots["mining-depot"].radius
 local drop_offset = depots["mining-depot"].drop_offset
 
+local pad_layers = function(layers)
+  for k = 1, 50 do
+    table.insert(layers, 1, util.empty_sprite())
+  end
+  return layers
+end
+
+local working_visualisations =
+{
+  {
+    always_draw = true,
+    render_layer = "object",
+    east_animation =
+    {
+      layers =
+      {
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-east.png",
+          frame_count = 1,
+          scale = 0.5,
+          shift = { 1, 0},
+          width = 748,
+          height = 421,
+        },
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-east-shadow.png",
+          frame_count = 1,
+          scale = 0.5,
+          shift = { -1, 0 },
+          width = 748,
+          height = 421,
+          draw_as_shadow = true
+        },
+      }
+    },
+    north_animation =
+    {
+      layers =
+      {
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-north.png",
+          frame_count = 1,
+          shift = { 0, -1},
+          scale = 0.5,
+          width = 748,
+          height = 421,
+        },
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-north-shadow.png",
+          frame_count = 1,
+          scale = 0.5,
+          shift = { -1, 0 },
+          width = 748,
+          height = 421,
+          draw_as_shadow = true
+        },
+      }
+    },
+    south_animation =
+    {
+      layers =
+      {
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-south.png",
+          frame_count = 1,
+          scale = 0.5,
+          shift = {0,1},
+          width = 748,
+          height = 421,
+        },
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-south-shadow.png",
+          frame_count = 1,
+          scale = 0.5,
+          shift = { -1, 0 },
+          width = 748,
+          height = 421,
+          draw_as_shadow = true
+        },
+      }
+    },
+    west_animation =
+    {
+      layers =
+      {
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-west.png",
+          frame_count = 1,
+          scale = 0.5,
+          shift = { -1, 0 },
+          width = 748,
+          height = 421,
+        },
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-west-shadow.png",
+          frame_count = 1,
+          scale = 0.5,
+          shift = { -1, 0 },
+          width = 748,
+          height = 421,
+          draw_as_shadow = true
+        },
+
+      }
+    }
+  }
+}
+
 local mining_depot =
 {
   name = "mining-depot",
@@ -132,69 +240,7 @@ local mining_depot =
       }
     }
   },
-  working_visualisations =
-  {
-    {
-      always_draw = true,
-      east_animation =
-      {
-        layers =
-        {
-          {
-            filename = "__Mining_Drones__/data/entities/mining_depot/depot-east.png",
-            frame_count = 1,
-            height = 192,
-            scale = 0.5,
-            shift = { 1, 0},
-            width = 320
-          }
-        }
-      },
-      north_animation =
-      {
-        layers =
-        {
-          {
-            filename = "__Mining_Drones__/data/entities/mining_depot/depot-north.png",
-            frame_count = 1,
-            height = 320,
-            scale = 0.5,
-            shift = { 0, -1},
-            width = 192
-          }
-        }
-      },
-      render_layer = "floor",
-      south_animation =
-      {
-        layers =
-        {
-          {
-            filename = "__Mining_Drones__/data/entities/mining_depot/depot-south.png",
-            frame_count = 1,
-            height = 320,
-            scale = 0.5,
-            shift = {0,1},
-            width = 192
-          }
-        }
-      },
-      west_animation =
-      {
-        layers =
-        {
-          {
-            filename = "__Mining_Drones__/data/entities/mining_depot/depot-west.png",
-            frame_count = 1,
-            height = 192,
-            scale = 0.5,
-            shift = { -1, 0 },
-            width = 320
-          }
-        }
-      }
-    }
-  }
+  working_visualisations = working_visualisations
 }
 
 local item =
