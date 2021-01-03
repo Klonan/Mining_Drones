@@ -848,15 +848,11 @@ function mining_depot:handle_path_request_finished(event)
       return
   end
 
-  drone.mining_target = entity
-  drone.entity.speed = self:get_drone_speed()
+  self:order_drone(drone, entity)
 
 end
 
 function mining_depot:return_drone(drone)
-  if not drone:move_to_return() then
-    return
-  end
   self:remove_drone(drone)
   drone:clear_things()
   drone.entity.destroy()

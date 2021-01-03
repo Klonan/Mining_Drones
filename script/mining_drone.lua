@@ -121,9 +121,7 @@ end
 local states =
 {
   mining_entity = 1,
-  return_to_depot = 2,
-  spawning = 3,
-  despawning = 4
+  return_to_depot = 2
 }
 
 mining_drone.new = function(entity, depot)
@@ -134,8 +132,7 @@ mining_drone.new = function(entity, depot)
     unit_number = entity.unit_number,
     force_index = entity.force.index,
     depot = depot.entity.unit_number,
-    inventory = game.create_inventory(20),
-    state = states.spawning
+    inventory = game.create_inventory(20)
   }
   entity.ai_settings.path_resolution_modifier = 0
   setmetatable(drone, mining_drone.metatable)
@@ -210,25 +207,6 @@ function mining_drone:distance(position)
   return distance(self.entity.position, position)
 end
 
-function mining_drone:move_to_return()
-
-  local depot = self:get_depot()
-  if not (depot and depot.entity.valid) then
-    --self:say("My depot isn't valid!")
-    self:cancel_command()
-    return
-  end
-
-  self.state = states.despawning
-  local position = depot:get_spawn_position()
-  if self:distance(position) > 0.5 then
-    self:go_to_position(position, 0.1)
-    return
-  end
-
-  return true
-end
-
 function mining_drone:process_return_to_depot()
 
   local depot = self:get_depot()
@@ -238,7 +216,7 @@ function mining_drone:process_return_to_depot()
     return
   end
 
-  if self:distance(depot:get_drop_position()) > 1 then
+  if self:distance(depot:get_spawn_position()) > 1 then
     self:return_to_depot()
     return
   end
@@ -296,22 +274,6 @@ function mining_drone:process_failed_command()
     return
   end
 
-  if self.state == states.spawning then
-    if self.fail_count <= 5 then
-      return self:wait(random(25, 45))
-    end
-    self:cancel_command()
-    return
-  end
-
-  if self.state == states.despawning then
-    if self.fail_count <= 5 then
-      return self:wait(random(25, 45))
-    end
-    self:cancel_command()
-    return
-  end
-
 end
 
 function mining_drone:wait(ticks)
@@ -336,16 +298,6 @@ function mining_drone:process_distracted_command()
     return
   end
 
-  if self.state == states.spawning then
-    self:request_order()
-    return
-  end
-
-  if self.state == states.despawning then
-    self:request_order()
-    return
-  end
-
 end
 
 function mining_drone:update(event)
@@ -358,16 +310,6 @@ function mining_drone:update(event)
 
   if event.was_distracted then
     self:process_distracted_command()
-    return
-  end
-
-  if self.state == states.spawning then
-    self:request_order()
-    return
-  end
-
-  if self.state == states.despawning then
-    self:request_order()
     return
   end
 
@@ -388,6 +330,13 @@ end
 
 function mining_drone:attack_mining_proxy()
 
+  local depot = self:get_depot()
+
+  if not (depot and depot.entity.valid) then
+    self:cancel_command()
+    return
+  end
+
   local attack_proxy = self.attack_proxy
   if not (attack_proxy and attack_proxy.valid) then
     --dunno
@@ -397,6 +346,13 @@ function mining_drone:attack_mining_proxy()
 
   local commands =
   {
+    {
+      type = defines.command.go_to_location,
+      destination_entity = depot.corpse,
+      radius = 0.25,
+      distraction = defines.distraction.none,
+      pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+    },
     {
       type = defines.command.go_to_location,
       destination_entity = attack_proxy,
@@ -456,11 +412,31 @@ function mining_drone:return_to_depot()
     return
   end
 
-  local corpse = depot.corpse
-  if corpse and corpse.valid then
-    self:go_to_entity(corpse, 0.35)
-    return
-  end
+  local commands =
+  {
+    {
+      type = defines.command.go_to_location,
+      destination_entity = depot.corpse,
+      radius = 0.25,
+      distraction = defines.distraction.none,
+      pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+    },
+    {
+      type = defines.command.go_to_location,
+      destination = depot:get_spawn_position(),
+      radius = 0.25,
+      distraction = defines.distraction.none,
+      pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+    }
+  }
+
+  self.entity.set_command
+  {
+    type = defines.command.compound,
+    structure_type = defines.compound_command.return_last,
+    distraction = defines.distraction.none,
+    commands = commands
+  }
 
 end
 

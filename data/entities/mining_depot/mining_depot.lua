@@ -15,7 +15,12 @@ local working_visualisations =
 {
   {
     always_draw = true,
-    render_layer = "object",
+    render_layer = "higher-object-under",
+    secondary_draw_order = -127,
+    --north_position = {0, 2},
+    --south_position = {0, 2},
+    --east_position = {0, 2},
+    --west_position = {0, 2},
     east_animation =
     {
       layers =
