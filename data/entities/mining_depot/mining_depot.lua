@@ -11,6 +11,10 @@ local pad_layers = function(layers)
   return layers
 end
 
+local sprite_width = 760
+local sprite_height = 608
+local sprite_scale = 0.3
+
 local working_visualisations =
 {
   {
@@ -21,71 +25,72 @@ local working_visualisations =
     --south_position = {0, 2},
     --east_position = {0, 2},
     --west_position = {0, 2},
-    east_animation =
-    {
-      layers =
-      {
-        {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-east.png",
-          frame_count = 1,
-          scale = 0.5,
-          shift = { 1, 0},
-          width = 748,
-          height = 421,
-        },
-        {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-east-shadow.png",
-          frame_count = 1,
-          scale = 0.5,
-          shift = { -1, 0 },
-          width = 748,
-          height = 421,
-          draw_as_shadow = true
-        },
-      }
-    },
     north_animation =
     {
       layers =
       {
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-north.png",
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/Image0001.png",
           frame_count = 1,
-          shift = { 0, -1},
-          scale = 0.5,
-          width = 748,
-          height = 421,
+          --shift = { 0, -1},
+          scale = sprite_scale,
+          width = sprite_width,
+          height = sprite_height,
         },
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-north-shadow.png",
+          filename = "__Mining_Drones__/data/entities/mining_depot/shadow/Image0001.png",
           frame_count = 1,
-          scale = 0.5,
-          shift = { -1, 0 },
-          width = 748,
-          height = 421,
+          scale = sprite_scale,
+          --shift = { 0, -1},
+          width = sprite_width,
+          height = sprite_height,
           draw_as_shadow = true
         },
       }
     },
+    east_animation =
+    {
+      layers =
+      {
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/Image0002.png",
+          frame_count = 1,
+          scale = sprite_scale,
+          --shift = { 1, 0},
+          width = sprite_width,
+          height = sprite_height,
+        },
+        {
+          filename = "__Mining_Drones__/data/entities/mining_depot/shadow/Image0002.png",
+          frame_count = 1,
+          scale = sprite_scale,
+          --shift = { 1, 0},
+          width = sprite_width,
+          height = sprite_height,
+          draw_as_shadow = true
+        },
+      }
+    },
+
     south_animation =
     {
       layers =
       {
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-south.png",
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/Image0003.png",
           frame_count = 1,
-          scale = 0.5,
-          shift = {0,1},
-          width = 748,
-          height = 421,
+          scale = sprite_scale,
+          --shift = {0,1},
+          width = sprite_width,
+          height = sprite_height,
         },
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-south-shadow.png",
+          filename = "__Mining_Drones__/data/entities/mining_depot/shadow/Image0003.png",
           frame_count = 1,
-          scale = 0.5,
-          shift = { -1, 0 },
-          width = 748,
-          height = 421,
+          scale = sprite_scale,
+          --shift = {0,1},
+          width = sprite_width,
+          height = sprite_height,
           draw_as_shadow = true
         },
       }
@@ -95,23 +100,22 @@ local working_visualisations =
       layers =
       {
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-west.png",
+          filename = "__Mining_Drones__/data/entities/mining_depot/render/Image0004.png",
           frame_count = 1,
-          scale = 0.5,
-          shift = { -1, 0 },
-          width = 748,
-          height = 421,
+          scale = sprite_scale,
+          --shift = { -1, 0 },
+          width = sprite_width,
+          height = sprite_height,
         },
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/depot-west-shadow.png",
+          filename = "__Mining_Drones__/data/entities/mining_depot/shadow/Image0004.png",
           frame_count = 1,
-          scale = 0.5,
-          shift = { -1, 0 },
-          width = 748,
-          height = 421,
+          scale = sprite_scale,
+          --shift = { -1, 0 },
+          width = sprite_width,
+          height = sprite_height,
           draw_as_shadow = true
         },
-
       }
     }
   }
