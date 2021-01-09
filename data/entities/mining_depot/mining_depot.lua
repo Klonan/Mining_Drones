@@ -11,16 +11,69 @@ local pad_layers = function(layers)
   return layers
 end
 
-local sprite_width = 760
-local sprite_height = 608
-local sprite_scale = 0.3
+local sprite_width = 768
+local sprite_height = 768
+local sprite_scale = 0.35
+local sprite_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-main/Scene_layer-main_"
+local shadow_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-shadow/Scene_layer-shadow_"
+local shift = {0, 0.66}
+
+
+local duration = 70
+local size = 768
+local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
+
+local particle_stripes = function(direction)
+  local stripes = {}
+  for k = 10, 80 do
+    table.insert(stripes,
+    {
+      filename = particle_path..string.format("/%s/Scene_layer-main_%04g.png", direction, k),
+      width_in_frames = 1,
+      height_in_frames = 1
+    })
+  end
+  return stripes
+end
+
+local make_smoke = function(name, tint, direction)
+  local smoke =
+  {
+    type = "trivial-smoke",
+    name = "depot-smoke-"..name.."-"..direction,
+    duration = duration,
+    fade_in_duration = 0,
+    fade_away_duration = 10,
+    spread_duration = 0,
+    start_scale = 1,
+    end_scale = 1,
+    color = {1, 0.5, 0.1},
+    cyclic = false,
+    affected_by_wind = false,
+    render_layer = "higher-object-under",
+    movement_slow_down_factor = 0,
+    animation =
+    {
+      stripes = particle_stripes(direction),
+      width = size,
+      height = size,
+      frame_count = duration,
+      priority = "high",
+      animation_speed = 1,
+      scale = sprite_scale,
+      shift = shift
+    }
+  }
+  data:extend{smoke}
+
+end
 
 local working_visualisations =
 {
   {
     always_draw = true,
-    render_layer = "higher-object-under",
-    secondary_draw_order = -127,
+    render_layer = "object",
+    secondary_draw_order = 127,
     --north_position = {0, 2},
     --south_position = {0, 2},
     --east_position = {0, 2},
@@ -30,18 +83,18 @@ local working_visualisations =
       layers =
       {
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/Image0001.png",
+          filename = sprite_path.."0002.png",
           frame_count = 1,
-          --shift = { 0, -1},
+          shift = shift,
           scale = sprite_scale,
           width = sprite_width,
           height = sprite_height,
         },
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/shadow/Image0001.png",
+          filename = shadow_path.."0002.png",
           frame_count = 1,
           scale = sprite_scale,
-          --shift = { 0, -1},
+          shift = shift,
           width = sprite_width,
           height = sprite_height,
           draw_as_shadow = true
@@ -53,18 +106,18 @@ local working_visualisations =
       layers =
       {
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/Image0002.png",
+          filename = sprite_path.."0003.png",
           frame_count = 1,
           scale = sprite_scale,
-          --shift = { 1, 0},
+          shift = shift,
           width = sprite_width,
           height = sprite_height,
         },
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/shadow/Image0002.png",
+          filename = shadow_path.."0003.png",
           frame_count = 1,
           scale = sprite_scale,
-          --shift = { 1, 0},
+          shift = shift,
           width = sprite_width,
           height = sprite_height,
           draw_as_shadow = true
@@ -77,18 +130,18 @@ local working_visualisations =
       layers =
       {
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/Image0003.png",
+          filename = sprite_path.."0004.png",
           frame_count = 1,
           scale = sprite_scale,
-          --shift = {0,1},
+          shift = shift,
           width = sprite_width,
           height = sprite_height,
         },
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/shadow/Image0003.png",
+          filename = shadow_path.."0004.png",
           frame_count = 1,
           scale = sprite_scale,
-          --shift = {0,1},
+          shift = shift,
           width = sprite_width,
           height = sprite_height,
           draw_as_shadow = true
@@ -100,18 +153,18 @@ local working_visualisations =
       layers =
       {
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/render/Image0004.png",
+          filename = sprite_path.."0001.png",
           frame_count = 1,
           scale = sprite_scale,
-          --shift = { -1, 0 },
+          shift = shift,
           width = sprite_width,
           height = sprite_height,
         },
         {
-          filename = "__Mining_Drones__/data/entities/mining_depot/shadow/Image0004.png",
+          filename = shadow_path.."0001.png",
           frame_count = 1,
           scale = sprite_scale,
-          --shift = { -1, 0 },
+          shift = shift,
           width = sprite_width,
           height = sprite_height,
           draw_as_shadow = true

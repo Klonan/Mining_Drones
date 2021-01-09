@@ -28,6 +28,70 @@ local empty_attack_parameters = function()
   }
 end
 
+local sprite_width = 768
+local sprite_height = 768
+local sprite_scale = 0.35
+local shift = {0, 0.66}
+
+
+local duration = 70
+local size = 768
+local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
+
+local particle_stripes = function(direction)
+  local stripes = {}
+  for k = 10, 80 do
+    table.insert(stripes,
+    {
+      filename = particle_path..string.format("/%s/Scene_layer-main_%04g.png", direction, k),
+      width_in_frames = 1,
+      height_in_frames = 1
+    })
+  end
+  return stripes
+end
+
+local make_smoke = function(name, tint, direction)
+  local r, g, b = tint[1] or tint.r, tint[2] or tint.g, tint[3] or tint.b
+  --r = (r + 0.2) / 1.2
+  --g = (g + 0.2) / 1.2
+  --b = (b + 0.2) / 1.2
+
+  r = (r + 0.5) / 1.5
+  g = (g + 0.5) / 1.5
+  b = (b + 0.5) / 1.5
+  local smoke =
+  {
+    type = "trivial-smoke",
+    name = "depot-smoke-"..name.."-"..direction,
+    duration = duration,
+    fade_in_duration = 0,
+    fade_away_duration = 10,
+    spread_duration = 0,
+    start_scale = 1,
+    end_scale = 1,
+    color = {r, g, b},
+    cyclic = false,
+    affected_by_wind = false,
+    render_layer = "higher-object-under",
+    movement_slow_down_factor = 0,
+    animation =
+    {
+      stripes = particle_stripes(direction),
+      width = size,
+      height = size,
+      frame_count = duration,
+      priority = "high",
+      animation_speed = 1,
+      scale = sprite_scale,
+      shift = shift
+    }
+  }
+  data:extend{smoke}
+
+end
+
+
 local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics", "not-repairable"}
 --local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"}
 
@@ -227,5 +291,10 @@ for k, resource in pairs (data.raw.resource) do
   if resource.minable and (resource.minable.result or resource.minable.results) then
     make_recipes(resource)
     make_resource_attack_proxy(resource)
+    local map_color = resource.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 1 }
+    make_smoke(resource.name, map_color, "north")
+    make_smoke(resource.name, map_color, "east")
+    make_smoke(resource.name, map_color, "south")
+    make_smoke(resource.name, map_color, "west")
   end
 end

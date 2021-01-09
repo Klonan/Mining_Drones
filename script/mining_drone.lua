@@ -216,7 +216,7 @@ function mining_drone:process_return_to_depot()
     return
   end
 
-  if self:distance(depot:get_spawn_position()) > 1 then
+  if self:distance(depot:get_spawn_position()) > 3 then
     self:return_to_depot()
     return
   end
@@ -237,6 +237,7 @@ function mining_drone:process_return_to_depot()
     target_inventory.insert({name = name, count = real_count})
     item_flow(name, real_count)
   end
+  depot:make_smoke()
 
   self.inventory.clear()
 
@@ -424,7 +425,7 @@ function mining_drone:return_to_depot()
     {
       type = defines.command.go_to_location,
       destination = depot:get_spawn_position(),
-      radius = 0.25,
+      radius = 2,
       distraction = defines.distraction.none,
       pathfind_flags = {prefer_straight_paths = false, use_cache = false}
     }

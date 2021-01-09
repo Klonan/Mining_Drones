@@ -852,6 +852,18 @@ function mining_depot:handle_path_request_finished(event)
 
 end
 
+local direction_name =
+{
+  [0] = "north",
+  [2] = "east",
+  [4] = "south",
+  [6] = "west"
+}
+
+function mining_depot:make_smoke()
+  self.entity.surface.create_trivial_smoke{name = "depot-smoke-"..self.target_resource_name.."-"..direction_name[self.entity.direction], position = self.entity.position}
+end
+
 function mining_depot:return_drone(drone)
   self:remove_drone(drone)
   drone:clear_things()
