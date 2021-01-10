@@ -56,15 +56,16 @@ local particle_stripes = function(direction)
   return stripes
 end
 
-local make_smoke = function(name, tint, direction)
+local make_smoke = function(name, tint, direction, custom)
   local r, g, b = tint[1] or tint.r, tint[2] or tint.g, tint[3] or tint.b
   --r = (r + 0.2) / 1.2
   --g = (g + 0.2) / 1.2
   --b = (b + 0.2) / 1.2
-
-  r = (r + 0.5) / 1.5
-  g = (g + 0.5) / 1.5
-  b = (b + 0.5) / 1.5
+  if not custom then
+    r = (r + 0.5) / 1.5
+    g = (g + 0.5) / 1.5
+    b = (b + 0.5) / 1.5
+  end
   local smoke =
   {
     type = "trivial-smoke",
@@ -114,15 +115,16 @@ local pot_stripes = function(direction)
 end
 
 
-local make_pot = function(name, tint, direction)
+local make_pot = function(name, tint, direction, custom)
   local r, g, b = tint[1] or tint.r, tint[2] or tint.g, tint[3] or tint.b
   --r = (r + 0.2) / 1.2
   --g = (g + 0.2) / 1.2
   --b = (b + 0.2) / 1.2
-
-  r = (r + 0.5) / 1.5
-  g = (g + 0.5) / 1.5
-  b = (b + 0.5) / 1.5
+  if not custom then
+    r = (r + 0.5) / 1.5
+    g = (g + 0.5) / 1.5
+    b = (b + 0.5) / 1.5
+  end
   local pot =
   {
     type = "animation",
@@ -340,18 +342,32 @@ local make_resource_attack_proxy = function(resource)
 
 end
 
+local custom_tints =
+{
+  ["iron-ore"] = {0.54, 0.8, 0.9},
+  ["copper-ore"] = {0.85, 0.5, 0.30},
+  ["stone"] = {0.75, 0.65, 0.4},
+  ["uranium-ore"] = {0.6, 0.9, 0.15},
+  ["coal"] = {0.25, 0.25, 0.25}
+}
+
 for k, resource in pairs (data.raw.resource) do
   if resource.minable and (resource.minable.result or resource.minable.results) then
     make_recipes(resource)
     make_resource_attack_proxy(resource)
+    local custom = false
     local map_color = resource.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 1 }
-    make_smoke(resource.name, map_color, "north")
-    make_smoke(resource.name, map_color, "east")
-    make_smoke(resource.name, map_color, "south")
-    make_smoke(resource.name, map_color, "west")
-    make_pot(resource.name, map_color, "north")
-    make_pot(resource.name, map_color, "east")
-    make_pot(resource.name, map_color, "south")
-    make_pot(resource.name, map_color, "west")
+    if custom_tints[resource.name] then
+      map_color = custom_tints[resource.name]
+      custom = true
+    end
+    make_smoke(resource.name, map_color, "north", custom)
+    make_smoke(resource.name, map_color, "east", custom)
+    make_smoke(resource.name, map_color, "south", custom)
+    make_smoke(resource.name, map_color, "west", custom)
+    make_pot(resource.name, map_color, "north", custom)
+    make_pot(resource.name, map_color, "east", custom)
+    make_pot(resource.name, map_color, "south", custom)
+    make_pot(resource.name, map_color, "west", custom)
   end
 end
