@@ -21,7 +21,14 @@ data.depots =
   {
     radius = 25 + 0.5,
     capacity = 50,
-    drop_offset = {0, -3}
+    drop_offset = {0, -5.5},
+    shifts =
+    {
+      north = {0,0},
+      south = {0, 1},
+      east = {0, 0.5},
+      west = {0, 0.5},
+    }
   }
 }
 

@@ -8,7 +8,7 @@ local sound = data.raw.tile["grass-1"].walking_sound
 
 local mining_drone_flags = {"placeable-off-grid", "hidden", "not-in-kill-statistics"}
 
-local mining_drone_collision_mask = {"not-colliding-with-itself", "player-layer", "train-layer", "consider-tile-transitions"}
+local mining_drone_collision_mask = {"not-colliding-with-itself", "player-layer", "consider-tile-transitions"}
 
 local shuffle = function(n, v)
   --local n = n or 0.5
@@ -68,6 +68,8 @@ local make_drone = function(name, tint, item)
     --minable = {result = name, mining_time = 2},
     collision_box = {{-0.18, -0.18}, {0.18, 0.18}},
     collision_mask = mining_drone_collision_mask,
+    --render_layer = "object",
+    render_layer = "lower-object-above-shadow",
     max_pursue_distance = 64,
     resistances = nil,
     min_persue_time = 60 * 15,

@@ -50,10 +50,11 @@ local offsets = {}
 for name, depot in pairs (shared.depots) do
   local offset = {depot.drop_offset[1], depot.drop_offset[2]}
   local depot_offset = {}
-  depot_offset[defines.direction.north] = {offset[1], offset[2]}
-  depot_offset[defines.direction.south] = {-offset[1], -offset[2]}
-  depot_offset[defines.direction.east] = {-offset[2], -offset[1]}
-  depot_offset[defines.direction.west] = {offset[2], offset[1]}
+  local shifts = depot.shifts
+  depot_offset[defines.direction.north] = {offset[1] + shifts["north"][1], offset[2] + shifts["north"][2]}
+  depot_offset[defines.direction.south] = {-offset[1] + shifts["south"][1], -offset[2] + shifts["south"][2]}
+  depot_offset[defines.direction.east] = {-offset[2] + shifts["east"][1], -offset[1] + shifts["east"][2]}
+  depot_offset[defines.direction.west] = {offset[2] + shifts["west"][1], offset[1] + shifts["west"][2]}
   offsets[name] = depot_offset
 end
 
@@ -87,6 +88,7 @@ local box_name = "mining-depot-collision-box"
 local render_player_index = 42069
 
 function mining_depot:add_wall()
+  if true then return end
   local direction = self.entity.direction
   local box = collide_box()
   local position = self.entity.position
@@ -268,8 +270,18 @@ function mining_depot:get_drone_speed()
   return (drone_base_speed * (1 + mining_technologies.get_walking_speed_bonus(self.force_index))) * get_speed_variance()
 end
 
+local direction_names =
+{
+  [0] = "north",
+  [2] = "east",
+  [4] = "south",
+  [6] = "west"
+}
+
 function mining_depot:get_spawn_position()
-  return self.entity.position
+  local position = self.entity.position
+  local shift = shared.depots[self.entity.name].shifts[direction_names[self.entity.direction]]
+  return {position.x + shift[1], position.y + shift[2]}
 end
 
 function mining_depot:spawn_drone()
@@ -416,7 +428,6 @@ function mining_depot:update()
   if not (entity and entity.valid) then return end
 
   self:update_sticker()
-  self:update_pot()
 
   local item = self:get_target_resource_name()
   if item ~= self.target_resource_name then
@@ -425,6 +436,8 @@ function mining_depot:update()
   end
 
   if not item then return end
+
+  self:update_pot()
 
   if not self:has_mining_targets() then
     --Nothing to mine, nothing to do...
@@ -820,7 +833,9 @@ end
 function mining_depot:get_max_output_amount()
   local inventory = self:get_output_inventory()
   local amount = 0
-  for k, product in pairs (self.entity.get_recipe().products) do
+  local recipe = self.entity.get_recipe()
+  if not recipe then return end
+  for k, product in pairs (recipe.products) do
     amount = math.max(amount, inventory.get_item_count(product.name))
   end
   return amount

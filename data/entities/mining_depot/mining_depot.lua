@@ -13,10 +13,17 @@ end
 
 local sprite_width = 768
 local sprite_height = 768
-local sprite_scale = 0.35
+local sprite_scale = 0.5
+local shift = {0, 0}
 local sprite_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-main/Scene_layer-main_"
 local shadow_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-shadow/Scene_layer-shadow_"
-local shift = {0, 0.66}
+local shifts =
+{
+  north = {0,0},
+  south = {0, 1},
+  east = {0, 0.5},
+  west = {0, 0.5},
+}
 
 
 local duration = 70
@@ -73,7 +80,7 @@ local working_visualisations =
   {
     always_draw = true,
     render_layer = "object",
-    secondary_draw_order = 127,
+    --secondary_draw_order = 127,
     --north_position = {0, 2},
     --south_position = {0, 2},
     --east_position = {0, 2},
@@ -85,7 +92,7 @@ local working_visualisations =
         {
           filename = sprite_path.."0004.png",
           frame_count = 1,
-          shift = shift,
+          shift = shifts["north"],
           scale = sprite_scale,
           width = sprite_width,
           height = sprite_height,
@@ -94,7 +101,7 @@ local working_visualisations =
           filename = shadow_path.."0002.png",
           frame_count = 1,
           scale = sprite_scale,
-          shift = shift,
+          shift = shifts["north"],
           width = sprite_width,
           height = sprite_height,
           draw_as_shadow = true
@@ -109,7 +116,7 @@ local working_visualisations =
           filename = sprite_path.."0003.png",
           frame_count = 1,
           scale = sprite_scale,
-          shift = shift,
+          shift = shifts["east"],
           width = sprite_width,
           height = sprite_height,
         },
@@ -117,7 +124,7 @@ local working_visualisations =
           filename = shadow_path.."0003.png",
           frame_count = 1,
           scale = sprite_scale,
-          shift = shift,
+          shift = shifts["east"],
           width = sprite_width,
           height = sprite_height,
           draw_as_shadow = true
@@ -133,7 +140,7 @@ local working_visualisations =
           filename = sprite_path.."0002.png",
           frame_count = 1,
           scale = sprite_scale,
-          shift = shift,
+          shift = shifts["south"],
           width = sprite_width,
           height = sprite_height,
         },
@@ -141,7 +148,7 @@ local working_visualisations =
           filename = shadow_path.."0004.png",
           frame_count = 1,
           scale = sprite_scale,
-          shift = shift,
+          shift = shifts["south"],
           width = sprite_width,
           height = sprite_height,
           draw_as_shadow = true
@@ -156,7 +163,7 @@ local working_visualisations =
           filename = sprite_path.."0001.png",
           frame_count = 1,
           scale = sprite_scale,
-          shift = shift,
+          shift = shifts["west"],
           width = sprite_width,
           height = sprite_height,
         },
@@ -164,7 +171,7 @@ local working_visualisations =
           filename = shadow_path.."0001.png",
           frame_count = 1,
           scale = sprite_scale,
-          shift = shift,
+          shift = shifts["west"],
           width = sprite_width,
           height = sprite_height,
           draw_as_shadow = true
@@ -178,7 +185,8 @@ local mining_depot =
 {
   name = "mining-depot",
   type = "assembling-machine",
-  collision_box = {{ -1.25, -3.25}, { 1.25, 1.25}},
+  collision_box = {{ -2.25, -5.75}, { 2.25, 1.75}},
+  selection_box = {{ -2.5, -6}, { 2.5, 2.0}},
   alert_icon_shift = { -0.09375, -0.375},
   entity_info_icon_shift = {0, -0.75},
   allowed_effects = {},
@@ -194,7 +202,8 @@ local mining_depot =
     "item-layer",
     "object-layer",
     "water-tile",
-    "resource-layer"
+    "resource-layer",
+    "train-layer"
   },
   corpse = "assembling-machine-3-remnants",
   crafting_categories =
@@ -227,7 +236,26 @@ local mining_depot =
   },
   fluid_boxes =
   {
-    off_when_no_fluid_recipe = false
+    {
+      production_type = "input",
+      pipe_picture = assembler3pipepictures(),
+      pipe_covers = pipecoverspictures(),
+      base_area = 10,
+      base_level = -1,
+      pipe_connections =
+      {
+        { type="input-output", position = {-3, -0.5} },
+        { type="input-output", position = {3, -0.5} }
+      },
+      secondary_draw_orders =
+      {
+        north = -1,
+        south = 100,
+        east = 50,
+        west = 50
+      }
+    },
+    off_when_no_fluid_recipe = true,
   },
   gui_title_key = "mining-depot-choose-resource",
   icon = "__Mining_Drones__/data/entities/mining_depot/depot-icon.png",
@@ -266,7 +294,6 @@ local mining_depot =
     }
   },
   scale_entity_info_icon = true,
-  selection_box = {{ -1.5, -3.5}, { 1.5, 1.5}},
   vehicle_impact_sound =
   {
     {
@@ -346,8 +373,9 @@ local caution_sprite =
   type = "sprite",
   name = "caution-sprite",
   filename = util.path("data/entities/mining_depot/depot-caution.png"),
-  width = 101,
-  height = 72,
+  --width = 101,
+  --height = 72,
+  size = 1,
   frame_count = 1,
   scale = 0.5,
   shift = shift,

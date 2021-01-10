@@ -28,11 +28,6 @@ local empty_attack_parameters = function()
   }
 end
 
-local sprite_width = 768
-local sprite_height = 768
-local sprite_scale = 0.35
-local shift = {0, 0.66}
-
 
 local duration = 70
 local size = 768
@@ -84,7 +79,7 @@ local make_smoke = function(name, tint, direction)
       priority = "high",
       animation_speed = 1,
       scale = sprite_scale,
-      shift = shift
+      shift = shifts[direction]
     }
   }
   data:extend{smoke}
@@ -133,7 +128,7 @@ local make_pot = function(name, tint, direction)
     priority = "high",
     animation_speed = 0.000000000001,
     scale = sprite_scale,
-    shift = shift
+    shift = shifts[direction]
   }
   data:extend{pot}
 

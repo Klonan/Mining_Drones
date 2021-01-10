@@ -216,7 +216,7 @@ function mining_drone:process_return_to_depot()
     return
   end
 
-  if self:distance(depot:get_spawn_position()) > 3 then
+  if self:distance(depot:get_drop_position()) > 5 then
     self:return_to_depot()
     return
   end
@@ -425,7 +425,7 @@ function mining_drone:return_to_depot()
     {
       type = defines.command.go_to_location,
       destination = depot:get_spawn_position(),
-      radius = 2,
+      radius = 3,
       distraction = defines.distraction.none,
       pathfind_flags = {prefer_straight_paths = false, use_cache = false}
     }
