@@ -83,7 +83,7 @@ local working_visualisations =
       layers =
       {
         {
-          filename = sprite_path.."0002.png",
+          filename = sprite_path.."0004.png",
           frame_count = 1,
           shift = shift,
           scale = sprite_scale,
@@ -130,7 +130,7 @@ local working_visualisations =
       layers =
       {
         {
-          filename = sprite_path.."0004.png",
+          filename = sprite_path.."0002.png",
           frame_count = 1,
           scale = sprite_scale,
           shift = shift,
