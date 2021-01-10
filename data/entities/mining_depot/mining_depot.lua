@@ -180,6 +180,7 @@ local mining_depot =
   type = "assembling-machine",
   collision_box = {{ -1.25, -3.25}, { 1.25, 1.25}},
   alert_icon_shift = { -0.09375, -0.375},
+  entity_info_icon_shift = {0, -0.75},
   allowed_effects = {},
   close_sound =
   {

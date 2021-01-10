@@ -237,7 +237,7 @@ function mining_drone:process_return_to_depot()
     target_inventory.insert({name = name, count = real_count})
     item_flow(name, real_count)
   end
-  depot:make_smoke()
+  depot:on_resource_given()
 
   self.inventory.clear()
 

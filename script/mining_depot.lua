@@ -325,6 +325,7 @@ function mining_depot:update_sticker()
   {
     surface = self.surface_index,
     target = self.entity,
+    target_offset = {0, -0.5},
     text = self:get_active_drone_count().."/"..self:get_drone_item_count(),
     only_in_alt_mode = true,
     forces = {self.entity.force},
@@ -415,6 +416,7 @@ function mining_depot:update()
   if not (entity and entity.valid) then return end
 
   self:update_sticker()
+  self:update_pot()
 
   local item = self:get_target_resource_name()
   if item ~= self.target_resource_name then
@@ -461,6 +463,19 @@ local min = math.min
 local spawn_damping_ratio = 0.2
 local target_amount_per_drone = 100
 local max_target_amount = 65000 / 250
+
+function mining_depot:get_full_ratio()
+
+  local current_item_count = self:get_max_output_amount()
+  if current_item_count == 0 then return 0 end
+
+  local max_drones = self:get_drone_item_count()
+  local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
+  local current_target_item_count = math.min(productivity * target_amount_per_drone, max_target_amount) * max_drones
+
+  local ratio = (current_item_count / current_target_item_count)
+  return ratio
+end
 
 function mining_depot:get_should_spawn_drone_count(extra)
 
@@ -860,7 +875,30 @@ local direction_name =
   [6] = "west"
 }
 
-function mining_depot:make_smoke()
+function mining_depot:update_pot()
+
+  if not self.target_resource_name then
+    if (self.pot_animation and rendering.is_valid(self.pot_animation)) then
+      rendering.destroy(self.pot_animation)
+    end
+    return
+  end
+
+  if not (self.pot_animation and rendering.is_valid(self.pot_animation)) then
+    self.pot_animation = rendering.draw_animation
+    {
+      animation = "depot-pot-"..self.target_resource_name.."-"..direction_name[self.entity.direction],
+      render_layer = "higher-object-under",
+      target = self.entity,
+      surface = self.entity.surface
+    }
+  end
+
+  local offset = math.max(0, math.min(math.ceil(self:get_full_ratio() * 16) - 1, 15))
+  rendering.set_animation_offset(self.pot_animation, offset)
+end
+
+function mining_depot:on_resource_given()
   self.entity.surface.create_trivial_smoke{name = "depot-smoke-"..self.target_resource_name.."-"..direction_name[self.entity.direction], position = self.entity.position}
 end
 
