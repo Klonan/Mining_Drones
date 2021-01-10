@@ -28,6 +28,16 @@ local empty_attack_parameters = function()
   }
 end
 
+local sprite_width = 768
+local sprite_height = 768
+local sprite_scale = 0.5
+local shifts =
+{
+  north = {0,0},
+  south = {0, 1},
+  east = {0, 0.5},
+  west = {0, 0.5},
+}
 
 local duration = 70
 local size = 768

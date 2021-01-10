@@ -240,7 +240,8 @@ local mining_depot =
       production_type = "input",
       pipe_picture = assembler3pipepictures(),
       pipe_covers = pipecoverspictures(),
-      base_area = 10,
+      base_area = 5,
+      height = 2,
       base_level = -1,
       pipe_connections =
       {

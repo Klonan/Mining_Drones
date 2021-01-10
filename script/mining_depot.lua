@@ -76,26 +76,36 @@ end
 local collide_box = function()
   return
   {
-    left_top = {x = -1.5, y = -1.5},
-    right_bottom = {x = 1.5, y = 1.5}
+    left_top = {x = -2.5, y = -5.5},
+    right_bottom = {x = 2.5, y = 2.5}
   }
 end
 
-local wall_thickness = 0.75
+local wall_thickness = 1.25
 local wall_padding = 0.25
 local front_gap = 2
 local box_name = "mining-depot-collision-box"
 local render_player_index = 42069
 
 function mining_depot:add_wall()
-  if true then return end
+  --if true then return end
   local direction = self.entity.direction
-  local box = collide_box()
-  local position = self.entity.position
-  box.left_top.x = position.x + box.left_top.x + wall_padding
-  box.right_bottom.x = position.x + box.right_bottom.x - wall_padding
-  box.left_top.y = position.y + box.left_top.y + wall_padding
-  box.right_bottom.y = position.y + box.right_bottom.y - wall_padding
+  --local box = collide_box()
+  --local position = self.entity.position
+  --box.left_top.x = position.x + box.left_top.x + wall_padding
+  --box.right_bottom.x = position.x + box.right_bottom.x - wall_padding
+  --box.left_top.y = position.y + box.left_top.y + wall_padding
+  --box.right_bottom.y = position.y + box.right_bottom.y - wall_padding
+  local box = self.entity.bounding_box
+  if direction == 0 then
+    box.left_top.y = box.left_top.y + 1
+  elseif direction == 2 then
+    box.right_bottom.x = box.right_bottom.x - 1
+  elseif direction == 4 then
+    box.right_bottom.y = box.right_bottom.y - 1
+  else
+    box.left_top.x = box.left_top.x + 1
+  end
   local position = {0,0}
   local boxes = {}
   local surface = self.entity.surface

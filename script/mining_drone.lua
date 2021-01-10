@@ -425,7 +425,7 @@ function mining_drone:return_to_depot()
     {
       type = defines.command.go_to_location,
       destination = depot:get_spawn_position(),
-      radius = 3,
+      radius = 2,
       distraction = defines.distraction.none,
       pathfind_flags = {prefer_straight_paths = false, use_cache = false}
     }
