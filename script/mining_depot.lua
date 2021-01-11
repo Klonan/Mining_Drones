@@ -583,26 +583,6 @@ local unique_index = function(entity)
 end
 
 local insert = table.insert
-local get_entities_for_products = function(item, fluid)
-  local names = {}
-  for name, prototype in pairs(game.entity_prototypes) do
-    if not (script_data.ignore_rocks and prototype.type == "simple-entity") then
-
-      local properties = prototype.mineable_properties
-      if properties.minable and properties.products and properties.required_fluid == fluid then
-        for k, product in pairs (properties.products) do
-          if product.name == item then
-            insert(names, name)
-            break
-          end
-        end
-      end
-
-    end
-  end
-  return names
-end
-
 
 function mining_depot:get_radius()
   local depot = shared.depots[self.entity.name]
@@ -1169,7 +1149,6 @@ lib.events =
 
 lib.on_init = function()
   global.mining_depot = global.mining_depot or script_data
-  script_data.ignore_rocks = settings.startup.ignore_rocks.value
 end
 
 lib.on_load = function()
@@ -1185,15 +1164,6 @@ lib.on_load = function()
 end
 
 lib.on_configuration_changed = function()
-
-  if script_data.ignore_rocks == nil then
-    script_data.ignore_rocks = false
-  end
-
-  if script_data.ignore_rocks ~= settings.startup.ignore_rocks.value then
-    script_data.ignore_rocks = settings.startup.ignore_rocks.value
-    rescan_all_depots()
-  end
 
   for k, bucket in pairs (script_data.depots) do
     --Idk, things can happen, let the depots rescan if they want.

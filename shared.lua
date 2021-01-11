@@ -24,10 +24,10 @@ data.depots =
     drop_offset = {0, -5.5},
     shifts =
     {
-      north = {0,0},
+      north = {0,0.5},
       south = {0, 1},
-      east = {0, 0.5},
-      west = {0, 0.5},
+      east = {0.5, 0.75},
+      west = {-0.5, 0.75},
     }
   }
 }
