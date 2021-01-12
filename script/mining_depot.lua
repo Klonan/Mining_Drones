@@ -16,6 +16,7 @@ local script_data =
   path_requests = {},
   targeted_resources = {},
   request_queue = {},
+  big_migration = true
 }
 
 local get_mining_depot = function(unit_number)
@@ -1164,6 +1165,30 @@ lib.on_load = function()
 end
 
 lib.on_configuration_changed = function()
+
+  if not script_data.big_migration then
+    script_data.big_migration = true
+    script_data.targeted_resources = {}
+    for k, surface in pairs (game.surfaces) do
+      script_data.targeted_resources[surface.index] = {}
+    end
+    script_data.request_queue = {}
+    for k, bucket in pairs (script_data.depots) do
+      --Idk, things can happen, let the depots rescan if they want.
+      for unit_number, depot in pairs (bucket) do
+        depot.unit_number = unit_number
+        if not depot.entity.valid then
+          depot:handle_depot_deletion()
+          bucket[unit_number] = nil
+        else
+          depot:remove_corpse()
+          depot:add_corpse()
+          depot:add_wall()
+          depot:check_for_rescan()
+        end
+      end
+    end
+  end
 
   for k, bucket in pairs (script_data.depots) do
     --Idk, things can happen, let the depots rescan if they want.

@@ -15,7 +15,8 @@ local pi = math.pi
 
 local script_data =
 {
-  drones = {}
+  drones = {},
+  big_migration = true
 }
 
 local mining_drone = {}
@@ -591,6 +592,20 @@ mining_drone.on_init = function()
 end
 
 mining_drone.on_configuration_changed = function()
+  if not script_data.big_migration then
+    script_data.big_migration = true
+    for unit_number, drone in pairs (script_data.drones) do
+      script_data.drones[unit_number] = nil
+      if drone.entity.valid then
+        drone.entity.destroy()
+      end
+      if drone.attack_proxy and drone.attack_proxy.valid then
+        drone.attack_proxy.destroy()
+      end
+    end
+    script_data.drones = {}
+  end
+
   validate_proxy_orders()
 end
 
