@@ -41,22 +41,59 @@ for k, ingredients in pairs (levels) do
     name = name.."-"..k,
     localised_name = {name},
     type = "technology",
-    icon = util.path("data/technologies/mining-speed-icon.png"),
-    icon_size = 216,
+    icons =
+    {
+      {
+        icon = "__Mining_Drones__/thumbnail.png",
+        icon_size = 460,
+        icon_mipmaps = 0,
+      },
+      {
+        icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
+        icon_size = 128,
+        scale = 2,
+        icon_mipmaps = 3,
+        shift = {180, 180}
+      }
+    },
     upgrade = true,
     effects =
     {
       {
         type = "nothing",
-        effect_description = "Mining drone mining speed: +20%"--repair-turret-power-description"}
+        effect_description = "Mining drone mining speed: +20%",
+        icons =
+        {
+          {
+            icon = "__core__/graphics/icons/technology/constants/constant-speed.png",
+            icon_size = 128,
+            icon_mipmaps = 3
+          }
+        }
       },
       {
         type = "nothing",
-        effect_description = "Mining drone walking speed: +20%"--repair-turret-power-description"}
+        effect_description = "Mining drone walking speed: +20%",
+        icons =
+        {
+          {
+            icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
+            icon_size = 128,
+            icon_mipmaps = 3
+          }
+        }
       },
       {
         type = "nothing",
-        effect_description = "Mining drone cargo bonus: +1"--repair-turret-power-description"}
+        effect_description = "Mining drone cargo bonus: +1",
+        icons =
+        {
+          {
+            icon = "__core__/graphics/icons/technology/constants/constant-capacity.png",
+            icon_size = 128,
+            icon_mipmaps = 3
+          }
+        }
       },
     },
     prerequisites = k > 1 and {name.."-"..k - 1} or {},
@@ -79,22 +116,59 @@ local infinite =
   name = name.."-"..k,
   localised_name = {name},
   type = "technology",
-  icon = util.path("data/technologies/mining-speed-icon.png"),
-  icon_size = 216,
+  icons =
+  {
+    {
+      icon = "__Mining_Drones__/thumbnail.png",
+      icon_size = 460,
+      icon_mipmaps = 0,
+    },
+    {
+      icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
+      icon_size = 128,
+      scale = 2,
+      icon_mipmaps = 3,
+      shift = {180, 180}
+    }
+  },
   upgrade = true,
   effects =
   {
     {
       type = "nothing",
-      effect_description = "Mining drone mining speed: +20%"
+      effect_description = "Mining drone mining speed: +20%",
+      icons =
+      {
+        {
+          icon = "__core__/graphics/icons/technology/constants/constant-speed.png",
+          icon_size = 128,
+          icon_mipmaps = 3
+        }
+      }
     },
     {
       type = "nothing",
-      effect_description = "Mining drone walking speed: +20%"
+      effect_description = "Mining drone walking speed: +20%",
+      icons =
+      {
+        {
+          icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
+          icon_size = 128,
+          icon_mipmaps = 3
+        }
+      }
     },
     {
       type = "nothing",
-      effect_description = "Mining drone cargo bonus: +1"
+      effect_description = "Mining drone cargo bonus: +1",
+      icons =
+      {
+        {
+          icon = "__core__/graphics/icons/technology/constants/constant-capacity.png",
+          icon_size = 128,
+          icon_mipmaps = 3
+        }
+      }
     },
   },
   prerequisites = k > 1 and {name.."-"..k - 1} or {},

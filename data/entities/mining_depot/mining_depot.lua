@@ -256,9 +256,9 @@ local mining_depot =
     off_when_no_fluid_recipe = true,
   },
   gui_title_key = "mining-depot-choose-resource",
-  icon = "__Mining_Drones__/data/entities/mining_depot/depot-icon.png",
-  icon_mipmaps = 4,
-  icon_size = 216,
+  icon = "__Mining_Drones__/thumbnail.png",
+  icon_size = 460,
+  icon_mipmaps = 0,
   localised_name =  {"mining-depot"},
   max_health = 400,
   minable =
@@ -366,28 +366,15 @@ local recipe =
   result = name
 }
 
-local caution_sprite =
-{
-  type = "sprite",
-  name = "caution-sprite",
-  filename = util.path("data/entities/mining_depot/depot-caution.png"),
-  --width = 101,
-  --height = 72,
-  size = 1,
-  frame_count = 1,
-  scale = 0.5,
-  shift = shift,
-  direction_count = 1,
-  draw_as_shadow = false,
-  flags = {"terrain"}
-}
+local empty = util.empty_sprite()
+empty.direction_count = 1
 
 local caution_corpse =
 {
   type = "corpse",
   name = "caution-corpse",
   flags = {"placeable-off-grid"},
-  animation = caution_sprite,
+  animation = empty,
   remove_on_entity_placement = false,
   remove_on_tile_placement = false
 }
@@ -458,7 +445,6 @@ data:extend
   item,
   category,
   recipe,
-  caution_sprite,
   caution_corpse,
   box,
   depot_corpse
