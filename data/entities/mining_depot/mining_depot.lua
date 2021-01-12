@@ -205,11 +205,8 @@ local mining_depot =
     "resource-layer",
     "train-layer"
   },
-  corpse = "assembling-machine-3-remnants",
-  crafting_categories =
-  {
-    "mining-depot"
-  },
+  corpse = "depot-corpse",
+  crafting_categories = {"mining-depot"},
   crafting_speed = depots["mining-depot"].capacity - 1,
   damaged_trigger_effect =
   {
@@ -380,7 +377,7 @@ local caution_sprite =
   frame_count = 1,
   scale = 0.5,
   shift = shift,
-  direction_count =1,
+  direction_count = 1,
   draw_as_shadow = false,
   flags = {"terrain"}
 }
@@ -402,6 +399,59 @@ local box =
   collision_mask = {"player-layer"}
 }
 
+local corpse_path = "__Mining_Drones__/data/entities/mining_depot/corpse/Scene_layer-"
+
+local depot_corpse =
+{
+  type = "corpse",
+  name = "depot-corpse",
+  flags = {"placeable-off-grid"},
+  animation =
+  {
+    layers =
+    {
+      {
+        filenames =
+        {
+          corpse_path.."main_0004.png",
+          corpse_path.."main_0003.png",
+          corpse_path.."main_0002.png",
+          corpse_path.."main_0001.png",
+        },
+        slice = 1,
+        frame_count = 1,
+        direction_count = 4,
+        shift = {0, 0.5},
+        scale = sprite_scale,
+        width = sprite_width,
+        height = sprite_height,
+        lines_per_file = 1
+      },
+      {
+        filenames =
+        {
+          corpse_path.."shadow_0004.png",
+          corpse_path.."shadow_0003.png",
+          corpse_path.."shadow_0002.png",
+          corpse_path.."shadow_0001.png",
+        },
+        slice = 1,
+        frame_count = 1,
+        direction_count = 4,
+        shift = {0, 0.5},
+        scale = sprite_scale,
+        width = sprite_width,
+        height = sprite_height,
+        draw_as_shadow = true,
+        lines_per_file = 1
+      },
+    }
+  },
+  final_render_layer = "lower-object-above-shadow",
+  remove_on_entity_placement = true,
+  remove_on_tile_placement = true
+}
+
 data:extend
 {
   mining_depot,
@@ -410,7 +460,8 @@ data:extend
   recipe,
   caution_sprite,
   caution_corpse,
-  box
+  box,
+  depot_corpse
 }
 
 --error(count)

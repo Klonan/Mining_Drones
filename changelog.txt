@@ -2,6 +2,15 @@
 Version: 1.1.0
 Date: ????
   Changes:
+    - New graphics.
+    - Depots are bigger now.
+    - Fluid connection was moved to the side, with passthrough.
+    - New logic, the mining depots can now only target resource entities, but the way they work is better for it.
+    - Things like mining ores with gems works properly
+    - Multiple drones can mine big ores, like the immersite.
+    - Internally things are much cleaner.
+    - Depots are limited more precisely to 100 drones max.
+    - Depot mining area was reduced to 50x50.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.0
 Date: 2020-11-25
