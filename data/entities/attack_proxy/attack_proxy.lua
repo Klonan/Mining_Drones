@@ -31,13 +31,7 @@ end
 local sprite_width = 768
 local sprite_height = 768
 local sprite_scale = 0.5
-local shifts =
-{
-  north = {0,0},
-  south = {0, 1},
-  east = {0, 0.5},
-  west = {0, 0.5},
-}
+local shifts = shared.depots["mining-depot"].shifts
 
 local duration = 70
 local size = 768
@@ -81,7 +75,8 @@ local make_smoke = function(name, tint, direction, custom)
     affected_by_wind = false,
     render_layer = "higher-object-above",
     movement_slow_down_factor = 0,
-    height = 0.5,
+    height = 0,
+    flags = {"placeable-off-grid"},
     animations =
     {
       tint = {r, g, b},

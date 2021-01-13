@@ -307,7 +307,7 @@ function mining_depot:spawn_drone()
   local spawn_entity_data =
   {
     name = name,
-    position = self:get_spawn_position(),
+    position = self.entity.position,
     force = entity.force,
     create_build_effect_smoke = false
   }
@@ -383,6 +383,12 @@ function mining_depot:target_name_changed()
     rendering.destroy(self.rendering)
     self.rendering = nil
   end
+
+  if self.pot_animation then
+    rendering.destroy(self.pot_animation)
+    self.pot_animation = nil
+  end
+
 end
 
 function mining_depot:get_required_fluid()
@@ -407,25 +413,6 @@ function mining_depot:add_no_items_alert(string)
     forces = {self.entity.force},
     time_to_live = 30,
     target_offset = target_offset,
-    render_layer = "entity-info-icon-above"
-  }
-end
-
-function mining_depot:add_spawn_blocked_alert(string)
-
-  for k, player in pairs (self.entity.force.connected_players) do
-    player.add_custom_alert(self.entity, alert_data, "Mining depot spawn blocked.", true)
-  end
-  rendering.draw_sprite
-  {
-    surface = self.surface_index,
-    target = self.entity,
-    sprite = "utility/warning_icon",
-    forces = {self.entity.force},
-    time_to_live = 30,
-    target_offset = self:get_drop_offset(),
-    x_scale = 0.5,
-    y_scale = 0.5,
     render_layer = "entity-info-icon-above"
   }
 end
@@ -466,11 +453,6 @@ function mining_depot:update()
 
     self:find_potential_targets()
 
-  end
-
-  if self:is_spawn_blocked() then
-    self:add_spawn_blocked_alert()
-    return
   end
 
   if not self:has_enough_fluid() then
@@ -573,10 +555,6 @@ end
 
 function mining_depot:get_drone_item_count()
   return self.entity.get_item_count(shared.drone_name)
-end
-
-function mining_depot:is_spawn_blocked()
-  return not self.entity.surface.can_place_entity{name = default_bot_name, position = self:get_drop_position()}
 end
 
 local unique_index = function(entity)

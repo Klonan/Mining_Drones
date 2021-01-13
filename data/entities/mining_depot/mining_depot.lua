@@ -17,14 +17,7 @@ local sprite_scale = 0.5
 local shift = {0, 0}
 local sprite_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-main/Scene_layer-main_"
 local shadow_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-shadow/Scene_layer-shadow_"
-local shifts =
-{
-  north = {0,0},
-  south = {0, 1},
-  east = {0, 0.5},
-  west = {0, 0.5},
-}
-
+local shifts = shared.depots["mining-depot"].shifts
 
 local duration = 70
 local size = 768
