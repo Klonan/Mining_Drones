@@ -30,51 +30,6 @@ local duration = 70
 local size = 768
 local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
 
-local particle_stripes = function(direction)
-  local stripes = {}
-  for k = 10, 80 do
-    table.insert(stripes,
-    {
-      filename = particle_path..string.format("/%s/Scene_layer-main_%04g.png", direction, k),
-      width_in_frames = 1,
-      height_in_frames = 1
-    })
-  end
-  return stripes
-end
-
-local make_smoke = function(name, tint, direction)
-  local smoke =
-  {
-    type = "trivial-smoke",
-    name = "depot-smoke-"..name.."-"..direction,
-    duration = duration,
-    fade_in_duration = 0,
-    fade_away_duration = 10,
-    spread_duration = 0,
-    start_scale = 1,
-    end_scale = 1,
-    color = {1, 0.5, 0.1},
-    cyclic = false,
-    affected_by_wind = false,
-    render_layer = "higher-object-under",
-    movement_slow_down_factor = 0,
-    animation =
-    {
-      stripes = particle_stripes(direction),
-      width = size,
-      height = size,
-      frame_count = duration,
-      priority = "high",
-      animation_speed = 1,
-      scale = sprite_scale,
-      shift = shift
-    }
-  }
-  data:extend{smoke}
-
-end
-
 local working_visualisations =
 {
   {

@@ -905,7 +905,7 @@ function mining_depot:update_pot()
 end
 
 function mining_depot:on_resource_given()
-  self.entity.surface.create_trivial_smoke{name = "depot-smoke-"..self.target_resource_name.."-"..direction_name[self.entity.direction], position = self.entity.position}
+  self.entity.surface.create_entity{name = "depot-smoke-"..self.target_resource_name.."-"..direction_name[self.entity.direction], position = self.entity.position}
 end
 
 function mining_depot:return_drone(drone)

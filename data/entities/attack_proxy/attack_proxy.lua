@@ -68,7 +68,7 @@ local make_smoke = function(name, tint, direction, custom)
   end
   local smoke =
   {
-    type = "trivial-smoke",
+    type = "explosion",
     name = "depot-smoke-"..name.."-"..direction,
     duration = duration,
     fade_in_duration = 0,
@@ -81,8 +81,10 @@ local make_smoke = function(name, tint, direction, custom)
     affected_by_wind = false,
     render_layer = "higher-object-above",
     movement_slow_down_factor = 0,
-    animation =
+    height = 0.5,
+    animations =
     {
+      tint = {r, g, b},
       stripes = particle_stripes(direction),
       width = size,
       height = size,
