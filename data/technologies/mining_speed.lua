@@ -45,7 +45,7 @@ for k, ingredients in pairs (levels) do
     {
       {
         icon = "__Mining_Drones__/thumbnail.png",
-        icon_size = 460,
+        icon_size = 456,
         icon_mipmaps = 0,
       },
       {
@@ -120,7 +120,7 @@ local infinite =
   {
     {
       icon = "__Mining_Drones__/thumbnail.png",
-      icon_size = 460,
+      icon_size = 456,
       icon_mipmaps = 0,
     },
     {

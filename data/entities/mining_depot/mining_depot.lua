@@ -205,7 +205,7 @@ local mining_depot =
   },
   gui_title_key = "mining-depot-choose-resource",
   icon = "__Mining_Drones__/thumbnail.png",
-  icon_size = 460,
+  icon_size = 456,
   icon_mipmaps = 0,
   localised_name =  {"mining-depot"},
   max_health = 400,

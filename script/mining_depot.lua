@@ -48,19 +48,31 @@ function mining_depot:get_mining_count(entity)
 end
 
 local offsets = {}
+local radius_offsets = {}
 for name, depot in pairs (shared.depots) do
   local offset = {depot.drop_offset[1], depot.drop_offset[2]}
   local depot_offset = {}
+  local radius_offset = {}
   local shifts = depot.shifts
   depot_offset[defines.direction.north] = {offset[1] + shifts["north"][1], offset[2] + shifts["north"][2]}
   depot_offset[defines.direction.south] = {-offset[1] + shifts["south"][1], -offset[2] + shifts["south"][2]}
   depot_offset[defines.direction.east] = {-offset[2] + shifts["east"][1], -offset[1] + shifts["east"][2]}
   depot_offset[defines.direction.west] = {offset[2] + shifts["west"][1], offset[1] + shifts["west"][2]}
   offsets[name] = depot_offset
+
+  radius_offset[defines.direction.north] = {offset[1], offset[2] - 0.5}
+  radius_offset[defines.direction.south] = {-offset[1], -offset[2] + 0.5}
+  radius_offset[defines.direction.east] = {-offset[2] + 0.5, -offset[1]}
+  radius_offset[defines.direction.west] = {offset[2] - 0.5, offset[1]}
+  radius_offsets[name] = radius_offset
 end
 
 function mining_depot:get_drop_offset()
   return offsets[self.entity.name][self.entity.direction]
+end
+
+function mining_depot:get_radius_offset()
+  return radius_offsets[self.entity.name][self.entity.direction]
 end
 
 local add_to_bucket = function(depot)
@@ -578,12 +590,10 @@ local directions =
 
 function mining_depot:get_area()
   local origin = self.entity.position
-  local drop_offset = self:get_drop_offset()
+  local drop_offset = self:get_radius_offset()
   local radius = self:get_radius()
   local direction = directions[self.entity.direction]
   local radius_offset = {direction[1] * radius, direction[2] * radius}
-  radius_offset[1] = radius_offset[1] + (0.5 * direction[1])
-  radius_offset[2] = radius_offset[2] + (0.5 * direction[2])
   origin.x = origin.x + drop_offset[1] + radius_offset[1]
   origin.y = origin.y + drop_offset[2] + radius_offset[2]
   return util.area(origin, radius)
