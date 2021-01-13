@@ -1,6 +1,15 @@
 ---------------------------------------------------------------------------------------------------
-Version: 1.1.0
+Version: 1.1.1
 Date: ????
+  Changes:
+    - Fixed mining area.
+    - Fixed north direction mining.
+    - Fixed error about 255 smokes.
+    - Make the drone limit actually 100.
+    - Fix stupid multiple of 8 icon error.
+---------------------------------------------------------------------------------------------------
+Version: 1.1.0
+Date: 2021-01-12
   Changes:
     - New graphics.
     - Depots are bigger now.
