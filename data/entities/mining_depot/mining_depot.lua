@@ -133,10 +133,10 @@ local mining_depot =
 {
   name = "mining-depot",
   type = "assembling-machine",
-  collision_box = {{ -2.25, -5.75}, { 2.25, 1.75}},
-  selection_box = {{ -2.5, -6}, { 2.5, 2.0}},
-  alert_icon_shift = { -0.09375, -0.375},
-  entity_info_icon_shift = {0, -0.75},
+  collision_box = {{ -2.25, -3.75}, { 2.25, 3.25}},
+  selection_box = {{ -2.5, -4}, { 2.5, 3.5}},
+  --alert_icon_shift = { -0.09375, -0.375},
+  --entity_info_icon_shift = {0, -0.75},
   allowed_effects = {},
   close_sound =
   {

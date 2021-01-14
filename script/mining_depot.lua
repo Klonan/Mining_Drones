@@ -68,7 +68,7 @@ for name, depot in pairs (shared.depots) do
 end
 
 function mining_depot:get_drop_offset()
-  return offsets[self.entity.name][self.entity.direction]
+  return radius_offsets[self.entity.name][self.entity.direction]
 end
 
 function mining_depot:get_radius_offset()
