@@ -205,7 +205,7 @@ function mining_drone:process_return_to_depot()
     return
   end
 
-  if self:distance(depot:get_drop_position()) > 5 then
+  if self:distance(depot:get_corpse().position) > 5 then
     self:return_to_depot()
     return
   end

@@ -67,8 +67,19 @@ for name, depot in pairs (shared.depots) do
   radius_offsets[name] = radius_offset
 end
 
+local custom_drop_offsets =
+{
+  [0] = {0, 0.5},
+  [2] = {0, 0.5},
+  [4] = {0, -0.5},
+  [6] = {0, 0.5},
+}
+
 function mining_depot:get_drop_offset()
-  return radius_offsets[self.entity.name][self.entity.direction]
+  local offset = radius_offsets[self.entity.name][self.entity.direction]
+  offset[1] = offset[1] + custom_drop_offsets[self.entity.direction][1]
+  offset[2] = offset[2] + custom_drop_offsets[self.entity.direction][2]
+  return offset
 end
 
 function mining_depot:get_radius_offset()
@@ -1073,7 +1084,7 @@ function mining_depot:request_path(entity)
   {
     bounding_box = box,
     collision_mask = mask,
-    start = self:get_drop_position(),
+    start = self.entity.position,
     goal = entity.position,
     force = self.entity.force,
     radius = entity.get_radius() + 0.5,
