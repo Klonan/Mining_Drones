@@ -331,6 +331,7 @@ local box =
 {
   type = "highlight-box",
   name = "mining-depot-collision-box",
+  localised_name = mining_depot.localised_name,
   collision_mask = {"player-layer"}
 }
 
