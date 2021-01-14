@@ -219,6 +219,33 @@ function mining_depot:remove_corpse()
 
 end
 
+function mining_depot:add_spawn_corpse()
+
+  if self.spawn_corpse and self.spawn_corpse.valid then
+    error("HUH")
+    return
+  end
+
+  local spawn_corpse = self.entity.surface.create_entity
+  {
+    name = "caution-corpse",
+    position = self.entity.position,
+    force = "neutral"
+  }
+
+  spawn_corpse.corpse_expires = false
+  self.spawn_corpse = spawn_corpse
+end
+
+function mining_depot:remove_spawn_corpse()
+
+  if self.spawn_corpse and self.spawn_corpse.valid then
+    self.spawn_corpse.destroy()
+    self.spawn_corpse = nil
+  end
+
+end
+
 function mining_depot.new(entity)
 
   local depot =
@@ -242,6 +269,7 @@ function mining_depot.new(entity)
   end
 
   depot:add_corpse()
+  depot:add_spawn_corpse()
   depot:add_wall()
 
   add_to_bucket(depot)
@@ -301,10 +329,20 @@ local direction_names =
   [6] = "west"
 }
 
-function mining_depot:get_spawn_position()
-  local position = self.entity.position
-  local shift = shared.depots[self.entity.name].shifts[direction_names[self.entity.direction]]
-  return {position.x + shift[1], position.y + shift[2]}
+function mining_depot:get_spawn_corpse()
+  if self.spawn_corpse and self.spawn_corpse.valid then
+    return self.spawn_corpse
+  end
+  self:add_spawn_corpse()
+  return self.spawn_corpse
+end
+
+function mining_depot:get_corpse()
+  if self.corpse and self.corpse.valid then
+    return self.corpse
+  end
+  self:add_corpse()
+  return self.corpse
 end
 
 function mining_depot:spawn_drone()
@@ -946,6 +984,7 @@ function mining_depot:handle_depot_deletion()
   self:cancel_all_orders()
   self.drones = nil
   self:remove_corpse()
+  self:remove_spawn_corpse()
   self:clear_wall()
 end
 
@@ -1171,6 +1210,8 @@ lib.on_configuration_changed = function()
         else
           depot:remove_corpse()
           depot:add_corpse()
+          depot:remove_spawn_corpse()
+          depot:add_spawn_corpse()
           depot:add_wall()
           depot:check_for_rescan()
         end

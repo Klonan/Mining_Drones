@@ -19,6 +19,8 @@ local script_data =
   big_migration = true
 }
 
+local drone_path_flags = {prefer_straight_paths = false, use_cache = false}
+
 local mining_drone = {}
 
 mining_drone.get_mining_depot = function(self)
@@ -139,16 +141,6 @@ mining_drone.new = function(entity, depot)
   setmetatable(drone, mining_drone.metatable)
 
   add_drone(drone)
-
-  entity.set_command
-  {
-    type = defines.command.go_to_location,
-    destination_entity = depot.corpse,
-    distraction = defines.distraction.none,
-    pathfind_flags = {prefer_straight_paths = false, use_cache = false},
-    radius = 0.1
-  }
-
   return drone
 end
 
@@ -350,17 +342,16 @@ function mining_drone:attack_mining_proxy()
   {
     {
       type = defines.command.go_to_location,
-      destination_entity = depot.corpse,
+      destination_entity = depot:get_corpse(),
       radius = 0.25,
       distraction = defines.distraction.none,
-      pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+      pathfind_flags = drone_path_flags
     },
     {
       type = defines.command.go_to_location,
       destination_entity = attack_proxy,
       distraction = defines.distraction.none,
-      --radius = entity.get_radius() + self.entity.get_radius(),
-      pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+      pathfind_flags = drone_path_flags
     },
     {
       type = defines.command.attack,
@@ -418,17 +409,17 @@ function mining_drone:return_to_depot()
   {
     {
       type = defines.command.go_to_location,
-      destination_entity = depot.corpse,
+      destination_entity = depot:get_corpse(),
       radius = 0.25,
       distraction = defines.distraction.none,
-      pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+      pathfind_flags = drone_path_flags
     },
     {
       type = defines.command.go_to_location,
-      destination = depot:get_spawn_position(),
-      radius = 2,
+      destination_entity = depot:get_spawn_corpse(),
+      radius = 1.5,
       distraction = defines.distraction.none,
-      pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+      pathfind_flags = drone_path_flags
     }
   }
 
@@ -449,7 +440,7 @@ function mining_drone:go_to_position(position, radius)
     destination = position,
     radius = radius or 1,
     distraction = defines.distraction.none,
-    pathfind_flags = {prefer_straight_paths = false, use_cache = false},
+    pathfind_flags = drone_path_flags,
   }
 end
 
@@ -460,7 +451,7 @@ function mining_drone:go_to_entity(entity, radius)
     destination_entity = entity,
     radius = radius or 1,
     distraction = defines.distraction.none,
-    pathfind_flags = {prefer_straight_paths = false, use_cache = false}
+    pathfind_flags = drone_path_flags
   }
 end
 
