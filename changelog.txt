@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.2
+Date: 2021-01-14
+  Changes:
+    - Changes to the depot collision boxes, trying to make it fit the sprite better, and rotate more naturally.
+    - Small optimization related to pathing.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.1
 Date: 2021-01-13
   Changes:
