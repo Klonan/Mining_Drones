@@ -149,10 +149,6 @@ function mining_drone:get_depot()
   return mining_drone.get_mining_depot(self.depot)
 end
 
-function mining_drone:spill(stack)
-  self.entity.surface.spill_item_stack(self.entity.position, stack, false, nil, false)
-end
-
 function mining_drone:process_mining()
 
   local target = self.mining_target
