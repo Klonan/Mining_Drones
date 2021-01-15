@@ -16,7 +16,8 @@ local script_data =
   path_requests = {},
   targeted_resources = {},
   request_queue = {},
-  big_migration = true
+  big_migration = true,
+  reset_corpses = true
 }
 
 local get_mining_depot = function(unit_number)
@@ -1211,8 +1212,11 @@ lib.on_configuration_changed = function()
       script_data.targeted_resources[surface.index] = {}
     end
     script_data.request_queue = {}
+  end
+
+  if not script_data.reset_corpses then
+    script_data.reset_corpses = true
     for k, bucket in pairs (script_data.depots) do
-      --Idk, things can happen, let the depots rescan if they want.
       for unit_number, depot in pairs (bucket) do
         depot.unit_number = unit_number
         if not depot.entity.valid then
