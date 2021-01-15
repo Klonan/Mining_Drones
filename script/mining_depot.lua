@@ -77,9 +77,9 @@ local custom_drop_offsets =
 
 function mining_depot:get_drop_offset()
   local offset = radius_offsets[self.entity.name][self.entity.direction]
-  offset[1] = offset[1] + custom_drop_offsets[self.entity.direction][1]
-  offset[2] = offset[2] + custom_drop_offsets[self.entity.direction][2]
-  return offset
+  local x = offset[1] + custom_drop_offsets[self.entity.direction][1]
+  local y = offset[2] + custom_drop_offsets[self.entity.direction][2]
+  return {x, y}
 end
 
 function mining_depot:get_radius_offset()
