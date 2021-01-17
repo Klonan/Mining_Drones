@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.5
+Date: 2021-01-17
+  Changes:
+    - Some collision layer things related to hovercraft but also more general trying to make it robust.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.4
 Date: 2021-01-15
   Changes:
