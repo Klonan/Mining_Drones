@@ -17,7 +17,8 @@ local script_data =
   targeted_resources = {},
   request_queue = {},
   big_migration = true,
-  reset_corpses = true
+  reset_corpses = true,
+  clear_wall_migration = true
 }
 
 local get_mining_depot = function(unit_number)
@@ -1111,11 +1112,16 @@ local on_script_path_request_finished = function(event)
 end
 
 local on_entity_removed = function(event)
-  local entity = event.entity
-  if not (entity and entity.valid) then
-    return
+
+  local unit_number = event.unit_number
+  if not unit_number then
+    local entity = event.entity
+    if not (entity and entity.valid) then
+      return
+    end
+    unit_number = entity.unit_number
   end
-  local unit_number = entity.unit_number
+
   if not unit_number then return end
 
   local bucket = script_data.depots[unit_number % depot_update_rate]
@@ -1231,6 +1237,7 @@ lib.on_configuration_changed = function()
           depot:add_corpse()
           depot:remove_spawn_corpse()
           depot:add_spawn_corpse()
+          depot:clear_wall()
           depot:add_wall()
           depot:check_for_rescan()
         end
@@ -1256,6 +1263,24 @@ lib.on_configuration_changed = function()
       for unit_number, depot in pairs (bucket) do
         for drone_unit_number, drone in pairs (depot.drones) do
           depot.drones[drone_unit_number] = true
+        end
+      end
+    end
+  end
+
+  if not script_data.clear_wall_migration then
+    script_data.clear_wall_migration = true
+    for k, surface in pairs (game.surfaces) do
+      for k, v in pairs (surface.find_entities_filtered{name = box_name}) do
+        v.destroy()
+      end
+    end
+    for k, bucket in pairs (script_data.depots) do
+      for unit_number, depot in pairs (bucket) do
+        depot.unit_number = unit_number
+        if depot.entity.valid then
+          depot:clear_wall()
+          depot:add_wall()
         end
       end
     end
