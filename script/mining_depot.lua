@@ -191,6 +191,10 @@ function mining_depot:add_wall()
     })
   end
 
+  for k, v in pairs (boxes) do
+    v.active = false
+  end
+
   self.boxes = boxes
 
 end

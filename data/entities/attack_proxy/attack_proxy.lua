@@ -1,5 +1,8 @@
 local make_drone = require("data/entities/mining_drone/mining_drone_entity")
 
+local name = names.drone_name
+make_drone(name, {r = 1, g = 1, b = 1, a = 0.5}, "base")
+
 local empty_rotated_animation = function()
   return
   {

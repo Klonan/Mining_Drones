@@ -145,7 +145,7 @@ local mining_depot =
       volume = 0.5
     }
   },
-  collision_mask =
+  old_collision_mask =
   {
     "item-layer",
     "object-layer",

@@ -11,6 +11,7 @@ data.mining_depot = "mining-depot"
 data.mining_depot_chest_h = "mining-depot-chest-h"
 data.mining_depot_chest_v = "mining-depot-chest-v"
 data.variation_count = 20
+data.mining_drone_collision_mask = {"error-fix-me"}
 
 data.mining_speed_technology = "mining-drone-mining-speed"
 data.mining_productivity_technology = "mining-drone-productivity"

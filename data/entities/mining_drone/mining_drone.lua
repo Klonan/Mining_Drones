@@ -1,11 +1,6 @@
 local path = util.path("data/units/smg_guy/")
 local name = names.drone_name
 
-
-local make_drone = require("data/entities/mining_drone/mining_drone_entity")
-
-make_drone(name, {r = 1, g = 1, b = 1, a = 0.5}, "base")
-
 local base = util.copy(data.raw.character.character)
 
 local item = {
