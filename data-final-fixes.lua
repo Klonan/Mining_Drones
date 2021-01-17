@@ -20,12 +20,14 @@ shared.mining_drone_collision_mask = {"not-colliding-with-itself", drone_layer, 
 
 require("data/entities/attack_proxy/attack_proxy")
 
+--[[
 
-for name, unit in pairs(data.raw.unit) do
-  if name:find(shared.drone_name, 0, true) then
-    unit.loot = nil
+  for name, unit in pairs(data.raw.unit) do
+    if name:find(shared.drone_name, 0, true) then
+      unit.loot = nil
+    end
+    if name:find(shared.attack_proxy_name, 0, true) then
+      unit.loot = nil
+    end
   end
-  if name:find(shared.attack_proxy_name, 0, true) then
-    unit.loot = nil
-  end
-end
+  ]]
