@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.7
+Date: 2021-02-07
+  Changes:
+    - Fix migration from old version of the mod (with stale path requests).
+    - Fix crash when a path requested entity is destroyed.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.6
 Date: 2021-01-17
   Changes:

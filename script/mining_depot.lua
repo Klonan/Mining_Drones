@@ -1027,7 +1027,9 @@ local process_request_queue = function()
     if depot then
       local entity_index, entity = next(entities)
       if entity then
-        depot:request_path(entity)
+        if entity.valid then
+          depot:request_path(entity)
+        end
         entities[entity_index] = nil
       end
     else
