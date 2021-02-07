@@ -441,7 +441,8 @@ function mining_depot:target_name_changed()
 
   self.target_resource_name = self:get_target_resource_name()
   self.fluid = self:get_required_fluid()
-
+  
+  self:clear_path_requests()
   self:cancel_all_orders()
 
   self:find_potential_targets()
@@ -683,11 +684,7 @@ function mining_depot:sort_by_distance(entities)
   table.sort(entities, function (k1, k2) return k1.distance > k2.distance end )
 
   for k = 1, #entities do
-    --local entity = entities[k].entity
     entities[k] = entities[k].index
-    --local text = entity.surface.create_entity{name = "flying-text", position = entity.position, text = k}
-    --text.active = false
-    --text.color = {r = 1, g = k/#entities, b = k/#entities}
   end
 
   return entities
@@ -1218,8 +1215,15 @@ lib.on_configuration_changed = function()
   if not script_data.big_migration then
     script_data.big_migration = true
     script_data.targeted_resources = {}
+    script_data.path_requests = {}
     for k, surface in pairs (game.surfaces) do
       script_data.targeted_resources[surface.index] = {}
+    end
+    
+    for k, bucket in pairs (script_data.depots) do
+      for unit_number, depot in pairs (bucket) do
+        depot.path_requests = {}
+      end
     end
     script_data.request_queue = {}
   end
