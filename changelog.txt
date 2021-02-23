@@ -5,6 +5,7 @@ Date: 2021-02-23
     - Depot post processing (lighting, texture...).
     - Ores in depots now use individual textures instead of tints, and use all 16 frames instead of 15.
     - Added uranium glow.
+    - Better pipe integration.
     - New icons for depots & drones.
     - New mod icon.
     - Normalized technology icons.
