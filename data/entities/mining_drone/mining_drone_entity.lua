@@ -56,9 +56,14 @@ local make_drone = function(name, tint, item)
     type = "unit",
     name = bot_name,
     localised_name = {"", {"mining-drone"}, " (", item or "eh", ")"},
-    icon = base.icon,
-    icon_size = base.icon_size,
-    icons = base.icons,
+    icon = "__Mining_Drones__/data/icons/mining_drone.png",
+    icon_size = 64,
+    icons = {
+      {
+        icon = "__Mining_Drones__/data/icons/mining_drone.png",
+        icon_size = 64,
+      }
+    },
     flags = mining_drone_flags,
     map_color = {r ^ 0.5, g ^ 0.5, b ^ 0.5, 0.5},
     enemy_map_color = {r = 1},

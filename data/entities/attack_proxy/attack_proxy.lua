@@ -101,21 +101,37 @@ end
 local size = 768
 local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
 
-local pot_stripes = function(direction)
+local pot_stripes = function(direction, resource)
   local stripes = {}
-  for k = 0, 16 do
-    table.insert(stripes,
-    {
-      filename = particle_path..string.format("/pot_%s/Scene_layer-main_%04g.png", direction, k),
-      width_in_frames = 1,
-      height_in_frames = 1
-    })
+  if resource == "iron-ore" or resource == "copper-ore" or resource == "stone" or resource == "uranium-ore" or resource == "coal" then
+    for k = 0, 16 do
+      table.insert(stripes,
+      {
+        filename = particle_path..string.format("/pot_%s/%s/Scene_layer-main_%04g.png", direction, resource, k),
+        width_in_frames = 1,
+        height_in_frames = 1
+      })
+    end
+  else
+    for k = 0, 16 do
+      table.insert(stripes,
+      {
+        filename = particle_path..string.format("/pot_%s/Scene_layer-main_%04g.png", direction, k),
+        width_in_frames = 1,
+        height_in_frames = 1
+      })
+    end
   end
   return stripes
 end
 
 
 local make_pot = function(name, tint, direction, custom)
+  if name == "uranium-ore" then
+    isglow = true
+  else
+    isglow = false
+  end
   local r, g, b = tint[1] or tint.r, tint[2] or tint.g, tint[3] or tint.b
   --r = (r + 0.2) / 1.2
   --g = (g + 0.2) / 1.2
@@ -129,18 +145,20 @@ local make_pot = function(name, tint, direction, custom)
   {
     type = "animation",
     name = "depot-pot-"..name.."-"..direction,
-    tint = {r, g, b},
+    --tint = {r, g, b},
+    tint = {1, 1, 1},
     cyclic = false,
     affected_by_wind = false,
     render_layer = "higher-object-under",
-    stripes = pot_stripes(direction),
+    stripes = pot_stripes(direction, name),
     width = size,
     height = size,
-    frame_count = 16,
+    frame_count = 17,
     priority = "high",
     animation_speed = 0.000000000001,
     scale = sprite_scale,
-    shift = shifts[direction]
+    shift = shifts[direction],
+    draw_as_glow = isglow,
   }
   data:extend{pot}
 
