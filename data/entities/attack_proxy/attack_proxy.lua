@@ -140,26 +140,20 @@ local should_glow =
 }
 
 local make_pot = function(name, tint, direction, custom)
-  if name == "uranium-ore" then
-    isglow = true
-  else
-    isglow = false
-  end
+
   local r, g, b = tint[1] or tint.r, tint[2] or tint.g, tint[3] or tint.b
-  --r = (r + 0.2) / 1.2
-  --g = (g + 0.2) / 1.2
-  --b = (b + 0.2) / 1.2
+
   if not custom then
     r = (r + 0.5) / 1.5
     g = (g + 0.5) / 1.5
     b = (b + 0.5) / 1.5
   end
+  
   local pot =
   {
     type = "animation",
     name = "depot-pot-"..name.."-"..direction,
-    --tint = {r, g, b},
-    tint = {1, 1, 1},
+    tint = (custom and {1, 1, 1}) or {r, g, b},
     cyclic = false,
     affected_by_wind = false,
     render_layer = "higher-object-under",
