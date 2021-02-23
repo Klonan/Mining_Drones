@@ -1,4 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.8
+Date: 2021-02-23
+  Changes:
+    - Depot post processing (lighting, texture...).
+    - Ores in depots now use individual textures instead of tints, and use all 16 frames instead of 15.
+    - Added uranium glow.
+    - New icons for depots & drones.
+    - New mod icon.
+    - Normalized technology icons.
+    - Optimized .png sizes (mod is ~8x smaller).
+    - (changes by snouz)
+---------------------------------------------------------------------------------------------------
 Version: 1.1.7
 Date: 2021-02-07
   Changes:
@@ -23,7 +35,7 @@ Date: 2021-01-15
 Version: 1.1.3
 Date: 2021-01-14
   Changes:
-    - Locale micro
+    - Locale micro.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.2
 Date: 2021-01-14

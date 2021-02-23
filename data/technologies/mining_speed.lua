@@ -44,16 +44,16 @@ for k, ingredients in pairs (levels) do
     icons =
     {
       {
-        icon = "__Mining_Drones__/thumbnail.png",
-        icon_size = 456,
+        icon = "__Mining_Drones__/data/technologies/mining_drones_tech.png",
+        icon_size = 256,
         icon_mipmaps = 0,
       },
       {
         icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
         icon_size = 128,
-        scale = 2,
+        --scale = 2,
         icon_mipmaps = 3,
-        shift = {180, 180}
+        shift = {100, 100},
       }
     },
     upgrade = true,
@@ -65,9 +65,15 @@ for k, ingredients in pairs (levels) do
         icons =
         {
           {
+            icon = "__Mining_Drones__/data/icons/mining_drone.png",
+            icon_size = 64,
+            icon_mipmaps = 0,
+          },
+          {
             icon = "__core__/graphics/icons/technology/constants/constant-speed.png",
             icon_size = 128,
-            icon_mipmaps = 3
+            icon_mipmaps = 3,
+            shift = {10, 10},
           }
         }
       },
@@ -77,9 +83,15 @@ for k, ingredients in pairs (levels) do
         icons =
         {
           {
+            icon = "__Mining_Drones__/data/icons/mining_drone.png",
+            icon_size = 64,
+            icon_mipmaps = 0,
+          },
+          {
             icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
             icon_size = 128,
-            icon_mipmaps = 3
+            icon_mipmaps = 3,
+            shift = {10, 10},
           }
         }
       },
@@ -89,9 +101,15 @@ for k, ingredients in pairs (levels) do
         icons =
         {
           {
+            icon = "__Mining_Drones__/data/icons/mining_drone.png",
+            icon_size = 64,
+            icon_mipmaps = 0,
+          },
+          {
             icon = "__core__/graphics/icons/technology/constants/constant-capacity.png",
             icon_size = 128,
-            icon_mipmaps = 3
+            icon_mipmaps = 3,
+            shift = {10, 10},
           }
         }
       },
@@ -119,16 +137,16 @@ local infinite =
   icons =
   {
     {
-      icon = "__Mining_Drones__/thumbnail.png",
-      icon_size = 456,
+      icon = "__Mining_Drones__/data/technologies/mining_drones_tech.png",
+      icon_size = 256,
       icon_mipmaps = 0,
     },
     {
       icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
       icon_size = 128,
-      scale = 2,
+      --scale = 2,
       icon_mipmaps = 3,
-      shift = {180, 180}
+      shift = {100, 100},
     }
   },
   upgrade = true,
@@ -140,9 +158,15 @@ local infinite =
       icons =
       {
         {
+          icon = "__Mining_Drones__/data/icons/mining_drone.png",
+          icon_size = 64,
+          icon_mipmaps = 0,
+        },
+        {
           icon = "__core__/graphics/icons/technology/constants/constant-speed.png",
           icon_size = 128,
-          icon_mipmaps = 3
+          icon_mipmaps = 3,
+          shift = {10, 10},
         }
       }
     },
@@ -152,9 +176,15 @@ local infinite =
       icons =
       {
         {
+          icon = "__Mining_Drones__/data/icons/mining_drone.png",
+          icon_size = 64,
+          icon_mipmaps = 0,
+        },
+        {
           icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
           icon_size = 128,
-          icon_mipmaps = 3
+          icon_mipmaps = 3,
+          shift = {10, 10},
         }
       }
     },
@@ -164,9 +194,15 @@ local infinite =
       icons =
       {
         {
+          icon = "__Mining_Drones__/data/icons/mining_drone.png",
+          icon_size = 64,
+          icon_mipmaps = 0,
+        },
+        {
           icon = "__core__/graphics/icons/technology/constants/constant-capacity.png",
           icon_size = 128,
-          icon_mipmaps = 3
+          icon_mipmaps = 3,
+          shift = {10, 10},
         }
       }
     },

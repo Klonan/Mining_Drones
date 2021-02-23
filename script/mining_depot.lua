@@ -940,7 +940,7 @@ function mining_depot:update_pot()
     }
   end
 
-  local offset = math.max(0, math.min(math.ceil(self:get_full_ratio() * 16) - 1, 15))
+  local offset = math.max(0, math.min(math.ceil(self:get_full_ratio() * 17) - 1, 16))
   rendering.set_animation_offset(self.pot_animation, offset)
 end
 

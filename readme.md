@@ -1,6 +1,6 @@
 ## Mining Drones
 
-![](thumbnail.png)
+![icon](/data/technologies/mining_drones_tech.png)
 
 --------------------------------------
 
