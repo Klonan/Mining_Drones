@@ -109,8 +109,7 @@ local infinite =
       icon_size = 128,
       --scale = 2,
       icon_mipmaps = 3,
-      shift = {100, 100},
-      shift = {10, 10},
+      shift = {100, 100}
     }
   },
   upgrade = true,

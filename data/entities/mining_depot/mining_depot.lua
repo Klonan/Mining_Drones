@@ -24,7 +24,7 @@ local size = 768
 local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
 
 
-function miningdepotpipepictures()
+function mining_depot_pipes()
   return
   {
     north =
@@ -258,7 +258,7 @@ local mining_depot =
   {
     {
       production_type = "input",
-      pipe_picture = miningdepotpipepictures(),
+      pipe_picture = mining_depot_pipes(),
       pipe_covers = pipecoverspictures(),
       base_area = 5,
       height = 2,

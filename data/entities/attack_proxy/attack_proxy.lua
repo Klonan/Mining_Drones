@@ -101,9 +101,18 @@ end
 local size = 768
 local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
 
+local custom_resources = 
+{
+  ["iron-ore"] = true,
+  ["copper-ore"] = true,
+  ["stone"] = true,
+  ["uranium-ore"] = true,
+  ["coal"] = true
+}
+
 local pot_stripes = function(direction, resource)
   local stripes = {}
-  if resource == "iron-ore" or resource == "copper-ore" or resource == "stone" or resource == "uranium-ore" or resource == "coal" then
+  if custom_resources[resource] then
     for k = 0, 16 do
       table.insert(stripes,
       {
@@ -125,6 +134,10 @@ local pot_stripes = function(direction, resource)
   return stripes
 end
 
+local should_glow =
+{
+  ["uranium-ore"] = true
+}
 
 local make_pot = function(name, tint, direction, custom)
   if name == "uranium-ore" then
@@ -158,7 +171,7 @@ local make_pot = function(name, tint, direction, custom)
     animation_speed = 0.000000000001,
     scale = sprite_scale,
     shift = shifts[direction],
-    draw_as_glow = isglow,
+    draw_as_glow = should_glow[name],
   }
   data:extend{pot}
 

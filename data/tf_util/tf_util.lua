@@ -149,16 +149,6 @@ util.empty_sound = function()
   }
 end
 
-util.empty_sprite = function()
-  return
-  {
-    filename = util.path("data/tf_util/empty-sprite.png"),
-    height = 1,
-    width = 1,
-    frame_count = 1
-  }
-end
-
 util.damage_type = function(name)
   if not data.raw["damage-type"][name] then
     data:extend{{type = "damage-type", name = name, localised_name = {name}}}
