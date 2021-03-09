@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.10
+Date: 2021-03-09
+  Changes:
+    - Increased internal drone inventory size 5x in attempt to prevent the game spilling ores on the ground with crazy infinite ores.
+---------------------------------------------------------------------------------------------------
 Version: 1.1.9
 Date: 2021-02-23
   Changes:

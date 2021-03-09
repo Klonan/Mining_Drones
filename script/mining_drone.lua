@@ -135,7 +135,7 @@ mining_drone.new = function(entity, depot)
     unit_number = entity.unit_number,
     force_index = entity.force.index,
     depot = depot.entity.unit_number,
-    inventory = game.create_inventory(20)
+    inventory = game.create_inventory(100)
   }
   entity.ai_settings.path_resolution_modifier = 0
   setmetatable(drone, mining_drone.metatable)
