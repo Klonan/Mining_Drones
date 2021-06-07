@@ -1148,14 +1148,18 @@ local cancel_all_depots = function()
   end
 end
 
-local rescan_all_depots = function()
-  local profiler = game.create_profiler()
+local rescan_all_depots = function(silent)
+  if not silent then
+    local profiler = game.create_profiler()
+  end
   for k, bucket in pairs (script_data.depots) do
     for unit_number, depot in pairs (bucket) do
       depot:find_potential_targets()
     end
   end
-  game.print{"", "Mining drones: Rescanned mining targets. ", profiler}
+  if not silent then
+    game.print{"", "Mining drones: Rescanned mining targets. ", profiler}
+  end
 end
 
 local reset_all_depots = function()
@@ -1296,6 +1300,10 @@ end
 
 lib.add_commands = function()
   commands.add_command("mining-depots-rescan", "Forces all mining depots to cancel all orders and refresh their target list", reset_all_depots)
+end
+
+lib.rescan_all_depots = function()
+  rescan_all_depots(true)
 end
 
 return lib
