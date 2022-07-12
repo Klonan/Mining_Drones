@@ -1,5 +1,5 @@
 local mining_technologies = require("script/mining_technologies")
-local pollution_per_mine = 0.2
+local pollution_per_mine = 0.35 -- 0.2
 local default_bot_name = shared.drone_name
 local mining_interval = shared.mining_interval
 local mining_damage = shared.mining_damage
@@ -163,28 +163,29 @@ function mining_drone:process_mining()
     return
   end
 
-
-  local pollute = self.entity.surface.pollute
-  local pollution_flow = game.pollution_statistics.on_flow
-
-  pollute(target.position, pollution_per_mine)
-  pollution_flow(default_bot_name, pollution_per_mine)
-
   if target.type ~= "resource" then error("HUEHRUEH") end
 
+  local pollution_value = 0
   local mine_opts = {inventory = self.inventory}
   local mine = target.mine
   for k = 1, self.mining_count do
     if target.valid then
       mine(mine_opts)
+      pollution_value = pollution_value + 1
     else
       self:clear_mining_target()
       break
     end
   end
   self.mining_count = nil
-  self:return_to_depot()
 
+  pollution_value = pollution_value * pollution_per_mine
+
+  local drone = self.entity
+  drone.surface.pollute(drone.position, pollution_value)
+  game.pollution_statistics.on_flow.pollution_flow(default_bot_name, pollution_value)
+
+  self:return_to_depot()
 end
 
 function mining_drone:request_order()
