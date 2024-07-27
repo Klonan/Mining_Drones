@@ -381,6 +381,7 @@ function mining_drone:clear_things()
   self:clear_mining_target()
   self:clear_attack_proxy()
   self:clear_depot()
+  self:clear_inventory()
   remove_drone(self)
 end
 
@@ -388,6 +389,12 @@ function mining_drone:cancel_command()
   self:clear_things()
   self.entity.force = "neutral"
   self.entity.die()
+end
+
+function mining_drone:clear_inventory()
+  if (self.inventory and self.inventory.valid) then
+    self.inventory.destroy()
+  end
 end
 
 function mining_drone:return_to_depot()
@@ -591,6 +598,21 @@ mining_drone.on_configuration_changed = function()
       end
     end
     script_data.drones = {}
+  end
+
+  if not script_data.fix_inventories then
+    script_data.fix_inventories = true
+
+    for mod_name, inventories in pairs(game.get_script_inventories("Mining_Drones")) do
+      for k, inventory in pairs(inventories) do
+        inventory.destroy()
+      end
+    end
+
+    for unit_number, drone in pairs(script_data.drones) do
+      drone.inventory = game.create_inventory(100)
+    end
+
   end
 
   validate_proxy_orders()
