@@ -55,11 +55,11 @@ lib.get_productivity_bonus = function(force_index)
 end
 
 lib.on_load = function()
-  script_data = global.mining_technologies or script_data
+  script_data = storage.mining_technologies or script_data
 end
 
 lib.on_init = function()
-  global.mining_technologies = global.mining_technologies or script_data
+  storage.mining_technologies = storage.mining_technologies or script_data
 end
 
 lib.events =

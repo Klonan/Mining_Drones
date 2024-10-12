@@ -28,6 +28,7 @@ mining_drone.get_mining_depot = function(self)
 end
 
 mining_drone.metatable = {__index = mining_drone}
+script.register_metatable("mining_drone", mining_drone.metatable)
 
 local add_drone = function(drone)
   script_data.drones[drone.unit_number] = drone
@@ -54,10 +55,6 @@ local get_drone = function(unit_number)
 
 end
 
-local get_drone_mining_speed = function()
-  return 0.5
-end
-
 local mining_times = {}
 local get_mining_time = function(entity)
 
@@ -80,7 +77,7 @@ local get_proxy_name = function(entity)
     return proxy_name
   end
 
-  if game.entity_prototypes[shared.attack_proxy_name..entity.name] then
+  if prototypes.entity[shared.attack_proxy_name..entity.name] then
     proxy_name = shared.attack_proxy_name..entity.name
   else
     local size = min(ceil((max(entity.get_radius() - 0.1, 0.25)) * 2), 10)
@@ -128,6 +125,7 @@ local states =
 }
 
 mining_drone.new = function(entity, depot)
+  script.register_on_object_destroyed(entity)
 
   local drone =
   {
@@ -163,12 +161,9 @@ function mining_drone:process_mining()
     return
   end
 
-
-  local pollute = self.entity.surface.pollute
-  local pollution_flow = game.pollution_statistics.on_flow
-
-  pollute(target.position, pollution_per_mine)
-  pollution_flow(default_bot_name, pollution_per_mine)
+  local surface = self.entity.surface
+  surface.pollute(target.position, pollution_per_mine)
+  game.get_pollution_statistics(surface).on_flow(default_bot_name, pollution_per_mine)
 
   if target.type ~= "resource" then error("HUEHRUEH") end
 
@@ -220,12 +215,18 @@ function mining_drone:process_return_to_depot()
   end
 
 
-  local item_flow = self.entity.force.item_production_statistics.on_flow
-  for name, count in pairs (self.inventory.get_contents()) do
-    local real_count = ceil(count * productivity_bonus)
-    target_inventory.insert({name = name, count = real_count})
-    item_flow(name, real_count)
+  local item_flow = self.entity.force.get_item_production_statistics(self.entity.surface).on_flow
+  for k = 1, #self.inventory do
+    local stack = self.inventory[k]
+    if not (stack and stack.valid_for_read) then
+      break
+    end
+    local name = stack.name
+    --local quality = stack.quality
+    local inserted = target_inventory.insert(stack)
+    item_flow(name, inserted)
   end
+
   depot:on_resource_given()
 
   self.inventory.clear()
@@ -267,7 +268,7 @@ function mining_drone:process_failed_command()
 end
 
 function mining_drone:wait(ticks)
-  self.entity.set_command
+  self.entity.commandable.set_command
   {
     type = defines.command.wander,
     ticks_to_wait = ticks,
@@ -356,7 +357,7 @@ function mining_drone:attack_mining_proxy()
     }
   }
 
-  self.entity.set_command
+  self.entity.commandable.set_command
   {
     type = defines.command.compound,
     structure_type = defines.compound_command.return_last,
@@ -426,7 +427,7 @@ function mining_drone:return_to_depot()
     }
   }
 
-  self.entity.set_command
+  self.entity.commandable.set_command
   {
     type = defines.command.compound,
     structure_type = defines.compound_command.return_last,
@@ -437,7 +438,7 @@ function mining_drone:return_to_depot()
 end
 
 function mining_drone:go_to_position(position, radius)
-  self.entity.set_command
+  self.entity.commandable.set_command
   {
     type = defines.command.go_to_location,
     destination = position,
@@ -448,7 +449,7 @@ function mining_drone:go_to_position(position, radius)
 end
 
 function mining_drone:go_to_entity(entity, radius)
-  self.entity.set_command
+  self.entity.commandable.set_command
   {
     type = defines.command.go_to_location,
     destination_entity = entity,
@@ -553,6 +554,21 @@ local on_unit_added_to_group = function(event)
 
 end
 
+local entity_type = defines.events.on_entity_died
+local on_object_destroyed = function(event)
+  if event.type ~= entity_type then return end
+  local drone = get_drone(event.useful_id)
+  if not drone then return end
+
+  if event.force and event.force.valid then
+    event.force.kill_count_statistics.on_flow(default_bot_name, 1)
+  end
+
+  entity.force.kill_count_statistics.on_flow(default_bot_name, -1)
+
+  drone:handle_drone_deletion()
+end
+
 
 
 mining_drone.events =
@@ -568,20 +584,19 @@ mining_drone.events =
   [defines.events.on_entity_died] = on_entity_removed,
   [defines.events.script_raised_destroy] = on_entity_removed,
 
+  [defines.events.on_object_destroyed] = on_object_destroyed,
+
   [defines.events.on_ai_command_completed] = on_ai_command_completed,
 
   [defines.events.on_unit_added_to_group] = on_unit_added_to_group,
 }
 
 mining_drone.on_load = function()
-  script_data = global.mining_drone or script_data
-  for unit_number, drone in pairs (script_data.drones) do
-    setmetatable(drone, mining_drone.metatable)
-  end
+  script_data = storage.mining_drone or script_data
 end
 
 mining_drone.on_init = function()
-  global.mining_drone = global.mining_drone or script_data
+  storage.mining_drone = storage.mining_drone or script_data
   game.map_settings.path_finder.use_path_cache = false
 end
 
@@ -625,3 +640,5 @@ mining_drone.get_drone_count = function()
 end
 
 return mining_drone
+
+

@@ -6,7 +6,7 @@ make_drone(name, {r = 1, g = 1, b = 1, a = 0.5}, "base")
 local empty_rotated_animation = function()
   return
   {
-    filename = "__base__/graphics/entity/ship-wreck/small-ship-wreck-a.png",
+    filename = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
     width = 1,
     height= 1,
     direction_count = 1,
@@ -101,7 +101,7 @@ end
 local size = 768
 local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
 
-local custom_resources = 
+local custom_resources =
 {
   ["iron-ore"] = true,
   ["copper-ore"] = true,
@@ -148,7 +148,7 @@ local make_pot = function(name, tint, direction, custom)
     g = (g + 0.5) / 1.5
     b = (b + 0.5) / 1.5
   end
-  
+
   local pot =
   {
     type = "animation",
@@ -312,13 +312,13 @@ local make_resource_attack_proxy = function(resource)
     order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,
     collision_box = {{-0.1, -0.1}, {0.1, 0.1}},
-    collision_mask = {"colliding-with-tiles-only"},
+    collision_mask = {colliding_with_tiles_only = true, layers = {}},
     selection_box = nil,
     run_animation = empty_rotated_animation(),
     attack_parameters = empty_attack_parameters(),
     movement_speed = 0,
     distance_per_frame = 0,
-    pollution_to_join_attack = 0,
+    --pollution_to_join_attack = 0,
     distraction_cooldown = 0,
     vision_distance = 0
   }

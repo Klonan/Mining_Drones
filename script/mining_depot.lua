@@ -6,7 +6,9 @@ local mining_technologies = require("script/mining_technologies")
 local depot_update_rate = 60
 local path_queue_rate = 13
 local mining_depot = {}
-local depot_metatable = {__index = mining_depot}
+mining_depot.metatable = {__index = mining_depot}
+
+script.register_metatable("mining_depot", mining_depot.metatable)
 local variation_count = shared.variation_count
 local default_bot_name = names.drone_name
 
@@ -15,10 +17,7 @@ local script_data =
   depots = {},
   path_requests = {},
   targeted_resources = {},
-  request_queue = {},
-  big_migration = true,
-  reset_corpses = true,
-  clear_wall_migration = true
+  request_queue = {}
 }
 
 local get_mining_depot = function(unit_number)
@@ -125,9 +124,9 @@ function mining_depot:add_wall()
   local box = self.entity.bounding_box
   if direction == 0 then
     box.left_top.y = box.left_top.y + 1
-  elseif direction == 2 then
-    box.right_bottom.x = box.right_bottom.x - 1
   elseif direction == 4 then
+    box.right_bottom.x = box.right_bottom.x - 1
+  elseif direction == 8 then
     box.right_bottom.y = box.right_bottom.y - 1
   else
     box.left_top.x = box.left_top.x + 1
@@ -150,7 +149,7 @@ function mining_depot:add_wall()
     })
   end
 
-  if direction ~= 2 then
+  if direction ~= 4 then
     table.insert(boxes, surface.create_entity
     {
       name = box_name,
@@ -164,7 +163,7 @@ function mining_depot:add_wall()
     })
   end
 
-  if direction ~= 4 then
+  if direction ~= 8 then
     table.insert(boxes, surface.create_entity
     {
       name = box_name,
@@ -178,7 +177,7 @@ function mining_depot:add_wall()
     })
   end
 
-  if direction ~= 6 then
+  if direction ~= 12 then
     table.insert(boxes, surface.create_entity
     {
       name = box_name,
@@ -264,6 +263,7 @@ function mining_depot:remove_spawn_corpse()
 end
 
 function mining_depot.new(entity)
+  script.register_on_object_destroyed(entity)
 
   local depot =
   {
@@ -279,7 +279,7 @@ function mining_depot.new(entity)
     fluid = nil,
     stack_count = nil
   }
-  setmetatable(depot, depot_metatable)
+  setmetatable(depot, mining_depot.metatable)
 
   if not script_data.targeted_resources[depot.surface_index] then
     script_data.targeted_resources[depot.surface_index] = {}
@@ -341,9 +341,9 @@ end
 local direction_names =
 {
   [0] = "north",
-  [2] = "east",
-  [4] = "south",
-  [6] = "west"
+  [4] = "east",
+  [8] = "south",
+  [12] = "west"
 }
 
 function mining_depot:get_spawn_corpse()
@@ -399,13 +399,12 @@ function mining_depot:spawn_drone()
 end
 
 local draw_text = rendering.draw_text
-local destroy = rendering.destroy
 
 function mining_depot:update_sticker()
 
 
-  if self.rendering and rendering.is_valid(self.rendering) then
-    rendering.set_text(self.rendering, self:get_active_drone_count().."/"..self:get_drone_item_count())
+  if self.rendering and self.rendering.valid then
+    self.rendering.text = self:get_active_drone_count() .. "/" .. self:get_drone_item_count()
     return
   end
 
@@ -441,19 +440,19 @@ function mining_depot:target_name_changed()
 
   self.target_resource_name = self:get_target_resource_name()
   self.fluid = self:get_required_fluid()
-  
+
   self:clear_path_requests()
   self:cancel_all_orders()
 
   self:find_potential_targets()
 
   if self.rendering then
-    rendering.destroy(self.rendering)
+    self.rendering.destroy()
     self.rendering = nil
   end
 
   if self.pot_animation then
-    rendering.destroy(self.pot_animation)
+    self.pot_animation.destroy()
     self.pot_animation = nil
   end
 
@@ -626,7 +625,7 @@ function mining_depot:get_drone_item_count()
 end
 
 local unique_index = function(entity)
-  return script.register_on_entity_destroyed(entity)
+  return script.register_on_object_destroyed(entity)
 end
 
 local insert = table.insert
@@ -821,7 +820,7 @@ function mining_depot:take_fluid(amount)
   if not box then game.print("Shouldn't happen?") return end
   local current = box.amount
   box.amount = box.amount - amount
-  self.entity.force.fluid_production_statistics.on_flow(self.fluid.name, -amount)
+  self.entity.force.get_fluid_production_statistics(self.entity.surface).on_flow(self.fluid.name, -amount)
   if box.amount == 0 then
     box = nil
   end
@@ -913,27 +912,19 @@ function mining_depot:handle_path_request_finished(event)
 
 end
 
-local direction_name =
-{
-  [0] = "north",
-  [2] = "east",
-  [4] = "south",
-  [6] = "west"
-}
-
 function mining_depot:update_pot()
 
   if not self.target_resource_name then
-    if (self.pot_animation and rendering.is_valid(self.pot_animation)) then
-      rendering.destroy(self.pot_animation)
+    if (self.pot_animation and self.pot_animation.valid) then
+      self.pot_animation.destroy()
     end
     return
   end
 
-  if not (self.pot_animation and rendering.is_valid(self.pot_animation)) then
+  if not (self.pot_animation and self.pot_animation.valid) then
     self.pot_animation = rendering.draw_animation
     {
-      animation = "depot-pot-"..self.target_resource_name.."-"..direction_name[self.entity.direction],
+      animation = "depot-pot-"..self.target_resource_name.."-"..direction_names[self.entity.direction],
       render_layer = "higher-object-under",
       target = self.entity,
       surface = self.entity.surface
@@ -941,11 +932,11 @@ function mining_depot:update_pot()
   end
 
   local offset = math.max(0, math.min(math.ceil(self:get_full_ratio() * 17) - 1, 16))
-  rendering.set_animation_offset(self.pot_animation, offset)
+  self.pot_animation.animation_offset = offset
 end
 
 function mining_depot:on_resource_given()
-  self.entity.surface.create_entity{name = "depot-smoke-"..self.target_resource_name.."-"..direction_name[self.entity.direction], position = self.entity.position}
+  self.entity.surface.create_entity{name = "depot-smoke-"..self.target_resource_name.."-"..direction_names[self.entity.direction], position = self.entity.position}
 end
 
 function mining_depot:return_drone(drone)
@@ -1061,7 +1052,7 @@ end
 local box, mask
 local get_box_and_mask = function()
   if not (box and mask) then
-    local prototype = game.entity_prototypes[default_bot_name]
+    local prototype = prototypes.entity[default_bot_name]
     box = prototype.collision_box
     mask = prototype.collision_mask
   end
@@ -1163,17 +1154,17 @@ local reset_all_depots = function()
   rescan_all_depots()
 end
 
-local clear_targeted_resources = function()
-  for k, bucket in pairs (script_data.depots) do
-    for unit_number, depot in pairs (bucket) do
-      depot:cancel_all_orders()
-    end
-  end
-  for k, surface in pairs (script_data.targeted_resources) do
-    script_data.targeted_resources[k] = {}
-  end
+local entity_type = defines.events.on_entity_died
+local on_object_destroyed = function(event)
+  if event.type ~= entity_type then return end
+  local unit_number = event.useful_id
+  local bucket = script_data.depots[unit_number % depot_update_rate]
+  if not bucket then return end
+  local depot = bucket[unit_number]
+  if not depot then return end
+  depot:handle_depot_deletion()
+  bucket[unit_number] = nil
 end
-
 
 local lib = {}
 
@@ -1191,65 +1182,21 @@ lib.events =
 
   [defines.events.on_entity_died] = on_entity_removed,
   [defines.events.script_raised_destroy] = on_entity_removed,
+  [defines.events.on_object_destroyed] = on_object_destroyed,
 
   [defines.events.on_tick] = on_tick
 
 }
 
 lib.on_init = function()
-  global.mining_depot = global.mining_depot or script_data
+  storage.mining_depot = storage.mining_depot or script_data
 end
 
 lib.on_load = function()
-  script_data = global.mining_depot or script_data
-  for k, bucket in pairs (script_data.depots) do
-    for unit_number, depot in pairs (bucket) do
-      setmetatable(depot, depot_metatable)
-    end
-  end
-  for path_request_id, depot in pairs (script_data.path_requests) do
-    setmetatable(depot, depot_metatable)
-  end
+  script_data = storage.mining_depot or script_data
 end
 
 lib.on_configuration_changed = function()
-
-  if not script_data.big_migration then
-    script_data.big_migration = true
-    script_data.targeted_resources = {}
-    script_data.path_requests = {}
-    for k, surface in pairs (game.surfaces) do
-      script_data.targeted_resources[surface.index] = {}
-    end
-    
-    for k, bucket in pairs (script_data.depots) do
-      for unit_number, depot in pairs (bucket) do
-        depot.path_requests = {}
-      end
-    end
-    script_data.request_queue = {}
-  end
-
-  if not script_data.reset_corpses then
-    script_data.reset_corpses = true
-    for k, bucket in pairs (script_data.depots) do
-      for unit_number, depot in pairs (bucket) do
-        depot.unit_number = unit_number
-        if not depot.entity.valid then
-          depot:handle_depot_deletion()
-          bucket[unit_number] = nil
-        else
-          depot:remove_corpse()
-          depot:add_corpse()
-          depot:remove_spawn_corpse()
-          depot:add_spawn_corpse()
-          depot:clear_wall()
-          depot:add_wall()
-          depot:check_for_rescan()
-        end
-      end
-    end
-  end
 
   for k, bucket in pairs (script_data.depots) do
     --Idk, things can happen, let the depots rescan if they want.
@@ -1259,35 +1206,6 @@ lib.on_configuration_changed = function()
       else
         depot:handle_depot_deletion()
         bucket[unit_number] = nil
-      end
-    end
-  end
-
-  if not script_data.migrate_drones then
-    script_data.migrate_drones = true
-    for k, bucket in pairs (script_data.depots) do
-      for unit_number, depot in pairs (bucket) do
-        for drone_unit_number, drone in pairs (depot.drones) do
-          depot.drones[drone_unit_number] = true
-        end
-      end
-    end
-  end
-
-  if not script_data.clear_wall_migration then
-    script_data.clear_wall_migration = true
-    for k, surface in pairs (game.surfaces) do
-      for k, v in pairs (surface.find_entities_filtered{name = box_name}) do
-        v.destroy()
-      end
-    end
-    for k, bucket in pairs (script_data.depots) do
-      for unit_number, depot in pairs (bucket) do
-        depot.unit_number = unit_number
-        if depot.entity.valid then
-          depot:clear_wall()
-          depot:add_wall()
-        end
       end
     end
   end

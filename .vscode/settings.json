@@ -1,5 +1,8 @@
 {
   "Lua.diagnostics.disable": [
-    "undefined-global"
+    "undefined-global",
+    "codestyle-check",
+    "unused-local",
+    "spell-check"
   ]
 }

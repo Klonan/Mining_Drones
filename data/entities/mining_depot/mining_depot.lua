@@ -24,7 +24,7 @@ local size = 768
 local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
 
 
-function mining_depot_pipes()
+local function mining_depot_pipes()
   return
   {
     north =
@@ -220,14 +220,6 @@ local mining_depot =
       volume = 0.5
     }
   },
-  old_collision_mask =
-  {
-    "item-layer",
-    "object-layer",
-    "water-tile",
-    "resource-layer",
-    "train-layer"
-  },
   corpse = "depot-corpse",
   crafting_categories = {"mining-depot"},
   crafting_speed = depots["mining-depot"].capacity - 1,
@@ -260,13 +252,11 @@ local mining_depot =
       production_type = "input",
       pipe_picture = mining_depot_pipes(),
       pipe_covers = pipecoverspictures(),
-      base_area = 5,
-      height = 2,
-      base_level = -1,
+      volume = 10,
       pipe_connections =
       {
-        { type="input-output", position = {-3, -0.5} },
-        { type="input-output", position = {3, -0.5} }
+        {direction = 12, flow_direction = "input-output", position = {-2, -0.5} },
+        {direction = 4, flow_direction = "input-output", position = {2, -0.5} }
       },
       secondary_draw_orders =
       {
@@ -276,8 +266,8 @@ local mining_depot =
         west = 50
       }
     },
-    off_when_no_fluid_recipe = true,
   },
+  fluid_boxes_off_when_no_fluid_recipe = true,
   gui_title_key = "mining-depot-choose-resource",
   icon = "__Mining_Drones__/data/technologies/mining_drones_tech.png",
   icon_size = 256,
@@ -351,7 +341,7 @@ local mining_depot =
       }
     }
   },
-  working_visualisations = working_visualisations
+  graphics_set = {working_visualisations = working_visualisations}
 }
 
 local item =
@@ -381,12 +371,12 @@ local recipe =
   enabled = true,
   ingredients =
   {
-    {"iron-plate", 50},
-    {"iron-gear-wheel", 10},
-    {"iron-stick", 20},
+    {type = "item", name = "iron-plate", amount = 50},
+    {type = "item", name = "iron-gear-wheel", amount = 10},
+    {type = "item", name = "iron-stick", amount = 20},
   },
   energy_required = 5,
-  result = name
+  results = {{type = "item", name = name, amount = 1}}
 }
 
 local empty = util.empty_sprite()
@@ -407,7 +397,7 @@ local box =
   type = "highlight-box",
   name = "mining-depot-collision-box",
   localised_name = mining_depot.localised_name,
-  collision_mask = {"player-layer"}
+  collision_mask = {layers = {player = true}}
 }
 
 local corpse_path = "__Mining_Drones__/data/entities/mining_depot/corpse/Scene_layer-"

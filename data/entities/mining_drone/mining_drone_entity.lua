@@ -6,7 +6,7 @@ end
 
 local sound = data.raw.tile["grass-1"].walking_sound
 
-local mining_drone_flags = {"placeable-off-grid", "hidden", "not-in-kill-statistics"}
+local mining_drone_flags = {"placeable-off-grid", "not-in-kill-statistics"}
 
 --local mining_drone_collision_mask = {"not-colliding-with-itself", "player-layer", "consider-tile-transitions"}
 local mining_drone_collision_mask = shared.mining_drone_collision_mask
@@ -65,6 +65,7 @@ local make_drone = function(name, tint, item)
       }
     },
     flags = mining_drone_flags,
+    hidden = true,
     map_color = {r ^ 0.5, g ^ 0.5, b ^ 0.5, 0.5},
     enemy_map_color = {r = 1},
     max_health = 150,
@@ -126,7 +127,7 @@ local make_drone = function(name, tint, item)
     affected_by_tiles = true,
     movement_speed = 0.05 * random_height,
     distance_per_frame = 0.05 / random_height,
-    pollution_to_join_attack = 1000000,
+    --pollution_to_join_attack = 1000000,
     corpse = bot_name.."-corpse",
     run_animation = base.animations[1].running,
     rotation_speed = 0.05 / random_height,
