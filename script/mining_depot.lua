@@ -71,9 +71,9 @@ end
 local custom_drop_offsets =
 {
   [0] = {0, 0.5},
-  [2] = {0, 0.5},
-  [4] = {0, -0.5},
-  [6] = {0, 0.5},
+  [4] = {0, 0.5},
+  [8] = {0, -0.5},
+  [12] = {0, 0.5},
 }
 
 function mining_depot:get_drop_offset()
