@@ -70,10 +70,10 @@ end
 
 local custom_drop_offsets =
 {
-  [0] = {0, 0.5},
-  [2] = {0, 0.5},
-  [4] = {0, -0.5},
-  [6] = {0, 0.5},
+  [defines.direction.north] = {0, 0.5},
+  [defines.direction.east] = {0, 0.5},
+  [defines.direction.south] = {0, -0.5},
+  [defines.direction.west] = {0, 0.5},
 }
 
 function mining_depot:get_drop_offset()
@@ -340,10 +340,10 @@ end
 
 local direction_names =
 {
-  [0] = "north",
-  [4] = "east",
-  [8] = "south",
-  [12] = "west"
+  [defines.direction.north] = "north",
+  [defines.direction.east] = "east",
+  [defines.direction.south] = "south",
+  [defines.direction.west] = "west"
 }
 
 function mining_depot:get_spawn_corpse()

@@ -511,10 +511,10 @@ local on_entity_removed = function(event)
   if not drone then return end
 
   if event.force and event.force.valid then
-    event.force.kill_count_statistics.on_flow(default_bot_name, 1)
+    event.force.get_kill_count_statistics(entity.surface).on_flow(default_bot_name, 1)
   end
 
-  entity.force.kill_count_statistics.on_flow(default_bot_name, -1)
+  entity.force.get_kill_count_statistics(entity.surface).on_flow(default_bot_name, -1)
 
   drone:handle_drone_deletion()
 
