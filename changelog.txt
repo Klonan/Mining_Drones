@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.1
+Date: 2025-01-28
+  Changes:
+    - Fixed loading in Factorio version 2.0.32.
+    - Fixed mining drone corpses lanquishing forever.
+    - Add support for reading depot with the circuit network (only read contents works okay).
+---------------------------------------------------------------------------------------------------
 Version: 2.0.0
 Date: 2024-10-27
   Changes:

@@ -180,6 +180,7 @@ local make_drone = function(name, tint, item)
   corpse.selection_box = nil
   corpse.render_layer = "remnants"
   corpse.order = "zzz-"..bot_name
+  corpse.time_to_live = 60 * 60 * 5
 
 
   data:extend

@@ -1,3 +1,4 @@
+require("circuit-connector-sprites")
 local name = "mining-depot"
 local depots = names.depots
 
@@ -341,7 +342,18 @@ local mining_depot =
       }
     }
   },
-  graphics_set = {working_visualisations = working_visualisations}
+  graphics_set = {working_visualisations = working_visualisations},
+  circuit_wire_max_distance = 9,
+  circuit_connector = circuit_connector_definitions.create_vector
+  (
+    universal_connector_template,
+    {
+      {variation = 27,  main_offset = util.by_pixel(50, 30),    shadow_offset = util.by_pixel(50 + 32, 30 + 30), show_shadow = true},
+      {variation = 27,  main_offset = util.by_pixel(0, 30),    shadow_offset = util.by_pixel(50 + 32, 30 + 30), show_shadow = true},
+      {variation = 27,  main_offset = util.by_pixel(50, 0),    shadow_offset = util.by_pixel(50 + 32, 30 + 30), show_shadow = true},
+      {variation = 27,  main_offset = util.by_pixel(80, 30),    shadow_offset = util.by_pixel(50 + 32, 30 + 30), show_shadow = true},
+    }
+  )
 }
 
 local item =

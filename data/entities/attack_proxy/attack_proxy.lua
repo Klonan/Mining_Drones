@@ -6,7 +6,7 @@ make_drone(name, {r = 1, g = 1, b = 1, a = 0.5}, "base")
 local empty_rotated_animation = function()
   return
   {
-    filename = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
+    filename = "__core__/graphics/empty.png",
     width = 1,
     height= 1,
     direction_count = 1,
@@ -306,8 +306,8 @@ local make_resource_attack_proxy = function(resource)
   {
     type = "unit",
     name = shared.attack_proxy_name..resource.name,
-    icon = "__base__/graphics/icons/ship-wreck/small-ship-wreck.png",
-    icon_size = 32,
+    icon = "__core__/graphics/empty.png",
+    icon_size = 1,
     flags = proxy_flags,
     order = "zzzzzz",
     max_health = shared.mining_damage * 1000000,

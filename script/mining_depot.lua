@@ -292,6 +292,7 @@ function mining_depot.new(entity)
   add_to_bucket(depot)
 
   entity.active = false
+  entity.custom_status = {diode = defines.entity_status_diode.green, label = 'Ok'}
 
   --[[
     local area = depot:get_area()
@@ -864,7 +865,7 @@ function mining_depot:get_max_output_amount()
   local inventory = self:get_output_inventory()
   local amount = 0
   local recipe = self.entity.get_recipe()
-  if not recipe then return end
+  if not recipe then return 0 end
   for k, product in pairs (recipe.products) do
     amount = math.max(amount, inventory.get_item_count(product.name))
   end
