@@ -158,15 +158,7 @@ local make_drone = function(name, tint, item)
       }
     },
     running_sound_animation_positions = {5, 16},
-    walking_sound = sound_enabled and
-    {
-      aggregation =
-      {
-        max_count = 2,
-        remove = true
-      },
-      variations = sound
-    } or nil
+    walking_sound = sound_enabled and sound or nil
   }
 --error(serpent.block(base.animations[1].running))
 
