@@ -21,7 +21,7 @@ local recipe = {
   name = name,
   localised_name = {name},
   --category = ,
-  enabled = true,
+  enabled = false,
   ingredients =
   {
     {type = "item", name = "iron-plate", amount = 10},

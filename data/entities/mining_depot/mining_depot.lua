@@ -380,7 +380,7 @@ local recipe =
   type = "recipe",
   name = name,
   localised_name = {name},
-  enabled = true,
+  enabled = false,
   ingredients =
   {
     {type = "item", name = "iron-plate", amount = 50},

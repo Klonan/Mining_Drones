@@ -3,6 +3,7 @@ names = require("shared")
 shared = require("shared")
 
 require "data/entities/entities"
+require "data/technologies/mining_drone"
 require "data/technologies/mining_speed"
 require "data/technologies/mining_productivity"
 

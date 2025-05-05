@@ -13,6 +13,7 @@ data.mining_depot_chest_v = "mining-depot-chest-v"
 data.variation_count = 20
 data.mining_drone_collision_mask = {"error-fix-me"}
 
+data.mining_drone_technology = "mining-drone-drones"
 data.mining_speed_technology = "mining-drone-mining-speed"
 data.mining_productivity_technology = "mining-drone-productivity"
 
