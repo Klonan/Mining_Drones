@@ -192,7 +192,7 @@ function mining_depot:add_wall()
   end
 
   for k, v in pairs (boxes) do
-    v.active = false
+    v.disabled_by_script = true
   end
 
   self.boxes = boxes
@@ -291,7 +291,7 @@ function mining_depot.new(entity)
 
   add_to_bucket(depot)
 
-  entity.active = false
+  entity.disabled_by_script = true
   entity.custom_status = {diode = defines.entity_status_diode.green, label = 'Ok'}
 
   --[[
@@ -608,17 +608,16 @@ end
 
 function mining_depot:has_enough_fluid()
   if not self.fluid then return true end
-  local box = self:get_input_fluidbox()
-  if not box then return false end
+  local fluid = self:get_input_fluid()
+  if not fluid then return false end
 
-  return box.amount >= (self.fluid.amount / 10)
+  return fluid.amount >= (self.fluid.amount / 10)
 
 end
 
-function mining_depot:get_input_fluidbox()
-  local fluidbox = self.entity.fluidbox
-  if #fluidbox == 0 then return end
-  return fluidbox[1]
+function mining_depot:get_input_fluid()
+  if self.entity.fluids_count == 0 then return end
+  return self.entity.get_fluid(1)
 end
 
 function mining_depot:get_drone_item_count()
@@ -794,14 +793,14 @@ function mining_depot:order_drone(drone, entity)
   local mining_count = self:get_mining_count(entity)
 
   if self.fluid then
-    local box = self:get_input_fluidbox()
-    if not box then
+    local fluid = self:get_input_fluid()
+    if not fluid then
       self:add_mining_target(entity)
       return
     end
     local needed_fluid = (self.fluid.amount / 100) * mining_count
-    if box.amount < needed_fluid then
-      local mining_count = math.floor(box.amount / (self.fluid.amount / 100))
+    if fluid.amount < needed_fluid then
+      local mining_count = math.floor(fluid.amount / (self.fluid.amount / 100))
       if mining_count == 0 then
         self:add_mining_target(entity)
         return
@@ -817,15 +816,9 @@ function mining_depot:order_drone(drone, entity)
 end
 
 function mining_depot:take_fluid(amount)
-  local box = self:get_input_fluidbox()
-  if not box then game.print("Shouldn't happen?") return end
-  local current = box.amount
-  box.amount = box.amount - amount
+  local removed = self.entity.remove_fluid(amount, 1)
+  if not removed then game.print("Shouldn't happen?") return end
   self.entity.force.get_fluid_production_statistics(self.entity.surface).on_flow(self.fluid.name, -amount)
-  if box.amount == 0 then
-    box = nil
-  end
-  self.entity.fluidbox[1] = box
 end
 
 function mining_depot:handle_order_request(drone)
@@ -851,7 +844,7 @@ function mining_depot:get_output_inventory()
 end
 
 function mining_depot:get_drone_inventory()
-  return self.entity.get_inventory(defines.inventory.assembling_machine_input)
+  return self.entity.get_inventory(defines.inventory.crafter_input)
 end
 
 function mining_depot:get_target_resource_name()

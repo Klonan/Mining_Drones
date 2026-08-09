@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.3
+Date: 2026-08-09
+  Changes:
+    - Fixed loading in Factorio version 2.1 (removed LuaFluidBox usage in favor of LuaEntity fluid methods, renamed assembling_machine_input inventory constant to crafter_input, updated factorio_version to 2.1).
+    - Fixed crash on data stage when no mod defines a "tool" type item (base game moved science packs off the tool/capsule types in 2.1).
+    - Fixed RecipePrototype.category (removed in 2.1) in favor of the new categories array.
+    - Fixed LuaEntity.active being read-only in 2.1 by using disabled_by_script instead.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.2
 Date: 2025-02-23
   Changes:
