@@ -175,8 +175,8 @@ end
 local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics", "not-repairable"}
 --local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"}
 
-local items = data.raw.item
-local tools = data.raw.tool
+local items = data.raw.item or {}
+local tools = data.raw.tool or {}
 local get_item = function(name)
   if items[name] then return items[name] end
   if tools[name] then return tools[name] end
@@ -222,7 +222,7 @@ local make_recipes = function(entity)
       fluid and {type = "fluid", name = fluid, amount = entity.minable.fluid_amount * 10}
     },
     results = recipe_results,
-    category = names.mining_depot,
+    categories = {names.mining_depot},
     subgroup = "extraction-machine",
     --overload_multiplier = 100,
     hide_from_player_crafting = true,
