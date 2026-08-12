@@ -37,8 +37,6 @@ The mod registers a `mining_drones` remote interface:
 | --- | --- |
 | `get_drone_count()` | number of drones currently out mining |
 | `get_depot_count()` | number of registered mining depots |
-| `get_targeted_resource_count()` | number of resource entities tracked as a mining target |
-| `get_pooled_inventory_count()` | number of recycled drone inventories held for reuse |
 | `get_bonuses(force_index)` | `{mining_speed, walking_speed, cargo_size, productivity}` |
 | `reset_depots()` | recalls every drone and rebuilds all target lists |
 
@@ -46,14 +44,18 @@ The mod registers a `mining_drones` remote interface:
 
 ### Self test
 
-`scripts/run-self-test.sh` runs the mod headlessly against a real game and checks that depots
-deploy drones, deliver ore, handle fluids, rotations, recipe changes and technologies, and clean
-up after themselves without leaking entities, script inventories or resource registrations.
+`script/self_test.lua` is a dev-only smoke test. It builds a private surface with six depots on
+it and checks that drones deploy, ore actually arrives, fluid gating works, rotations and recipe
+changes are picked up, the technologies apply, the migration handlers do their job, and that
+everything cleans up without leaking entities, script inventories or resource registrations.
+
+It is commented out in `control.lua` by default, because it builds entities on a running save.
+To use it, uncomment its `handler.add_lib` line and then run:
 
 ```
-scripts/run-self-test.sh [path/to/factorio]
+factorio.exe --create test.zip
+factorio.exe --benchmark test.zip --benchmark-ticks 30000
 ```
 
-It converts `scenarios/mining-drones-self-test` into a map (which also exercises a save/load
-round trip of the mod's storage) and then benchmarks it, so it needs no graphics and exits on its
-own. It prints one line per check and finishes with `SELF TEST PASSED` or `SELF TEST FAILED`.
+It logs one line per check and finishes with `SELF_TEST_RESULT: PASS` or `FAIL`. Comment the line
+back out afterwards.

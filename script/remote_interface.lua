@@ -23,16 +23,6 @@ local interface =
     return mining_depot.get_depot_count()
   end,
 
-  --Number of resource entities currently tracked as a mining target by any depot.
-  get_targeted_resource_count = function()
-    return mining_depot.get_targeted_resource_count()
-  end,
-
-  --Number of recycled drone inventories being held for reuse.
-  get_pooled_inventory_count = function()
-    return mining_drone.get_pooled_inventory_count()
-  end,
-
   --Same as the /mining-depots-rescan command: recall every drone and rebuild the target lists.
   reset_depots = function()
     mining_depot.reset_all_depots()
