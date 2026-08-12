@@ -1,9 +1,7 @@
-local path = util.path("data/units/smg_guy/")
-local name = names.drone_name
+local name = shared.drone_name
 
-local base = util.copy(data.raw.character.character)
-
-local item = {
+local item =
+{
   type = "item",
   name = name,
   localised_name = {name},
@@ -12,15 +10,14 @@ local item = {
   flags = {},
   subgroup = "extraction-machine",
   order = "zb"..name,
-  stack_size = 20,
-  --place_result = name
+  stack_size = 20
 }
 
-local recipe = {
+local recipe =
+{
   type = "recipe",
   name = name,
   localised_name = {name},
-  --category = ,
   enabled = true,
   ingredients =
   {

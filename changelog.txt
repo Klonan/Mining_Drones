@@ -2,6 +2,38 @@
 Version: 2.1.0
 Date: ????
   Changes:
+    - Updated to Factorio 2.1.
+    - Depots now show a proper status in their GUI: working, no resource selected, no mining
+      targets in range, missing required fluid, or no mining drones.
+    - Depots handle being rotated: the bay, the drop off point and the mining area are rebuilt.
+    - Depots built by script cloning are now registered and work.
+    - Added get_depot_count, get_bonuses, get_targeted_resource_count, get_pooled_inventory_count
+      and reset_depots to the 'mining_drones' remote interface.
+    - The mod setting and the technology effect descriptions can now be translated.
+  Bugfixes:
+    - Fixed that mining drone productivity research did nothing. It has had no effect on the
+      amount of ore delivered since the 2.0 update.
+    - Fixed that mining targets were never released when a depot was removed or had its recipe
+      changed while it had queued path requests, which permanently reserved those ore entities
+      so no other depot would mine them.
+    - Fixed that the list of targeted resources was never cleaned up, growing forever as a patch
+      was mined out.
+    - Fixed that ore was silently destroyed when a drone came home to a depot with a full output.
+      The drone now keeps what did not fit and waits.
+    - Fixed that mining drones used the 'bullet' ammo category, so bullet damage upgrades were
+      quietly speeding up mining. They now use their own category.
+    - Fixed that the technology bonuses were cached in a way that could disagree with the force,
+      for instance after a technology effects reset or a force merge.
+    - Fixed that changing a depot recipe while path requests were queued could send drones of the
+      new resource type to mine the old one.
+    - Fixed a crash in the drone destruction handler that would have triggered if a drone was
+      removed by another mod.
+    - Fixed that the depot pipe graphics were rendered from the low resolution sheets.
+    - Fixed that the drone smoke never faded out, and removed a pile of prototype properties that
+      have not done anything since 2.0.
+    - Removed the leftover proxy chest prototype, unused since 0.3.6.
+  Optimizations:
+    - Drone inventories are recycled instead of being created and destroyed for every mining trip.
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.2
 Date: 2025-02-23

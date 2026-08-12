@@ -1,228 +1,109 @@
 local name = shared.mining_speed_technology
+local finite_levels = shared.technology_levels
 
-local levels =
+local science_packs =
 {
-  [1] =
-  {
-    {"automation-science-pack", 1},
-  },
-  [2] =
-  {
-    {"automation-science-pack", 1},
-    {"logistic-science-pack", 1},
-  },
-  [3] =
-  {
-    {"automation-science-pack", 1},
-    {"logistic-science-pack", 1},
-    {"chemical-science-pack", 1},
-  },
-  [4] =
-  {
-    {"automation-science-pack", 1},
-    {"logistic-science-pack", 1},
-    {"chemical-science-pack", 1},
-    {"production-science-pack", 1},
-  },
-  [5] =
-  {
-    {"automation-science-pack", 1},
-    {"logistic-science-pack", 1},
-    {"chemical-science-pack", 1},
-    {"production-science-pack", 1},
-    {"utility-science-pack", 1},
-  }
+  "automation-science-pack",
+  "logistic-science-pack",
+  "chemical-science-pack",
+  "production-science-pack",
+  "utility-science-pack",
+  "space-science-pack"
 }
 
-for k, ingredients in pairs (levels) do
-
-  local technology =
-  {
-    name = name.."-"..k,
-    localised_name = {name},
-    type = "technology",
-    icons =
-    {
-      {
-        icon = "__Mining_Drones__/data/technologies/mining_drones_tech.png",
-        icon_size = 256,
-        icon_mipmaps = 0,
-      },
-      {
-        icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
-        icon_size = 128,
-        --scale = 2,
-        icon_mipmaps = 3,
-        shift = {100, 100},
-      }
-    },
-    upgrade = true,
-    effects =
-    {
-      {
-        type = "nothing",
-        effect_description = "Mining drone mining speed: +20%",
-        icons =
-        {
-          {
-            icon = "__Mining_Drones__/data/icons/mining_drone.png",
-            icon_size = 64,
-            icon_mipmaps = 0,
-          },
-          {
-            icon = "__core__/graphics/icons/technology/constants/constant-speed.png",
-            icon_size = 128,
-            icon_mipmaps = 3,
-            shift = {10, 10},
-          }
-        }
-      },
-      {
-        type = "nothing",
-        effect_description = "Mining drone walking speed: +20%",
-        icons =
-        {
-          {
-            icon = "__Mining_Drones__/data/icons/mining_drone.png",
-            icon_size = 64,
-            icon_mipmaps = 0,
-          },
-          {
-            icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
-            icon_size = 128,
-            icon_mipmaps = 3,
-            shift = {10, 10},
-          }
-        }
-      },
-      {
-        type = "nothing",
-        effect_description = "Mining drone cargo bonus: +1",
-        icons =
-        {
-          {
-            icon = "__Mining_Drones__/data/icons/mining_drone.png",
-            icon_size = 64,
-            icon_mipmaps = 0,
-          },
-          {
-            icon = "__core__/graphics/icons/technology/constants/constant-capacity.png",
-            icon_size = 128,
-            icon_mipmaps = 3,
-            shift = {10, 10},
-          }
-        }
-      },
-    },
-    prerequisites = k > 1 and {name.."-"..k - 1} or {},
-    unit =
-    {
-      count = k * 100,
-      ingredients = ingredients,
-      time = 30
-    },
-    order = name
-  }
-  data:extend{technology}
+local ingredients_for_level = function(level)
+  local ingredients = {}
+  for k = 1, math.min(level, #science_packs) do
+    ingredients[k] = {science_packs[k], 1}
+  end
+  return ingredients
 end
 
-
-local k = #levels + 1
-
-local infinite =
-{
-  name = name.."-"..k,
-  localised_name = {name},
-  type = "technology",
-  icons =
+local technology_icons = function()
+  return
   {
     {
       icon = "__Mining_Drones__/data/technologies/mining_drones_tech.png",
-      icon_size = 256,
-      icon_mipmaps = 0,
+      icon_size = 256
     },
     {
       icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
       icon_size = 128,
-      --scale = 2,
-      icon_mipmaps = 3,
-      shift = {100, 100},
+      shift = {100, 100}
     }
-  },
-  upgrade = true,
-  effects =
+  }
+end
+
+local effect = function(constant, description)
+  return
+  {
+    type = "nothing",
+    effect_description = {description},
+    icons =
+    {
+      {
+        icon = "__Mining_Drones__/data/icons/mining_drone.png",
+        icon_size = 64
+      },
+      {
+        icon = "__core__/graphics/icons/technology/constants/"..constant..".png",
+        icon_size = 128,
+        shift = {10, 10}
+      }
+    }
+  }
+end
+
+local effects = function()
+  return
+  {
+    effect("constant-speed", "mining-drone-mining-speed-description"),
+    effect("constant-movement-speed", "mining-drone-walking-speed-description"),
+    effect("constant-capacity", "mining-drone-cargo-size-description")
+  }
+end
+
+for k = 1, finite_levels do
+  data:extend
   {
     {
-      type = "nothing",
-      effect_description = "Mining drone mining speed: +20%",
-      icons =
+      type = "technology",
+      name = name.."-"..k,
+      localised_name = {name},
+      icons = technology_icons(),
+      upgrade = true,
+      effects = effects(),
+      prerequisites = k > 1 and {name.."-"..(k - 1)} or {},
+      unit =
       {
-        {
-          icon = "__Mining_Drones__/data/icons/mining_drone.png",
-          icon_size = 64,
-          icon_mipmaps = 0,
-        },
-        {
-          icon = "__core__/graphics/icons/technology/constants/constant-speed.png",
-          icon_size = 128,
-          icon_mipmaps = 3,
-          shift = {10, 10},
-        }
-      }
-    },
-    {
-      type = "nothing",
-      effect_description = "Mining drone walking speed: +20%",
-      icons =
-      {
-        {
-          icon = "__Mining_Drones__/data/icons/mining_drone.png",
-          icon_size = 64,
-          icon_mipmaps = 0,
-        },
-        {
-          icon = "__core__/graphics/icons/technology/constants/constant-movement-speed.png",
-          icon_size = 128,
-          icon_mipmaps = 3,
-          shift = {10, 10},
-        }
-      }
-    },
-    {
-      type = "nothing",
-      effect_description = "Mining drone cargo bonus: +1",
-      icons =
-      {
-        {
-          icon = "__Mining_Drones__/data/icons/mining_drone.png",
-          icon_size = 64,
-          icon_mipmaps = 0,
-        },
-        {
-          icon = "__core__/graphics/icons/technology/constants/constant-capacity.png",
-          icon_size = 128,
-          icon_mipmaps = 3,
-          shift = {10, 10},
-        }
-      }
-    },
-  },
-  prerequisites = k > 1 and {name.."-"..k - 1} or {},
-  unit =
+        count = k * 100,
+        ingredients = ingredients_for_level(k),
+        time = 30
+      },
+      order = name
+    }
+  }
+end
+
+local infinite_level = finite_levels + 1
+
+data:extend
+{
   {
-    count_formula = "(2^(L-6))*500",
-    ingredients =
+    type = "technology",
+    name = name.."-"..infinite_level,
+    localised_name = {name},
+    icons = technology_icons(),
+    upgrade = true,
+    effects = effects(),
+    prerequisites = {name.."-"..finite_levels},
+    unit =
     {
-      {"automation-science-pack", 1},
-      {"logistic-science-pack", 1},
-      {"chemical-science-pack", 1},
-      {"production-science-pack", 1},
-      {"utility-science-pack", 1},
-      {"space-science-pack", 1},
+      count_formula = "(2^(L-6))*500",
+      ingredients = ingredients_for_level(#science_packs),
+      time = 30
     },
-    time = 30
-  },
-  order = name,
-  max_level = "infinite"
+    order = name,
+    max_level = "infinite"
+  }
 }
-data:extend{infinite}

@@ -9,16 +9,24 @@ local mining_depot = {}
 mining_depot.metatable = {__index = mining_depot}
 
 script.register_metatable("mining_depot", mining_depot.metatable)
-local variation_count = shared.variation_count
+local variation_count = names.variation_count
 local default_bot_name = names.drone_name
 
 local script_data =
 {
   depots = {},
   path_requests = {},
+  --Keyed by the registration number of the resource entity, which is unique across all surfaces.
   targeted_resources = {},
   request_queue = {}
 }
+
+local min = math.min
+local max = math.max
+local floor = math.floor
+local ceil = math.ceil
+local random = math.random
+local insert = table.insert
 
 local get_mining_depot = function(unit_number)
   local bucket = script_data.depots[unit_number % depot_update_rate]
@@ -27,21 +35,11 @@ end
 
 mining_drone.get_mining_depot = get_mining_depot
 
-local main_products = {}
-local get_main_product = function(entity)
-  local cached = main_products[entity.name]
-  if cached then return cached end
-  local products = entity.prototype.mineable_properties.products
-  cached = products[1]
-  main_products[entity.name] = cached
-  return cached
-
+--Registering the same entity again always returns the same registration number,
+--so this doubles as a stable per-entity key.
+local unique_index = function(entity)
+  return script.register_on_object_destroyed(entity)
 end
-
-local min = math.min
-local floor = math.floor
-local random = math.random
-local ceil = math.ceil
 
 function mining_depot:get_mining_count(entity)
   local bonus = mining_technologies.get_cargo_size_bonus(self.force_index)
@@ -50,7 +48,7 @@ end
 
 local offsets = {}
 local radius_offsets = {}
-for name, depot in pairs (shared.depots) do
+for name, depot in pairs (names.depots) do
   local offset = {depot.drop_offset[1], depot.drop_offset[2]}
   local depot_offset = {}
   local radius_offset = {}
@@ -98,45 +96,32 @@ local add_to_bucket = function(depot)
   bucket[unit_number] = depot
 end
 
-local collide_box = function()
-  return
-  {
-    left_top = {x = -2.5, y = -5.5},
-    right_bottom = {x = 2.5, y = 2.5}
-  }
-end
-
 local wall_thickness = 1.25
-local wall_padding = 0.25
-local front_gap = 2
 local box_name = "mining-depot-collision-box"
+--Rendering the collision boxes for a player index that will never exist keeps them invisible.
 local render_player_index = 42069
 
 function mining_depot:add_wall()
-  --if true then return end
+
+  --The depot doesn't collide with drones (see data-final-fixes), so that they can drive in
+  --and out of the bay. These highlight boxes wall off everything except the open side.
   local direction = self.entity.direction
-  --local box = collide_box()
-  --local position = self.entity.position
-  --box.left_top.x = position.x + box.left_top.x + wall_padding
-  --box.right_bottom.x = position.x + box.right_bottom.x - wall_padding
-  --box.left_top.y = position.y + box.left_top.y + wall_padding
-  --box.right_bottom.y = position.y + box.right_bottom.y - wall_padding
   local box = self.entity.bounding_box
-  if direction == 0 then
+  if direction == defines.direction.north then
     box.left_top.y = box.left_top.y + 1
-  elseif direction == 4 then
+  elseif direction == defines.direction.east then
     box.right_bottom.x = box.right_bottom.x - 1
-  elseif direction == 8 then
+  elseif direction == defines.direction.south then
     box.right_bottom.y = box.right_bottom.y - 1
   else
     box.left_top.x = box.left_top.x + 1
   end
-  local position = {0,0}
+  local position = {0, 0}
   local boxes = {}
   local surface = self.entity.surface
 
-  if direction ~= 0 then
-    table.insert(boxes, surface.create_entity
+  if direction ~= defines.direction.north then
+    insert(boxes, surface.create_entity
     {
       name = box_name,
       bounding_box =
@@ -149,8 +134,8 @@ function mining_depot:add_wall()
     })
   end
 
-  if direction ~= 4 then
-    table.insert(boxes, surface.create_entity
+  if direction ~= defines.direction.east then
+    insert(boxes, surface.create_entity
     {
       name = box_name,
       bounding_box =
@@ -163,8 +148,8 @@ function mining_depot:add_wall()
     })
   end
 
-  if direction ~= 8 then
-    table.insert(boxes, surface.create_entity
+  if direction ~= defines.direction.south then
+    insert(boxes, surface.create_entity
     {
       name = box_name,
       bounding_box =
@@ -177,8 +162,8 @@ function mining_depot:add_wall()
     })
   end
 
-  if direction ~= 12 then
-    table.insert(boxes, surface.create_entity
+  if direction ~= defines.direction.west then
+    insert(boxes, surface.create_entity
     {
       name = box_name,
       bounding_box =
@@ -191,8 +176,9 @@ function mining_depot:add_wall()
     })
   end
 
-  for k, v in pairs (boxes) do
-    v.active = false
+  for k, entity in pairs (boxes) do
+    --Highlight boxes destroy themselves once their (zero) time to live runs out.
+    entity.disabled_by_script = true
   end
 
   self.boxes = boxes
@@ -211,10 +197,7 @@ end
 
 function mining_depot:add_corpse()
 
-  if self.corpse and self.corpse.valid then
-    error("HUH")
-    return
-  end
+  if self.corpse and self.corpse.valid then return end
 
   local corpse = self.entity.surface.create_entity
   {
@@ -230,17 +213,14 @@ function mining_depot:remove_corpse()
 
   if self.corpse and self.corpse.valid then
     self.corpse.destroy()
-    self.corpse = nil
   end
+  self.corpse = nil
 
 end
 
 function mining_depot:add_spawn_corpse()
 
-  if self.spawn_corpse and self.spawn_corpse.valid then
-    error("HUH")
-    return
-  end
+  if self.spawn_corpse and self.spawn_corpse.valid then return end
 
   local spawn_corpse = self.entity.surface.create_entity
   {
@@ -257,9 +237,30 @@ function mining_depot:remove_spawn_corpse()
 
   if self.spawn_corpse and self.spawn_corpse.valid then
     self.spawn_corpse.destroy()
-    self.spawn_corpse = nil
   end
+  self.spawn_corpse = nil
 
+end
+
+local status_ok = "working"
+local status_no_recipe = "no-recipe"
+local status_no_targets = "no-targets"
+local status_no_fluid = "no-fluid"
+local status_no_drones = "no-drones"
+
+local custom_statuses =
+{
+  [status_ok] = {diode = defines.entity_status_diode.green, label = {"mining-depot-status-working"}},
+  [status_no_recipe] = {diode = defines.entity_status_diode.red, label = {"mining-depot-status-no-recipe"}},
+  [status_no_targets] = {diode = defines.entity_status_diode.red, label = {"mining-depot-status-no-targets"}},
+  [status_no_fluid] = {diode = defines.entity_status_diode.yellow, label = {"mining-depot-status-no-fluid"}},
+  [status_no_drones] = {diode = defines.entity_status_diode.yellow, label = {"mining-depot-status-no-drones"}},
+}
+
+function mining_depot:set_status(status)
+  if self.status == status then return end
+  self.status = status
+  self.entity.custom_status = custom_statuses[status]
 end
 
 function mining_depot.new(entity)
@@ -275,15 +276,10 @@ function mining_depot.new(entity)
     surface_index = entity.surface.index,
     force_index = entity.force.index,
     unit_number = entity.unit_number,
-    item = nil,
-    fluid = nil,
-    stack_count = nil
+    direction = entity.direction,
+    fluid = nil
   }
   setmetatable(depot, mining_depot.metatable)
-
-  if not script_data.targeted_resources[depot.surface_index] then
-    script_data.targeted_resources[depot.surface_index] = {}
-  end
 
   depot:add_corpse()
   depot:add_spawn_corpse()
@@ -291,33 +287,71 @@ function mining_depot.new(entity)
 
   add_to_bucket(depot)
 
-  entity.active = false
-  entity.custom_status = {diode = defines.entity_status_diode.green, label = 'Ok'}
-
-  --[[
-    local area = depot:get_area()
-    rendering.draw_rectangle
-    {
-      color = {0.5, 0.5, 0, 0.5},
-      filled = true,
-      left_top = area[1],
-      right_bottom = area[2],
-      surface = entity.surface,
-      draw_on_ground = true
-    }
-  ]]
+  entity.disabled_by_script = true
+  depot:set_status(status_no_recipe)
 
   return depot
 end
 
 local on_built_entity = function(event)
-  local entity = event.entity or event.created_entity
+  local entity = event.entity
   if not (entity and entity.valid) then return end
 
   if entity.name ~= names.mining_depot then return end
 
   mining_depot.new(entity)
 
+end
+
+local on_entity_cloned = function(event)
+  local entity = event.destination
+  if not (entity and entity.valid) then return end
+
+  if entity.name ~= names.mining_depot then return end
+
+  --The clone brings along whatever the source had, but none of it is registered to the copy.
+  if get_mining_depot(entity.unit_number) then return end
+
+  mining_depot.new(entity)
+
+end
+
+--Rotating the depot moves the bay, the drop off point and the mining area, so everything that
+--was built for the old direction has to be rebuilt.
+function mining_depot:on_rotated()
+
+  self.direction = self.entity.direction
+
+  self:cancel_all_orders()
+  self:clear_path_requests()
+  self:clear_request_queue()
+
+  self:clear_wall()
+  self:add_wall()
+
+  --The spawn marker sits on the depot itself, only the drop off marker moves.
+  self:remove_corpse()
+  self:add_corpse()
+
+  if self.pot_animation and self.pot_animation.valid then
+    self.pot_animation.destroy()
+  end
+  self.pot_animation = nil
+
+  self:find_potential_targets()
+
+end
+
+local on_entity_rotated = function(event)
+  local entity = event.entity
+  if not (entity and entity.valid) then return end
+
+  if entity.name ~= names.mining_depot then return end
+
+  local depot = get_mining_depot(entity.unit_number)
+  if not depot then return end
+
+  depot:on_rotated()
 end
 
 function mining_depot:get_drop_position()
@@ -328,7 +362,6 @@ function mining_depot:get_drop_position()
   return position
 end
 
-local random = math.random
 local get_speed_variance = function()
   return (1 + (random() - 0.5) / 3)
 end
@@ -369,13 +402,11 @@ function mining_depot:spawn_drone()
     return
   end
 
-  local name = self.target_resource_name..names.drone_name..random(variation_count)
-
   local entity = self.entity
   local spawn_entity_data =
   {
-    name = name,
-    position = self.entity.position,
+    name = self.target_resource_name..default_bot_name..random(variation_count),
+    position = entity.position,
     force = entity.force,
     create_build_effect_smoke = false
   }
@@ -386,11 +417,8 @@ function mining_depot:spawn_drone()
   local unit = surface.create_entity(spawn_entity_data)
   if not unit then return end
 
-  unit.orientation = (entity.direction / 8)
-  --unit.ai_settings.do_separation = false
-
-  --self:get_drone_inventory().remove({name = names.drone_name, count = 1})
-
+  --There are 16 directions, and orientation is a fraction of a full turn.
+  unit.orientation = entity.direction / 16
 
   local drone = mining_drone.new(unit, self)
   self.drones[unit.unit_number] = true
@@ -402,7 +430,6 @@ end
 local draw_text = rendering.draw_text
 
 function mining_depot:update_sticker()
-
 
   if self.rendering and self.rendering.valid then
     self.rendering.text = self:get_active_drone_count() .. "/" .. self:get_drone_item_count()
@@ -424,7 +451,6 @@ function mining_depot:update_sticker()
     scale = 1.5
   }
 
-
 end
 
 function mining_depot:cancel_all_orders()
@@ -443,35 +469,39 @@ function mining_depot:target_name_changed()
   self.fluid = self:get_required_fluid()
 
   self:clear_path_requests()
+  self:clear_request_queue()
   self:cancel_all_orders()
 
   self:find_potential_targets()
 
-  if self.rendering then
+  if self.rendering and self.rendering.valid then
     self.rendering.destroy()
-    self.rendering = nil
   end
+  self.rendering = nil
 
-  if self.pot_animation then
+  if self.pot_animation and self.pot_animation.valid then
     self.pot_animation.destroy()
-    self.pot_animation = nil
   end
+  self.pot_animation = nil
 
 end
 
 function mining_depot:get_required_fluid()
   local recipe = self.entity.get_recipe()
   if not recipe then return end
-  return recipe.ingredients[2]
+  for k, ingredient in pairs (recipe.ingredients) do
+    if ingredient.type == "fluid" then
+      return {name = ingredient.name, amount = ingredient.amount}
+    end
+  end
 end
 
-local alert_data = {type = "item", name = shared.mining_depot}
+local alert_data = {type = "item", name = names.mining_depot}
+local alert_message = {"mining-depot-no-targets-alert"}
 local target_offset = {0, -0.5}
-function mining_depot:add_no_items_alert(string)
+function mining_depot:add_no_items_alert()
 
-  for k, player in pairs (self.entity.force.connected_players) do
-    player.add_custom_alert(self.entity, alert_data, "Mining depot out of mining targets.", true)
-  end
+  self.entity.force.add_custom_alert(self.entity, alert_data, alert_message, true)
 
   rendering.draw_sprite
   {
@@ -485,23 +515,30 @@ function mining_depot:add_no_items_alert(string)
   }
 end
 
-local min = math.min
 function mining_depot:update()
-
-  --game.print(tostring(next(self.recent)))
 
   local entity = self.entity
   if not (entity and entity.valid) then return end
+
+  --Catches rotations that don't come with an event, for instance from another script.
+  if self.direction ~= entity.direction then
+    self:on_rotated()
+    return
+  end
 
   self:update_sticker()
 
   local item = self:get_target_resource_name()
   if item ~= self.target_resource_name then
     self:target_name_changed()
+    self:set_status(item and status_ok or status_no_recipe)
     return
   end
 
-  if not item then return end
+  if not item then
+    self:set_status(status_no_recipe)
+    return
+  end
 
   self:update_pot()
 
@@ -515,6 +552,7 @@ function mining_depot:update()
 
     if not self.mined_any then
       -- Last time we rescanned, and we didn't mine anything, so lets give up.
+      self:set_status(status_no_targets)
       self:add_no_items_alert()
       return
     end
@@ -524,36 +562,41 @@ function mining_depot:update()
   end
 
   if not self:has_enough_fluid() then
+    self:set_status(status_no_fluid)
     return
   end
+
+  if self:get_drone_item_count() == 0 then
+    self:set_status(status_no_drones)
+    return
+  end
+
+  self:set_status(status_ok)
 
   self:try_to_mine_targets()
 
 end
 
-local ceil = math.ceil
-local floor = math.floor
-local min = math.min
-local spawn_damping_ratio = 0.2
 local target_amount_per_drone = 100
 local max_target_amount = 65000 / 250
+
+function mining_depot:get_target_item_count()
+  local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
+  return min(productivity * target_amount_per_drone, max_target_amount) * self:get_drone_item_count()
+end
 
 function mining_depot:get_full_ratio()
 
   local current_item_count = self:get_max_output_amount()
   if current_item_count == 0 then return 0 end
 
-  local max_drones = self:get_drone_item_count()
-  local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
-  local current_target_item_count = math.min(productivity * target_amount_per_drone, max_target_amount) * max_drones
-
-  local ratio = (current_item_count / current_target_item_count)
-  return ratio
+  return current_item_count / self:get_target_item_count()
 end
 
 function mining_depot:get_should_spawn_drone_count(extra)
 
   local max_drones = self:get_drone_item_count()
+  if max_drones <= 0 then return 0 end
 
   --Path finds in progress, don't over achieve
   local path_requests = table_size(self.path_requests)
@@ -566,14 +609,9 @@ function mining_depot:get_should_spawn_drone_count(extra)
 
   if active >= max_drones then return 0 end
 
-  local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
-  local current_target_item_count = math.min(productivity * target_amount_per_drone, max_target_amount) * max_drones
-  local current_item_count = self:get_max_output_amount()
+  local ratio = 1 - ((self:get_max_output_amount() / self:get_target_item_count()) ^ 2)
 
-  local ratio = 1 - ((current_item_count / current_target_item_count) ^ 2)
-  --self:say(ratio)
-
-  return math.min(math.ceil(ratio * max_drones) - active, math.ceil(depot_update_rate / path_queue_rate))
+  return min(ceil(ratio * max_drones) - active, ceil(depot_update_rate / path_queue_rate))
 
 end
 
@@ -583,10 +621,7 @@ end
 
 function mining_depot:try_to_mine_targets()
 
-  local max_drones = self:get_drone_item_count()
-  local active = self:get_active_drone_count()
-
-  if active >= max_drones then
+  if self:get_active_drone_count() >= self:get_drone_item_count() then
     return
   end
 
@@ -608,32 +643,16 @@ end
 
 function mining_depot:has_enough_fluid()
   if not self.fluid then return true end
-  local box = self:get_input_fluidbox()
-  if not box then return false end
-
-  return box.amount >= (self.fluid.amount / 10)
-
-end
-
-function mining_depot:get_input_fluidbox()
-  local fluidbox = self.entity.fluidbox
-  if #fluidbox == 0 then return end
-  return fluidbox[1]
+  return self.entity.get_fluid_count(self.fluid.name) >= (self.fluid.amount / 10)
 end
 
 function mining_depot:get_drone_item_count()
-  return self.entity.get_item_count(shared.drone_name)
+  return self.entity.get_item_count(default_bot_name)
 end
-
-local unique_index = function(entity)
-  return script.register_on_object_destroyed(entity)
-end
-
-local insert = table.insert
 
 function mining_depot:get_radius()
-  local depot = shared.depots[self.entity.name]
-  return depot.radius or error("POOP")
+  local depot = names.depots[self.entity.name]
+  return depot.radius
 end
 
 local directions =
@@ -655,7 +674,6 @@ function mining_depot:get_area()
   return util.area(origin, radius)
 end
 
-local insert = table.insert
 function mining_depot:sort_by_distance(entities)
 
   local origin = self.entity.position
@@ -665,7 +683,7 @@ function mining_depot:sort_by_distance(entities)
     return ((x - position.x) ^ 2 + (y - position.y) ^ 2)
   end
 
-  local targeted_resources = script_data.targeted_resources[self.surface_index]
+  local targeted_resources = script_data.targeted_resources
 
   for k, entity in pairs (entities) do
     local index = unique_index(entity)
@@ -674,7 +692,7 @@ function mining_depot:sort_by_distance(entities)
       {
         entity = entity,
         depots = {},
-        max_mining = math.ceil(entity.get_radius() ^ 2),
+        max_mining = ceil(entity.get_radius() ^ 2),
         mining = 0
       }
     end
@@ -714,16 +732,15 @@ function mining_depot:find_potential_targets()
 
 end
 
-local insert = table.insert
 function mining_depot:find_entity_to_mine()
 
-  local targeted_resources = script_data.targeted_resources[self.surface_index]
+  local targeted_resources = script_data.targeted_resources
 
   local recent = self.recent
 
   for entity_index, bool in pairs (recent) do
     local target_data = targeted_resources[entity_index]
-    if target_data.entity.valid then
+    if target_data and target_data.entity.valid then
       target_data.depots[self.unit_number] = true
       if target_data.mining < target_data.max_mining then
         target_data.mining = target_data.mining + 1
@@ -740,14 +757,13 @@ function mining_depot:find_entity_to_mine()
   if not entities[1] then return end
 
   local size = #entities
-  --game.print(size)
   while true do
 
     local entity_index = entities[size]
     if not entity_index then break end
 
     local target_data = targeted_resources[entity_index]
-    if target_data.entity.valid then
+    if target_data and target_data.entity.valid then
       target_data.depots[self.unit_number] = true
       if target_data.mining < target_data.max_mining then
         target_data.mining = target_data.mining + 1
@@ -769,7 +785,10 @@ end
 function mining_depot:remove_drone(drone, remove_item)
 
   if remove_item then
-    self:get_drone_inventory().remove{name = names.drone_name, count = 1}
+    local inventory = self:get_drone_inventory()
+    if inventory and inventory.valid then
+      inventory.remove{name = default_bot_name, count = 1}
+    end
   end
 
   local mining_target = drone.mining_target
@@ -783,8 +802,6 @@ function mining_depot:remove_drone(drone, remove_item)
   self:update_sticker()
 end
 
---self.potential[drone.desired_item][unique_index(target)] = target
-
 function mining_depot:order_drone(drone, entity)
 
   if not self.mined_any then
@@ -794,19 +811,16 @@ function mining_depot:order_drone(drone, entity)
   local mining_count = self:get_mining_count(entity)
 
   if self.fluid then
-    local box = self:get_input_fluidbox()
-    if not box then
-      self:add_mining_target(entity)
-      return
-    end
-    local needed_fluid = (self.fluid.amount / 100) * mining_count
-    if box.amount < needed_fluid then
-      local mining_count = math.floor(box.amount / (self.fluid.amount / 100))
-      if mining_count == 0 then
+    local available = self.entity.get_fluid_count(self.fluid.name)
+    local fluid_per_mine = self.fluid.amount / 100
+    local needed_fluid = fluid_per_mine * mining_count
+    if available < needed_fluid then
+      mining_count = floor(available / fluid_per_mine)
+      if mining_count <= 0 then
         self:add_mining_target(entity)
         return
       end
-      needed_fluid = (self.fluid.amount / 100) * mining_count
+      needed_fluid = fluid_per_mine * mining_count
     end
     self:take_fluid(needed_fluid)
   end
@@ -817,15 +831,10 @@ function mining_depot:order_drone(drone, entity)
 end
 
 function mining_depot:take_fluid(amount)
-  local box = self:get_input_fluidbox()
-  if not box then game.print("Shouldn't happen?") return end
-  local current = box.amount
-  box.amount = box.amount - amount
-  self.entity.force.get_fluid_production_statistics(self.entity.surface).on_flow(self.fluid.name, -amount)
-  if box.amount == 0 then
-    box = nil
+  local removed = self.entity.extract_fluid{name = self.fluid.name, amount = amount}
+  if removed > 0 then
+    self.entity.force.get_fluid_production_statistics(self.entity.surface).on_flow(self.fluid.name, -removed)
   end
-  self.entity.fluidbox[1] = box
 end
 
 function mining_depot:handle_order_request(drone)
@@ -835,7 +844,7 @@ function mining_depot:handle_order_request(drone)
     return
   end
 
-  local should_spawn_count = (self:get_should_spawn_drone_count(true))
+  local should_spawn_count = self:get_should_spawn_drone_count(true)
 
   if should_spawn_count <= 0 or not self:has_enough_fluid() then
     self:return_drone(drone)
@@ -851,23 +860,23 @@ function mining_depot:get_output_inventory()
 end
 
 function mining_depot:get_drone_inventory()
-  return self.entity.get_inventory(defines.inventory.assembling_machine_input)
+  return self.entity.get_inventory(defines.inventory.crafter_input)
 end
 
+local mine_prefix_length = ("mine-"):len()
 function mining_depot:get_target_resource_name()
   local recipe = self.entity.get_recipe()
   if not recipe then return end
-  local name = recipe.name:sub(("mine-"):len() + 1, recipe.name:len())
-  return name
+  return recipe.name:sub(mine_prefix_length + 1)
 end
 
 function mining_depot:get_max_output_amount()
-  local inventory = self:get_output_inventory()
-  local amount = 0
   local recipe = self.entity.get_recipe()
   if not recipe then return 0 end
+  local inventory = self:get_output_inventory()
+  local amount = 0
   for k, product in pairs (recipe.products) do
-    amount = math.max(amount, inventory.get_item_count(product.name))
+    amount = max(amount, inventory.get_item_count(product.name))
   end
   return amount
 end
@@ -875,6 +884,8 @@ end
 function mining_depot:handle_path_request_finished(event)
 
   local entity = self.path_requests[event.id]
+  self.path_requests[event.id] = nil
+
   if not (entity and entity.valid) then return end
 
   if not self.entity.valid then
@@ -882,14 +893,12 @@ function mining_depot:handle_path_request_finished(event)
     return
   end
 
-  self.path_requests[event.id] = nil
-
   if event.try_again_later then
     self:attempt_to_mine(entity)
     return
   end
 
-  if not (event.path and self.entity.valid) then
+  if not event.path then
     --we can't reach it, don't spawn any miners.
     self:add_mining_target(entity, true)
     return
@@ -905,8 +914,8 @@ function mining_depot:handle_path_request_finished(event)
 
   if not drone then
     --For some reason, we can't spawn a drone
-      self:add_mining_target(entity)
-      return
+    self:add_mining_target(entity)
+    return
   end
 
   self:order_drone(drone, entity)
@@ -918,6 +927,7 @@ function mining_depot:update_pot()
   if not self.target_resource_name then
     if (self.pot_animation and self.pot_animation.valid) then
       self.pot_animation.destroy()
+      self.pot_animation = nil
     end
     return
   end
@@ -932,12 +942,15 @@ function mining_depot:update_pot()
     }
   end
 
-  local offset = math.max(0, math.min(math.ceil(self:get_full_ratio() * 17) - 1, 16))
-  self.pot_animation.animation_offset = offset
+  self.pot_animation.animation_offset = max(0, min(ceil(self:get_full_ratio() * 17) - 1, 16))
 end
 
 function mining_depot:on_resource_given()
-  self.entity.surface.create_entity{name = "depot-smoke-"..self.target_resource_name.."-"..direction_names[self.entity.direction], position = self.entity.position}
+  self.entity.surface.create_entity
+  {
+    name = "depot-smoke-"..self.target_resource_name.."-"..direction_names[self.entity.direction],
+    position = self.entity.position
+  }
 end
 
 function mining_depot:return_drone(drone)
@@ -947,65 +960,65 @@ function mining_depot:return_drone(drone)
   self:update_sticker()
 end
 
-local insert = table.insert
 function mining_depot:add_mining_target(entity, ignore_self)
-  local targeted_resources = script_data.targeted_resources[self.surface_index]
+  local targeted_resources = script_data.targeted_resources
   local index = unique_index(entity)
   local target_data = targeted_resources[index]
-  target_data.mining = target_data.mining - 1
+  if not target_data then return end
 
-  if target_data.mining < 0 then
-    error("HUHEKR?")
-  end
+  target_data.mining = max(0, target_data.mining - 1)
 
   for depot_index, bool in pairs(target_data.depots) do
     if not ignore_self or depot_index ~= self.unit_number then
       local depot = get_mining_depot(depot_index)
       if depot then
-        if not depot.recent then
-          depot.recent = {}
-        end
         depot.recent[index] = true
+      else
+        target_data.depots[depot_index] = nil
       end
     end
   end
 
-end
-
-function mining_depot:remove_from_list()
-  local unit_number = self.unit_number
-  script_data.depots[unit_number % depot_update_rate][unit_number] = nil
 end
 
 function mining_depot:clear_path_requests()
   local global_requests = script_data.path_requests
   for k, entity in pairs (self.path_requests) do
-    self:add_mining_target(entity, true)
+    if entity.valid then
+      self:add_mining_target(entity, true)
+    end
     global_requests[k] = nil
   end
   self.path_requests = {}
 end
 
+function mining_depot:clear_request_queue()
+  local queue = script_data.request_queue[self.unit_number]
+  if not queue then return end
+  for k, entity in pairs (queue) do
+    if entity.valid then
+      self:add_mining_target(entity, true)
+    end
+  end
+  script_data.request_queue[self.unit_number] = nil
+end
+
 function mining_depot:handle_depot_deletion()
   self:cancel_all_orders()
-  self.drones = nil
+  self.drones = {}
+  self:clear_path_requests()
+  self:clear_request_queue()
   self:remove_corpse()
   self:remove_spawn_corpse()
   self:clear_wall()
-end
-
-function mining_depot:get_all_depots()
-  local depots = {}
-  for k, bucket in pairs (script_data.depots) do
-    for unit_number, depot in pairs (bucket) do
-      if not depot.entity.valid then
-        bucket[unit_number] = nil
-      else
-        depots[unit_number] = depot
-      end
-    end
+  if self.rendering and self.rendering.valid then
+    self.rendering.destroy()
   end
-  return depots
+  self.rendering = nil
+  if self.pot_animation and self.pot_animation.valid then
+    self.pot_animation.destroy()
+  end
+  self.pot_animation = nil
 end
 
 function mining_depot:get_active_drone_count()
@@ -1023,11 +1036,18 @@ local process_request_queue = function()
           depot:request_path(entity)
         end
         entities[entity_index] = nil
+      else
+        script_data.request_queue[depot_unit_number] = nil
       end
     else
       script_data.request_queue[depot_unit_number] = nil
     end
   end
+end
+
+local remove_depot = function(bucket, unit_number, depot)
+  depot:handle_depot_deletion()
+  bucket[unit_number] = nil
 end
 
 local on_tick = function(event)
@@ -1036,8 +1056,7 @@ local on_tick = function(event)
   if bucket then
     for unit_number, depot in pairs (bucket) do
       if not (depot.entity.valid) then
-        depot:handle_depot_deletion()
-        bucket[unit_number] = nil
+        remove_depot(bucket, unit_number, depot)
       else
         depot:update()
       end
@@ -1070,7 +1089,7 @@ function mining_depot:attempt_to_mine(entity)
     script_data.request_queue[self.unit_number] = depot_queue
   end
 
-  table.insert(depot_queue, entity)
+  insert(depot_queue, entity)
 
 end
 
@@ -1095,7 +1114,6 @@ function mining_depot:request_path(entity)
 end
 
 local on_script_path_request_finished = function(event)
-  --game.print(event.tick.." - "..event.id)
   local depot = script_data.path_requests[event.id]
   if not depot then return end
   script_data.path_requests[event.id] = nil
@@ -1104,23 +1122,17 @@ end
 
 local on_entity_removed = function(event)
 
-  local unit_number = event.unit_number
-  if not unit_number then
-    local entity = event.entity
-    if not (entity and entity.valid) then
-      return
-    end
-    unit_number = entity.unit_number
-  end
+  local entity = event.entity
+  if not (entity and entity.valid) then return end
 
+  local unit_number = entity.unit_number
   if not unit_number then return end
 
   local bucket = script_data.depots[unit_number % depot_update_rate]
   if not bucket then return end
   local depot = bucket[unit_number]
   if not depot then return end
-  depot:handle_depot_deletion()
-  bucket[unit_number] = nil
+  remove_depot(bucket, unit_number, depot)
 
 end
 
@@ -1141,13 +1153,11 @@ local cancel_all_depots = function()
 end
 
 local rescan_all_depots = function()
-  local profiler = game.create_profiler()
   for k, bucket in pairs (script_data.depots) do
     for unit_number, depot in pairs (bucket) do
       depot:find_potential_targets()
     end
   end
-  game.print{"", "Mining drones: Rescanned mining targets. ", profiler}
 end
 
 local reset_all_depots = function()
@@ -1155,16 +1165,26 @@ local reset_all_depots = function()
   rescan_all_depots()
 end
 
-local entity_type = defines.events.on_entity_died
+local reset_all_depots_command = function()
+  local profiler = helpers.create_profiler()
+  reset_all_depots()
+  game.print{"", "Mining drones: Rescanned mining targets. ", profiler}
+end
+
 local on_object_destroyed = function(event)
-  if event.type ~= entity_type then return end
+  if event.type ~= defines.target_type.entity then return end
+
+  --Resources are keyed by their registration number, they have no unit number.
+  script_data.targeted_resources[event.registration_number] = nil
+
   local unit_number = event.useful_id
+  if not unit_number or unit_number == 0 then return end
+
   local bucket = script_data.depots[unit_number % depot_update_rate]
   if not bucket then return end
   local depot = bucket[unit_number]
   if not depot then return end
-  depot:handle_depot_deletion()
-  bucket[unit_number] = nil
+  remove_depot(bucket, unit_number, depot)
 end
 
 local lib = {}
@@ -1176,6 +1196,10 @@ lib.events =
   [defines.events.script_raised_revive] = on_built_entity,
   [defines.events.script_raised_built] = on_built_entity,
   [defines.events.on_space_platform_built_entity] = on_built_entity,
+  [defines.events.on_entity_cloned] = on_entity_cloned,
+
+  [defines.events.on_player_rotated_entity] = on_entity_rotated,
+  [defines.events.on_player_flipped_entity] = on_entity_rotated,
 
   [defines.events.on_script_path_request_finished] = on_script_path_request_finished,
 
@@ -1199,16 +1223,50 @@ lib.on_load = function()
   script_data = storage.mining_depot or script_data
 end
 
+local migrate_targeted_resources = function()
+
+  --Used to be keyed by surface index first, which meant nothing ever cleaned them up when the
+  --resource was mined out. They are now flat, keyed by registration number (unique globally),
+  --and removed by on_object_destroyed.
+  local targeted_resources = script_data.targeted_resources
+  local flat = {}
+  local migrated = false
+
+  for key, value in pairs (targeted_resources) do
+    if value.entity then
+      flat[key] = value
+    else
+      migrated = true
+      for index, target_data in pairs (value) do
+        flat[index] = target_data
+      end
+    end
+  end
+
+  if not migrated then return end
+
+  script_data.targeted_resources = flat
+
+end
+
 lib.on_configuration_changed = function()
+
+  migrate_targeted_resources()
+
+  for index, target_data in pairs (script_data.targeted_resources) do
+    if not target_data.entity.valid then
+      script_data.targeted_resources[index] = nil
+    end
+  end
 
   for k, bucket in pairs (script_data.depots) do
     --Idk, things can happen, let the depots rescan if they want.
     for unit_number, depot in pairs (bucket) do
       if depot.entity.valid then
+        depot.status = nil
         depot:check_for_rescan()
       else
-        depot:handle_depot_deletion()
-        bucket[unit_number] = nil
+        remove_depot(bucket, unit_number, depot)
       end
     end
   end
@@ -1216,7 +1274,21 @@ lib.on_configuration_changed = function()
 end
 
 lib.add_commands = function()
-  commands.add_command("mining-depots-rescan", "Forces all mining depots to cancel all orders and refresh their target list", reset_all_depots)
+  commands.add_command("mining-depots-rescan", {"mining-depots-rescan-command"}, reset_all_depots_command)
+end
+
+lib.reset_all_depots = reset_all_depots
+
+lib.get_depot_count = function()
+  local count = 0
+  for k, bucket in pairs (script_data.depots) do
+    count = count + table_size(bucket)
+  end
+  return count
+end
+
+lib.get_targeted_resource_count = function()
+  return table_size(script_data.targeted_resources)
 end
 
 return lib

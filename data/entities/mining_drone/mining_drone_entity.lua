@@ -1,5 +1,4 @@
-
-function gaussian (mean, variance)
+local gaussian = function(mean, variance)
   return  math.sqrt(-2 * variance * math.log(math.random())) *
           math.cos(2 * math.pi * math.random()) + mean
 end
@@ -58,12 +57,6 @@ local make_drone = function(name, tint, item)
     localised_name = {"", {"mining-drone"}, " (", item or "eh", ")"},
     icon = "__Mining_Drones__/data/icons/mining_drone.png",
     icon_size = 64,
-    icons = {
-      {
-        icon = "__Mining_Drones__/data/icons/mining_drone.png",
-        icon_size = 64,
-      }
-    },
     flags = mining_drone_flags,
     hidden = true,
     map_color = {r ^ 0.5, g ^ 0.5, b ^ 0.5, 0.5},
@@ -80,13 +73,12 @@ local make_drone = function(name, tint, item)
     render_layer = "lower-object-above-shadow",
     max_pursue_distance = 64,
     resistances = nil,
-    min_persue_time = 60 * 15,
+    min_pursue_time = 60 * 15,
     selection_box = {{-0.3, -0.3}, {0.3, 0.3}},
     sticker_box = {{-0.3, -1}, {0.2, 0.3}},
     distraction_cooldown = (15),
     move_while_shooting = false,
     can_open_gates = true,
-    not_controllable = true,
     ai_settings =
     {
       do_separation = false
@@ -94,13 +86,13 @@ local make_drone = function(name, tint, item)
     attack_parameters =
     {
       type = "projectile",
-      ammo_category = "bullet",
+      --A dedicated ammo category, so that bullet damage upgrades don't secretly speed up mining.
+      ammo_category = util.ammo_category(shared.ammo_category),
       warmup = math.floor(19 * random_mining_speed),
       cooldown = math.floor((26 - 19) * random_mining_speed),
       range = 0.5,
       ammo_type =
       {
-        category = util.ammo_category("mining-drone"),
         target_type = "entity",
         action =
         {

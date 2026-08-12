@@ -18,14 +18,12 @@ local empty_attack_parameters = function()
   return
   {
     type = "projectile",
-    ammo_category = "bullet",
+    ammo_category = util.ammo_category(shared.ammo_category),
     cooldown = 1,
     range = 0,
     ammo_type =
     {
-      category = util.ammo_category("mining-drone"),
-      target_type = "entity",
-      --action = {}
+      target_type = "entity"
     },
     animation = empty_rotated_animation()
   }
@@ -67,17 +65,9 @@ local make_smoke = function(name, tint, direction, custom)
   {
     type = "explosion",
     name = "depot-smoke-"..name.."-"..direction,
-    duration = duration,
     fade_in_duration = 0,
-    fade_away_duration = 10,
-    spread_duration = 0,
-    start_scale = 1,
-    end_scale = 1,
-    color = {r, g, b},
-    cyclic = false,
-    affected_by_wind = false,
+    fade_out_duration = 10,
     render_layer = "higher-object-above",
-    movement_slow_down_factor = 0,
     height = 0,
     flags = {"placeable-off-grid"},
     animations =
@@ -154,9 +144,6 @@ local make_pot = function(name, tint, direction, custom)
     type = "animation",
     name = "depot-pot-"..name.."-"..direction,
     tint = (custom and {1, 1, 1}) or {r, g, b},
-    cyclic = false,
-    affected_by_wind = false,
-    render_layer = "higher-object-under",
     stripes = pot_stripes(direction, name),
     width = size,
     height = size,
@@ -215,7 +202,6 @@ local make_recipes = function(entity)
     icon = entity.dark_background_icon or entity.icon,
     icon_size = entity.icon_size,
     icons = entity.icons,
-    icon_mipmap = entity.icon_mipmap,
     ingredients =
     {
       {type = "item", name = names.drone_name, amount = 1},
@@ -335,7 +321,6 @@ local make_resource_attack_proxy = function(resource)
       type = "create-particle",
       repeat_count = 3,
       particle_name = particle,
-      entity_name = particle,
       initial_height = 0,
       speed_from_center = 0.025,
       speed_from_center_deviation = 0.025,
@@ -348,7 +333,6 @@ local make_resource_attack_proxy = function(resource)
       type = "create-particle",
       repeat_count = 5,
       particle_name = particle,
-      entity_name = particle,
       initial_height = 0,
       speed_from_center = 0.045,
       speed_from_center_deviation = 0.035,

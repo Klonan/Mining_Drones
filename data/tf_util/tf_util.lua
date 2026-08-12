@@ -54,10 +54,6 @@ recursive_hack_tint = function(array, tint, check_runtime)
         if not check_runtime or v.apply_runtime_tint then
           v.tint = tint
           v.apply_runtime_tint = false
-          if v.hr_version then
-            v.hr_version.apply_runtime_tint = false
-            v.hr_version.tint = tint
-          end
         end
       end
       recursive_hack_tint(v, tint, check_runtime)
@@ -65,21 +61,6 @@ recursive_hack_tint = function(array, tint, check_runtime)
   end
 end
 util.recursive_hack_tint = recursive_hack_tint
-
-local recursive_hack_make_hr
-recursive_hack_make_hr = function(prototype)
-  for k, v in pairs (prototype) do
-    if type(v) == "table" then
-      if is_sprite_def(v) and v.hr_version then
-        prototype[k] = v.hr_version
-        --v.scale = v.scale * 0.5
-        v.hr_version = nil
-      end
-      recursive_hack_make_hr(v)
-    end
-  end
-end
-util.recursive_hack_make_hr = recursive_hack_make_hr
 
 util.scale_box = function(box, scale)
   box[1][1] = box[1][1] * scale
@@ -125,16 +106,6 @@ end
 util.add_flag = function(prototype, flag)
   if not prototype.flags then return end
   table.insert(prototype.flags, flag)
-end
-
-util.base_player = function()
-
-  local player = util.table.deepcopy(data.raw.player.player or error("Wat man cmon why"))
-  player.ticks_to_keep_gun = (600)
-  player.ticks_to_keep_aiming_direction = (100)
-  player.ticks_to_stay_in_combat = (600)
-  util.remove_flag(player, "not-flammable")
-  return player
 end
 
 util.path = function(str)
@@ -229,9 +200,6 @@ recursive_hack_runtime_tint = function(prototype, value)
     if type(v) == "table" then
       if util.is_sprite_def(v) then
         v.apply_runtime_tint = value
-        if v.hr_version then
-          v.hr_version.apply_runtime_tint = value
-        end
       end
       recursive_hack_runtime_tint(v, value)
     end
@@ -240,20 +208,6 @@ end
 util.recursive_hack_runtime_tint = recursive_hack_runtime_tint
 
 util.copy = util.table.deepcopy
-
-util.prototype = require("data/tf_util/prototype_util")
-
-util.flying_unit_collision_mask = function()
-  return {"not-colliding-with-itself", "layer-15"}
-end
-
-util.ground_unit_collision_mask = function()
-  return {"not-colliding-with-itself", "player-layer", "train-layer"}
-end
-
-util.projectile_collision_mask = function()
-  return {"layer-15", "player-layer", "train-layer"}
-end
 
 util.unit_flags = function()
   return {"player-creation", "placeable-off-grid"}

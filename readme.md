@@ -26,3 +26,34 @@ Each depot can hold 100 drones, and more under some circumstances. Drones will a
 The mod should detect all modded resources, and work correctly with them.
 
 As far as performance goes, obviously they will not be as good as mining drills for super mega bases, due to the units and the script update. With a running save with over 2,300 active mining drones, the script update was only about 0.4ms. So you can probably have upwards of 10,000 mining drones without any problem. And of course, performance will be better in 0.18.
+
+--------------------------------------
+
+### Remote interface
+
+The mod registers a `mining_drones` remote interface:
+
+| Call | Returns |
+| --- | --- |
+| `get_drone_count()` | number of drones currently out mining |
+| `get_depot_count()` | number of registered mining depots |
+| `get_targeted_resource_count()` | number of resource entities tracked as a mining target |
+| `get_pooled_inventory_count()` | number of recycled drone inventories held for reuse |
+| `get_bonuses(force_index)` | `{mining_speed, walking_speed, cargo_size, productivity}` |
+| `reset_depots()` | recalls every drone and rebuilds all target lists |
+
+--------------------------------------
+
+### Self test
+
+`scripts/run-self-test.sh` runs the mod headlessly against a real game and checks that depots
+deploy drones, deliver ore, handle fluids, rotations, recipe changes and technologies, and clean
+up after themselves without leaking entities, script inventories or resource registrations.
+
+```
+scripts/run-self-test.sh [path/to/factorio]
+```
+
+It converts `scenarios/mining-drones-self-test` into a map (which also exercises a save/load
+round trip of the mod's storage) and then benchmarks it, so it needs no graphics and exits on its
+own. It prints one line per check and finishes with `SELF TEST PASSED` or `SELF TEST FAILED`.

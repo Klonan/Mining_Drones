@@ -25,76 +25,45 @@ local size = 768
 local particle_path = "__Mining_Drones__/data/entities/mining_depot/Scene_layer-particle"
 
 
+--2.0 dropped hr_version, so the high resolution sheets are used directly.
 local function mining_depot_pipes()
   return
   {
     north =
     {
-      filename = "__Mining_Drones__/data/entities/mining_depot/pipes/mining-depot-3-pipe-N.png",
+      filename = "__Mining_Drones__/data/entities/mining_depot/pipes/hr-mining-depot-3-pipe-N.png",
       priority = "extra-high",
-      width = 35,
-      height = 18,
-      shift = util.by_pixel(2.5, 14),
-      hr_version =
-      {
-        filename = "__Mining_Drones__/data/entities/mining_depot/pipes/hr-mining-depot-3-pipe-N.png",
-        priority = "extra-high",
-        width = 71,
-        height = 100,
-        shift = util.by_pixel(2.25, 13.5),
-        scale = 0.5
-      }
+      width = 71,
+      height = 100,
+      shift = util.by_pixel(2.25, 13.5),
+      scale = 0.5
     },
     east =
     {
-      filename = "__Mining_Drones__/data/entities/mining_depot/pipes/mining-depot-3-pipe-E.png",
+      filename = "__Mining_Drones__/data/entities/mining_depot/pipes/hr-mining-depot-3-pipe-E.png",
       priority = "extra-high",
-      width = 20,
-      height = 38,
-      shift = util.by_pixel(-25, 1),
-      hr_version =
-      {
-        filename = "__Mining_Drones__/data/entities/mining_depot/pipes/hr-mining-depot-3-pipe-E.png",
-        priority = "extra-high",
-        width = 42,
-        height = 76,
-        shift = util.by_pixel(-24.5, 1),
-        scale = 0.5
-      }
+      width = 42,
+      height = 76,
+      shift = util.by_pixel(-24.5, 1),
+      scale = 0.5
     },
     south =
     {
-      filename = "__Mining_Drones__/data/entities/mining_depot/pipes/mining-depot-3-pipe-S.png",
+      filename = "__Mining_Drones__/data/entities/mining_depot/pipes/hr-mining-depot-3-pipe-S.png",
       priority = "extra-high",
-      width = 44,
-      height = 31,
-      shift = util.by_pixel(0, -31.5),
-      hr_version =
-      {
-        filename = "__Mining_Drones__/data/entities/mining_depot/pipes/hr-mining-depot-3-pipe-S.png",
-        priority = "extra-high",
-        width = 88,
-        height = 99,
-        shift = util.by_pixel(0, -31.25),
-        scale = 0.5
-      }
+      width = 88,
+      height = 99,
+      shift = util.by_pixel(0, -31.25),
+      scale = 0.5
     },
     west =
     {
-      filename = "__Mining_Drones__/data/entities/mining_depot/pipes/mining-depot-3-pipe-W.png",
+      filename = "__Mining_Drones__/data/entities/mining_depot/pipes/hr-mining-depot-3-pipe-W.png",
       priority = "extra-high",
-      width = 19,
-      height = 37,
-      shift = util.by_pixel(25.5, 1.5),
-      hr_version =
-      {
-        filename = "__Mining_Drones__/data/entities/mining_depot/pipes/hr-mining-depot-3-pipe-W.png",
-        priority = "extra-high",
-        width = 39,
-        height = 73,
-        shift = util.by_pixel(25.75, 1.25),
-        scale = 0.5
-      }
+      width = 39,
+      height = 73,
+      shift = util.by_pixel(25.75, 1.25),
+      scale = 0.5
     }
   }
 end
@@ -232,13 +201,11 @@ local mining_depot =
     offsets = {{ 0, 1}},
     type = "create-entity"
   },
-  drawing_box = {{ -1.5, -1.7}, { 1.5, 1.5}},
+  drawing_box_vertical_extension = 0.2,
   dying_explosion = "assembling-machine-3-explosion",
   energy_source =
   {
-    emissions_per_second_per_watt = 0.1,
-    type = "void",
-    usage_priority = "secondary-input"
+    type = "void"
   },
   energy_usage = "1W",
   fast_replaceable_group = "assembling-machine",
@@ -272,7 +239,7 @@ local mining_depot =
   gui_title_key = "mining-depot-choose-resource",
   icon = "__Mining_Drones__/data/technologies/mining_drones_tech.png",
   icon_size = 256,
-  icon_mipmaps = 0,
+  impact_category = "metal",
   localised_name =  {"mining-depot"},
   max_health = 400,
   minable =
@@ -305,41 +272,15 @@ local mining_depot =
       type = "fire"
     }
   },
-  scale_entity_info_icon = true,
-  vehicle_impact_sound =
-  {
-    {
-      filename = "__base__/sound/car-metal-impact-2.ogg",
-      volume = 0.5
-    },
-    {
-      filename = "__base__/sound/car-metal-impact-3.ogg",
-      volume = 0.5
-    },
-    {
-      filename = "__base__/sound/car-metal-impact-4.ogg",
-      volume = 0.5
-    },
-    {
-      filename = "__base__/sound/car-metal-impact-5.ogg",
-      volume = 0.5
-    },
-    {
-      filename = "__base__/sound/car-metal-impact-6.ogg",
-      volume = 0.5
-    }
-  },
   working_sound =
   {
-    audible_distance_modifier = 0.5,
     fade_in_ticks = 4,
     fade_out_ticks = 20,
     sound =
     {
-      {
-        filename = "__base__/sound/assembling-machine-t3-1.ogg",
-        volume = 0.45
-      }
+      filename = "__base__/sound/assembling-machine-t3-1.ogg",
+      volume = 0.45,
+      audible_distance_modifier = 0.5
     }
   },
   graphics_set = {working_visualisations = working_visualisations},
