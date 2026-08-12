@@ -4,5 +4,11 @@
     "codestyle-check",
     "unused-local",
     "spell-check"
+  ],
+  "factorio.versions": [
+    {
+      "name": "Factorio fetched",
+      "factorioPath": "c:\\Factorio\\bin\\fetched\\factorio.exe"
+    }
   ]
 }
