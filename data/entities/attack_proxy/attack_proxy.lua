@@ -162,11 +162,19 @@ end
 local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map", "not-in-kill-statistics", "not-repairable"}
 --local proxy_flags = {"placeable-neutral", "placeable-off-grid", "not-on-map"}
 
-local items = data.raw.item
---local tools = data.raw.tool
+--Resources can be mined into any kind of item, not just plain items - modded ores yielding
+--tools, ammo, item-with-entity-data and so on all have to be recognised as well.
+local item_types = {}
+for item_type in pairs (defines.prototypes.item) do
+  table.insert(item_types, item_type)
+end
+
 local get_item = function(name)
-  if items[name] then return items[name] end
-  --if tools[name] then return tools[name] end
+  for k, item_type in pairs (item_types) do
+    local prototypes = data.raw[item_type]
+    local prototype = prototypes and prototypes[name]
+    if prototype then return prototype end
+  end
 end
 
 local make_recipes = function(entity)
@@ -175,22 +183,28 @@ local make_recipes = function(entity)
 
   local results = entity.minable.results or {{entity.minable.result}}
   if not next(results) then return end
+
+  --A resource that asks for a fluid without saying how much of it can't be mined by a depot,
+  --and would otherwise generate a recipe with a nil ingredient amount.
   local fluid = entity.minable.required_fluid
+  local fluid_amount = entity.minable.fluid_amount
+  if fluid and not fluid_amount then return end
 
   local recipe_name = "mine-"..entity.name
 
   local localised_name = {"mine", entity.localised_name or {"entity-name."..entity.name}}
 
   local recipe_results = {}
+  local seen = {}
   for k, result in pairs (results) do
     local name = result.name or result[1]
-    local item_prototype = get_item(name)
-    if item_prototype then
+    --Fluid results can't go in the depot's output inventory, and a recipe can only list
+    --each product once.
+    if name and not seen[name] and get_item(name) then
+      seen[name] = true
       table.insert(recipe_results, {type = "item", name = name, amount = (2 ^ 16) - 1, show_details_in_recipe_tooltip = false})
     end
   end
-
-  --error(serpent.block{results = results, recipe_results = recipe_results})
 
   if not next(recipe_results) then return end
 
@@ -205,7 +219,7 @@ local make_recipes = function(entity)
     ingredients =
     {
       {type = "item", name = names.drone_name, amount = 1},
-      fluid and {type = "fluid", name = fluid, amount = entity.minable.fluid_amount * 10}
+      fluid and {type = "fluid", name = fluid, amount = fluid_amount * 10}
     },
     results = recipe_results,
     categories = {names.mining_depot},
@@ -226,6 +240,8 @@ local make_recipes = function(entity)
   for k = 1, shared.variation_count do
     make_drone(entity.name..shared.drone_name..k, map_color, entity.localised_name or {"entity-name."..entity.name})
   end
+
+  return true
 end
 
 local count = 0
@@ -361,8 +377,10 @@ local custom_tints =
 }
 
 for k, resource in pairs (data.raw.resource) do
-  if resource.minable and (resource.minable.result or resource.minable.results) then
-    make_recipes(resource)
+  --Only resources a depot can actually mine get the rest of the prototypes. Resources that
+  --yield nothing but fluid, like crude oil, would otherwise generate a proxy, four smokes
+  --and four pot animations that can never be reached.
+  if resource.minable and (resource.minable.result or resource.minable.results) and make_recipes(resource) then
     make_resource_attack_proxy(resource)
     local custom = false
     local map_color = resource.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 1 }

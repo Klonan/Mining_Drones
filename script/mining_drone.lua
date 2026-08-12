@@ -129,8 +129,13 @@ local get_proxy_name = function(entity)
 
 end
 
+--Read back off the entity, because the force it belongs to can change under us.
+function mining_drone:get_force_index()
+  return self.entity.force.index
+end
+
 function mining_drone:get_mining_speed()
-  return 0.5 * (1 + mining_technologies.get_mining_speed_bonus(self.force_index))
+  return 0.5 * (1 + mining_technologies.get_mining_speed_bonus(self:get_force_index()))
 end
 
 function mining_drone:make_attack_proxy()
@@ -170,7 +175,6 @@ mining_drone.new = function(entity, depot)
   {
     entity = entity,
     unit_number = entity.unit_number,
-    force_index = entity.force.index,
     depot = depot.entity.unit_number,
     inventory = get_inventory()
   }
@@ -258,7 +262,7 @@ function mining_drone:process_return_to_depot()
   end
 
   local target_inventory = depot:get_output_inventory()
-  local productivity_bonus = mining_technologies.get_productivity_bonus(self.force_index)
+  local productivity_bonus = mining_technologies.get_productivity_bonus(self:get_force_index())
   local item_flow = self.entity.force.get_item_production_statistics(self.entity.surface).on_flow
   local inventory = self.inventory
   local depot_is_full = false
@@ -585,7 +589,21 @@ local on_unit_added_to_group = function(event)
 
   local group = event.group
   if not (group and group.valid) then return end
-  group.destroy()
+
+  --A group takes over the commands of everything in it, which strands the drone. There is no way
+  --to pull a single member back out, so the group is only destroyed when it is made up entirely
+  --of drones - somebody else's group is left alone and the drone is simply re-commanded.
+  local all_drones = true
+  for k, member in pairs (group.members) do
+    if member.valid and not script_data.drones[member.unit_number] then
+      all_drones = false
+      break
+    end
+  end
+
+  if all_drones then
+    group.destroy()
+  end
 
   drone:process_distracted_command()
 

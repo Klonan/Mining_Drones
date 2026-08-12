@@ -7,8 +7,7 @@ Date: ????
       targets in range, missing required fluid, or no mining drones.
     - Depots handle being rotated: the bay, the drop off point and the mining area are rebuilt.
     - Depots built by script cloning are now registered and work.
-    - Added get_depot_count, get_bonuses, get_targeted_resource_count, get_pooled_inventory_count
-      and reset_depots to the 'mining_drones' remote interface.
+    - Added get_depot_count, get_bonuses and reset_depots to the 'mining_drones' remote interface.
     - The mod setting and the technology effect descriptions can now be translated.
   Bugfixes:
     - Fixed that mining drone productivity research did nothing. It has had no effect on the
@@ -32,8 +31,23 @@ Date: ????
     - Fixed that the drone smoke never faded out, and removed a pile of prototype properties that
       have not done anything since 2.0.
     - Removed the leftover proxy chest prototype, unused since 0.3.6.
+    - Fixed that resources which mine into anything other than a plain item, which several mods
+      use, got no mining recipe at all and so could never be mined by a depot.
+    - Fixed that a depot kept using the force it was built on, so moving one to another force
+      left it applying the wrong mining, walking, cargo and productivity bonuses.
+    - Fixed that a depot kept the fluid requirement it first saw, so a mod update that changed
+      what a recipe needs was ignored until the recipe was changed by hand.
+    - Fixed that a single path request that never came back, which happens when its surface is
+      deleted mid flight, permanently stopped every depot in the game from mining.
+    - Fixed that a depot briefly reported itself as working when its recipe changed, and that it
+      kept reporting itself as working when a rescan turned up nothing to mine.
+    - Fixed that a mining drone joining a unit group destroyed the whole group, even when it
+      belonged to another mod. Only groups made up entirely of drones are destroyed now.
+    - Fixed that a resource asking for a fluid without saying how much of it broke the data stage.
   Optimizations:
     - Drone inventories are recycled instead of being created and destroyed for every mining trip.
+    - Resources that only yield fluid, crude oil being the obvious one, no longer generate an
+      attack proxy, four smoke prototypes and four pot animations that could never be reached.
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.2
 Date: 2025-02-23

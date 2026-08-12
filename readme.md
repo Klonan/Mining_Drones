@@ -44,17 +44,20 @@ The mod registers a `mining_drones` remote interface:
 
 ### Self test
 
-`script/self_test.lua` is a dev-only smoke test. It builds a private surface with six depots on
-it and checks that drones deploy, ore actually arrives, fluid gating works, rotations and recipe
-changes are picked up, the technologies apply, the migration handlers do their job, and that
-everything cleans up without leaking entities, script inventories or resource registrations.
+`script/self_test.lua` is a dev-only smoke test. It builds a private surface with seven depots on
+it and checks that the generated prototypes are complete for every resource in the loaded mod set,
+that drones deploy and ore actually arrives, that fluid gating works, that rotations, recipe
+changes, force changes and status transitions are picked up, that the technologies apply, that a
+full depot throttles itself, that the migration handlers do their job, that an unanswered path
+request doesn't stall the mod, and that everything cleans up without leaking entities, script
+inventories or resource registrations.
 
 It is commented out in `control.lua` by default, because it builds entities on a running save.
 To use it, uncomment its `handler.add_lib` line and then run:
 
 ```
 factorio.exe --create test.zip
-factorio.exe --benchmark test.zip --benchmark-ticks 30000
+factorio.exe --benchmark test.zip --benchmark-ticks 37000
 ```
 
 It logs one line per check and finishes with `SELF_TEST_RESULT: PASS` or `FAIL`. Comment the line

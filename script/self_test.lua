@@ -7,7 +7,7 @@
 -- against a disposable test map. To use it: uncomment the `handler.add_lib` for this file in
 -- control.lua, then run
 --   factorio.exe --create test.zip
---   factorio.exe --benchmark test.zip --benchmark-ticks 30000
+--   factorio.exe --benchmark test.zip --benchmark-ticks 37000
 -- and check the log for "SELF_TEST_RESULT". Re-comment it out again afterwards.
 --
 -- Because it lives inside the mod it shares the mod's Lua state, so it can poke at storage and
@@ -70,11 +70,23 @@ local plots =
   north = {position = {x = -100, y = 0}, direction = defines.direction.north, resource = "copper-ore"},
   south = {position = {x = -100, y = 100}, direction = defines.direction.south, resource = "copper-ore"},
   east = {position = {x = 0, y = 100}, direction = defines.direction.east, resource = "copper-ore"},
-  west = {position = {x = 100, y = 100}, direction = defines.direction.west, resource = "copper-ore"}
+  west = {position = {x = 100, y = 100}, direction = defines.direction.west, resource = "copper-ore"},
+  --Built with neither a recipe nor any drones in it, so the status transitions can be watched
+  --all the way from "nothing to do" to "working" and back again.
+  idle = {position = {x = 0, y = -100}, direction = defines.direction.north, resource = "stone", deferred = true}
 }
 
 local refs
 local setup_ok = false
+
+--The depots live in buckets keyed by update slot, which is an implementation detail, so they are
+--looked up by scanning rather than by recomputing the bucket the mod would have used.
+local depot_object = function(entity)
+  for k, bucket in pairs (storage.mining_depot.depots) do
+    local depot = bucket[entity.unit_number]
+    if depot then return depot end
+  end
+end
 
 local flatten = function(surface, position)
   local tiles = {}
@@ -145,8 +157,10 @@ local build_depot = function(surface, plot, force)
     raise_built = true
   }
   if not (depot and depot.valid) then error("failed to build a depot at "..plot.position.x..","..plot.position.y) end
-  depot.set_recipe("mine-"..plot.resource)
-  depot.insert{name = drone_item, count = 10}
+  if not plot.deferred then
+    depot.set_recipe("mine-"..plot.resource)
+    depot.insert{name = drone_item, count = 10}
+  end
   return depot
 end
 
@@ -177,13 +191,14 @@ end
 -- Phases
 ---------------------------------------------------------------------------------------------------
 
-local setup = function()
+-- Everything the mod generates for a resource has to be generated for every resource, or a
+-- depot set to that recipe crashes the moment it tries to build a proxy, drone or pot animation.
+-- Run against a modded install this covers the mod set that is actually loaded.
+local check_generated_prototypes = function()
 
   check(prototypes.recipe["mine-iron-ore"] ~= nil, "iron ore mining recipe was generated")
   check(prototypes.recipe["mine-uranium-ore"] ~= nil, "uranium ore mining recipe was generated")
   check(prototypes.entity[shared.attack_proxy_name.."iron-ore"] ~= nil, "per resource attack proxy was generated")
-  check(remote.interfaces["mining_drones"] ~= nil, "remote interface is registered")
-  check(commands.commands["mining-depots-rescan"] ~= nil, "rescan command is registered")
 
   local has_fluid = false
   for k, ingredient in pairs (prototypes.recipe["mine-uranium-ore"].ingredients) do
@@ -191,37 +206,145 @@ local setup = function()
   end
   check(has_fluid, "uranium ore recipe requires a fluid ingredient")
 
+  local depot_categories = prototypes.entity[depot_name].crafting_categories
+
+  local recipes = 0
+  local missing_recipe, missing_proxy, missing_drone = 0, 0, 0
+  local unmineable_recipe, wrong_category, non_item_product = 0, 0, 0
+
+  for name, resource in pairs (prototypes.get_entity_filtered{{filter = "type", type = "resource"}}) do
+
+    local products = resource.mineable_properties.products
+    local mines_an_item = false
+    for k, product in pairs (products or {}) do
+      if product.type == "item" then mines_an_item = true end
+    end
+
+    local recipe = prototypes.recipe["mine-"..name]
+
+    if mines_an_item and not recipe then
+      missing_recipe = missing_recipe + 1
+    end
+
+    -- A resource that only yields fluid, crude oil being the obvious one, can't be put in the
+    -- depot's output inventory and must not generate anything at all.
+    if recipe and not mines_an_item then
+      unmineable_recipe = unmineable_recipe + 1
+    end
+
+    if recipe then
+      recipes = recipes + 1
+
+      local craftable = false
+      for k, category in pairs (recipe.categories) do
+        if depot_categories[category] then craftable = true end
+      end
+      if not craftable then wrong_category = wrong_category + 1 end
+
+      for k, product in pairs (recipe.products) do
+        if product.type ~= "item" then non_item_product = non_item_product + 1 end
+      end
+
+      if not prototypes.entity[shared.attack_proxy_name..name] then
+        missing_proxy = missing_proxy + 1
+      end
+
+      for k = 1, shared.variation_count do
+        if not prototypes.entity[name..drone_item..k] then
+          missing_drone = missing_drone + 1
+        end
+      end
+    end
+  end
+
+  check(recipes > 0, "mining recipes were generated ("..recipes..")")
+  check_equal(missing_recipe, 0, "every resource that mines into an item got a mining recipe")
+  check_equal(unmineable_recipe, 0, "resources that only yield fluid got no mining recipe")
+  check_equal(non_item_product, 0, "no mining recipe produces something the depot can't store")
+  check_equal(wrong_category, 0, "every mining recipe is in a category the depot can craft")
+  check_equal(missing_proxy, 0, "every mining recipe has its attack proxy")
+  check_equal(missing_drone, 0, "every mining recipe has all of its drone variations")
+
   -- Drones must not share an ammo category with anything the player can research, or damage
   -- upgrades would silently change how fast they mine.
   local categories = prototypes.entity["iron-ore"..drone_item.."1"].attack_parameters.ammo_categories
   check_equal(#categories, 1, "drones have exactly one ammo category")
   check_equal(categories[1], shared.ammo_category, "drones use their own ammo category")
 
+end
+
+local setup = function()
+
+  check(remote.interfaces["mining_drones"] ~= nil, "remote interface is registered")
+  check(commands.commands["mining-depots-rescan"] ~= nil, "rescan command is registered")
+
+  check_generated_prototypes()
+
   local surface = make_surface()
   local force = game.forces.player
 
   local depots = {}
+  local depot_count = 0
   for name, plot in pairs (plots) do
     check(place_resource_field(surface, plot) > 50, "placed the "..name.." "..plot.resource.." field")
     depots[name] = build_depot(surface, plot, force)
+    depot_count = depot_count + 1
   end
 
-  refs = {surface = surface, force = force, depots = depots}
+  refs = {surface = surface, force = force, depots = depots, depot_count = depot_count}
 
-  check_equal(mining_depot.get_depot_count(), 6, "every depot was registered")
-  check_equal(count_on_surface("mining-depot-collision-box"), 18, "every depot walled off its bay")
-  check_equal(count_on_surface("caution-corpse"), 12, "every depot placed its drop and spawn markers")
+  check_equal(mining_depot.get_depot_count(), depot_count, "every depot was registered")
+  check_equal(count_on_surface("mining-depot-collision-box"), depot_count * 3, "every depot walled off its bay")
+  check_equal(count_on_surface("caution-corpse"), depot_count * 2, "every depot placed its drop and spawn markers")
 
   report("setup complete")
 end
 
 local check_deployment = function()
   -- Highlight boxes delete themselves on their first update unless they are disabled.
-  check_equal(count_on_surface("mining-depot-collision-box"), 18, "collision walls survived their first update")
+  check_equal(count_on_surface("mining-depot-collision-box"), refs.depot_count * 3, "collision walls survived their first update")
   check(mining_drone.get_drone_count() > 0, "drones were deployed ("..mining_drone.get_drone_count()..")")
   check(mining_drone.get_drone_count() <= 60, "no more drones than the depots hold")
   check(mining_depot.get_targeted_resource_count() > 0, "resources are tracked as mining targets")
   check_equal(diode("main"), defines.entity_status_diode.green, "a working depot reports a green status")
+end
+
+---------------------------------------------------------------------------------------------------
+-- The idle depot walks through every status the depot can report.
+---------------------------------------------------------------------------------------------------
+
+local check_idle_has_no_recipe = function()
+  check_equal(diode("idle"), defines.entity_status_diode.red, "a depot without a recipe reports a red status")
+  check_equal(produced("idle"), 0, "a depot without a recipe mined nothing")
+  refs.depots.idle.set_recipe("mine-"..plots.idle.resource)
+end
+
+local check_idle_has_no_drones = function()
+  check_equal(diode("idle"), defines.entity_status_diode.yellow, "a depot with a recipe but no drones reports a warning")
+  check_equal(produced("idle"), 0, "a depot with no drones mined nothing")
+  refs.depots.idle.insert{name = drone_item, count = 10}
+end
+
+local check_idle_is_working = function()
+  check_equal(diode("idle"), defines.entity_status_diode.green, "the depot starts working once it has drones")
+end
+
+-- Taking the drone items away while drones are still out in the field must not confuse the
+-- depot's accounting, and it must stop sending new ones.
+local drain_idle_drones = function()
+  local produced_so_far = produced("idle")
+  check(produced_so_far > 0, "the idle depot delivered stone once it had drones ("..produced_so_far..")")
+  refs.idle_active = table_size(depot_object(refs.depots.idle).drones)
+
+  local removed = refs.depots.idle.get_inventory(defines.inventory.crafter_input).remove{name = drone_item, count = 100}
+  check(removed > 0, "the drone items were taken back out of the depot ("..removed..")")
+end
+
+local check_idle_drained = function()
+  check_equal(diode("idle"), defines.entity_status_diode.yellow, "the depot warns again once its drones are gone")
+  check_equal(refs.depots.idle.get_item_count(drone_item), 0, "no drone items came back from nowhere")
+  check(table_size(depot_object(refs.depots.idle).drones) <= refs.idle_active,
+        "no new drones were sent out once the drone items were gone")
 end
 
 local check_technologies = function()
@@ -264,8 +387,8 @@ local check_first_production = function()
   check(refs.iron_produced > 0, "iron ore was delivered ("..refs.iron_produced..")")
   check_equal(refs.depots.main.get_item_count(drone_item), 10, "no drone items were lost while mining")
 
-  for name in pairs (plots) do
-    if name ~= "main" and name ~= "fluid" then
+  for name, plot in pairs (plots) do
+    if name ~= "main" and name ~= "fluid" and not plot.deferred then
       check(produced(name) > 0, "the depot facing "..name.." delivered copper ore ("..produced(name)..")")
     end
   end
@@ -304,8 +427,8 @@ end
 
 local check_rotation = function()
   local depot = refs.depots.fluid
-  check_equal(count_on_surface("mining-depot-collision-box"), 18, "rotation rebuilt the walls without leaking any")
-  check_equal(count_on_surface("caution-corpse"), 12, "rotation rebuilt the drop marker without leaking any")
+  check_equal(count_on_surface("mining-depot-collision-box"), refs.depot_count * 3, "rotation rebuilt the walls without leaking any")
+  check_equal(count_on_surface("caution-corpse"), refs.depot_count * 2, "rotation rebuilt the drop marker without leaking any")
   check_equal(diode("fluid"), defines.entity_status_diode.red, "the rotated depot noticed its new area is empty")
 
   depot.direction = defines.direction.north
@@ -347,10 +470,18 @@ local check_migration = function()
   -- The technology bonuses used to live in storage too.
   storage.mining_technologies = {walking_speed = {}, mining_speed = {}, cargo_size = {}, productivity_bonus = {}}
 
+  -- A mod update can change what a recipe needs without renaming it, so the fluid requirement
+  -- has to be worked out again rather than kept from when the recipe was first seen.
+  local fluid_depot = depot_object(refs.depots.fluid)
+  check(fluid_depot.fluid ~= nil, "the fluid depot knows it needs a fluid")
+  fluid_depot.fluid = nil
+
   mining_depot.on_configuration_changed()
   mining_drone.on_configuration_changed()
   mining_technologies.on_configuration_changed()
 
+  check(fluid_depot.fluid ~= nil and fluid_depot.fluid.name == "sulfuric-acid",
+        "the fluid requirement was worked out again on a configuration change")
   check_equal(table_size(script_data.targeted_resources), tracked, "the tracking table was flattened without losing entries")
   local flat = true
   for index, target_data in pairs (script_data.targeted_resources) do
@@ -374,6 +505,94 @@ end
 
 local check_recovered = function()
   check(mining_drone.get_drone_count() > 0, "drones are deployed again after the reset")
+end
+
+-- A depot can end up on a different force than the one it was built on, so it must never keep
+-- using the force it happened to be created with.
+local change_force = function()
+
+  local entity = refs.depots.north
+  local depot = depot_object(entity)
+
+  if not check(depot ~= nil, "the north depot is registered") then return end
+
+  -- Nothing is taking the ore away, so by now every depot has filled its output past a full
+  -- load and throttled itself back rather than piling up more.
+  check(depot:get_max_output_amount() >= depot:get_target_item_count(), "the depot filled its output")
+  check_equal(depot:get_should_spawn_drone_count(), 0, "a full depot stops sending drones out")
+
+  local force = game.create_force("mining-drones-self-test")
+  refs.new_force = force
+  entity.force = force
+
+  check_equal(depot:get_force_index(), force.index, "the depot reads its force back off the entity")
+  check_equal(mining_technologies.get_cargo_size_bonus(force.index), 0, "the new force has no mining research")
+
+  -- The player force is at 0.6 productivity by now, the new force at nothing, so the depot's
+  -- idea of a full load has to drop back to the unresearched amount.
+  check_equal(depot:get_target_item_count(), 100 * depot:get_drone_item_count(),
+              "the depot sizes its load from the force it is on now")
+
+  entity.get_output_inventory().clear()
+  check(depot:get_should_spawn_drone_count() > 0, "emptying the output puts the depot back to work")
+  refs.copper_before_force_change = produced("north")
+end
+
+local check_force_change = function()
+  check(produced("north") > refs.copper_before_force_change,
+        "the depot keeps mining after being moved to another force ("..produced("north")..")")
+end
+
+-- Only one path request is ever in flight, and the engine drops script path requests without an
+-- answer when their surface goes away, so an unanswered one must not stall the mod forever.
+local stall_path_requests = function()
+  local script_data = storage.mining_depot
+  refs.stalled_id = -1
+  refs.depots.south.get_output_inventory().clear()
+  refs.copper_before_stall = produced("south")
+  script_data.path_requests[refs.stalled_id] = depot_object(refs.depots.south)
+  script_data.last_path_request_tick = game.tick - (60 * 30) - 1
+  check(script_data.path_requests[refs.stalled_id] ~= nil, "a path request that will never be answered is outstanding")
+end
+
+local check_path_requests_recovered = function()
+  local script_data = storage.mining_depot
+  check_equal(script_data.path_requests[refs.stalled_id], nil, "the unanswered path request was given up on")
+  check(produced("south") > refs.copper_before_stall,
+        "depots kept mining through an unanswered path request ("..produced("south")..")")
+end
+
+-- Entities can be removed by a script without raising anything, in which case on_object_destroyed
+-- is the only notice the mod gets.
+local silent_destroy = function()
+
+  local victim
+  for unit_number, drone in pairs (storage.mining_drone.drones) do
+    if drone.entity.valid then
+      victim = drone
+      break
+    end
+  end
+
+  if check(victim ~= nil, "there is a drone out in the field to destroy") then
+    refs.destroyed_drone = victim.unit_number
+    victim.entity.destroy()
+  end
+
+  refs.destroyed_depot = refs.depots.idle.unit_number
+  refs.depots.idle.destroy()
+  refs.depots.idle = nil
+  refs.depot_count = refs.depot_count - 1
+end
+
+-- on_object_destroyed is raised at the end of the tick, so the clean up can only be checked
+-- from a later one. Both are looked up by unit number, because the rest of the depots carry on
+-- spawning and retiring drones in the meantime.
+local check_silent_destroy = function()
+  check_equal(storage.mining_drone.drones[refs.destroyed_drone], nil, "a silently destroyed drone unregisters itself")
+  check_equal(depot_object{unit_number = refs.destroyed_depot}, nil, "a silently destroyed depot unregisters itself")
+  check_equal(count_on_surface("mining-depot-collision-box"), refs.depot_count * 3, "its collision walls went with it")
+  check_equal(count_on_surface("caution-corpse"), refs.depot_count * 2, "its markers went with it")
 end
 
 local tear_down = function()
@@ -411,21 +630,32 @@ end
 
 local phases =
 {
-  {tick =    60, name = "setup",             run = setup},
-  {tick =  1800, name = "deployment",        run = check_deployment},
-  {tick =  5400, name = "first production",  run = check_first_production},
-  {tick = 11400, name = "fluid production",  run = check_fluid_production},
-  {tick = 12000, name = "rotate",            run = rotate_depot},
-  {tick = 12600, name = "rotation",          run = check_rotation},
-  {tick = 18600, name = "rotated back",      run = check_rotated_back},
-  {tick = 19200, name = "change recipe",     run = change_recipe},
-  {tick = 19800, name = "migration",         run = check_migration},
-  {tick = 23400, name = "after migration",   run = check_after_migration},
-  {tick = 24000, name = "reset",             run = reset_depots},
-  {tick = 27000, name = "recovered",         run = check_recovered},
-  {tick = 27600, name = "tear down",         run = tear_down},
-  {tick = 28200, name = "no orphans",        run = check_no_orphans},
-  {tick = 28800, name = "registrations",     run = check_registrations_released}
+  {tick =    60, name = "setup",              run = setup},
+  {tick =  1800, name = "deployment",         run = check_deployment},
+  {tick =  2400, name = "idle no recipe",     run = check_idle_has_no_recipe},
+  {tick =  3000, name = "idle no drones",     run = check_idle_has_no_drones},
+  {tick =  4200, name = "idle working",       run = check_idle_is_working},
+  {tick =  5400, name = "first production",   run = check_first_production},
+  {tick =  7200, name = "drain idle",         run = drain_idle_drones},
+  {tick =  7800, name = "idle drained",       run = check_idle_drained},
+  {tick = 11400, name = "fluid production",   run = check_fluid_production},
+  {tick = 12000, name = "rotate",             run = rotate_depot},
+  {tick = 12600, name = "rotation",           run = check_rotation},
+  {tick = 18600, name = "rotated back",       run = check_rotated_back},
+  {tick = 19200, name = "change recipe",      run = change_recipe},
+  {tick = 19800, name = "migration",          run = check_migration},
+  {tick = 23400, name = "after migration",    run = check_after_migration},
+  {tick = 24000, name = "reset",              run = reset_depots},
+  {tick = 27000, name = "recovered",          run = check_recovered},
+  {tick = 27600, name = "change force",       run = change_force},
+  {tick = 30600, name = "force changed",      run = check_force_change},
+  {tick = 31200, name = "stall path request", run = stall_path_requests},
+  {tick = 33600, name = "path recovered",     run = check_path_requests_recovered},
+  {tick = 34200, name = "silent destroy",     run = silent_destroy},
+  {tick = 34260, name = "silently destroyed", run = check_silent_destroy},
+  {tick = 34800, name = "tear down",          run = tear_down},
+  {tick = 35400, name = "no orphans",         run = check_no_orphans},
+  {tick = 36000, name = "registrations",      run = check_registrations_released}
 }
 
 local final_tick = phases[#phases].tick + 60

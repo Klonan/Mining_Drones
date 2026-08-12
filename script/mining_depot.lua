@@ -41,8 +41,14 @@ local unique_index = function(entity)
   return script.register_on_object_destroyed(entity)
 end
 
+--The depot can change force after it was built (script, force merge, capture), so the index is
+--always read back off the entity rather than trusting the one it was created with.
+function mining_depot:get_force_index()
+  return self.entity.force.index
+end
+
 function mining_depot:get_mining_count(entity)
-  local bonus = mining_technologies.get_cargo_size_bonus(self.force_index)
+  local bonus = mining_technologies.get_cargo_size_bonus(self:get_force_index())
   return min(3 + random(2 + bonus), entity.amount)
 end
 
@@ -274,7 +280,6 @@ function mining_depot.new(entity)
     recent = {},
     path_requests = {},
     surface_index = entity.surface.index,
-    force_index = entity.force.index,
     unit_number = entity.unit_number,
     direction = entity.direction,
     fluid = nil
@@ -369,7 +374,7 @@ end
 local drone_base_speed = 0.05
 
 function mining_depot:get_drone_speed()
-  return (drone_base_speed * (1 + mining_technologies.get_walking_speed_bonus(self.force_index))) * get_speed_variance()
+  return (drone_base_speed * (1 + mining_technologies.get_walking_speed_bonus(self:get_force_index()))) * get_speed_variance()
 end
 
 local direction_names =
@@ -531,8 +536,6 @@ function mining_depot:update()
   local item = self:get_target_resource_name()
   if item ~= self.target_resource_name then
     self:target_name_changed()
-    self:set_status(item and status_ok or status_no_recipe)
-    return
   end
 
   if not item then
@@ -559,6 +562,11 @@ function mining_depot:update()
 
     self:find_potential_targets()
 
+    if not self:has_mining_targets() then
+      self:set_status(status_no_targets)
+      return
+    end
+
   end
 
   if not self:has_enough_fluid() then
@@ -581,7 +589,7 @@ local target_amount_per_drone = 100
 local max_target_amount = 65000 / 250
 
 function mining_depot:get_target_item_count()
-  local productivity = 1 + mining_technologies.get_productivity_bonus(self.force_index)
+  local productivity = 1 + mining_technologies.get_productivity_bonus(self:get_force_index())
   return min(productivity * target_amount_per_drone, max_target_amount) * self:get_drone_item_count()
 end
 
@@ -1025,8 +1033,33 @@ function mining_depot:get_active_drone_count()
   return table_size(self.drones)
 end
 
+--Only one path request is ever in flight, so a request that never comes back would stall every
+--depot in the game forever. The engine drops script path requests without an answer when their
+--surface is deleted, so anything this old is given up on and the reservations handed back.
+local stale_path_request_timeout = 60 * 30
+
+local abandon_path_requests = function()
+  for id, depot in pairs (script_data.path_requests) do
+    script_data.path_requests[id] = nil
+    local requests = depot.path_requests
+    local entity = requests and requests[id]
+    if requests then
+      requests[id] = nil
+    end
+    if entity and entity.valid then
+      depot:add_mining_target(entity, true)
+    end
+  end
+end
+
 local process_request_queue = function()
-  if next(script_data.path_requests) then return end
+
+  if next(script_data.path_requests) then
+    local last = script_data.last_path_request_tick
+    if last and (game.tick - last) < stale_path_request_timeout then return end
+    abandon_path_requests()
+  end
+
   for depot_unit_number, entities in pairs (script_data.request_queue) do
     local depot = get_mining_depot(depot_unit_number)
     if depot then
@@ -1109,6 +1142,7 @@ function mining_depot:request_path(entity)
   }
 
   script_data.path_requests[path_request_id] = self
+  script_data.last_path_request_tick = game.tick
   self.path_requests[path_request_id] = entity
 
 end
@@ -1138,6 +1172,9 @@ end
 
 function mining_depot:check_for_rescan()
   if self.target_resource_name == self:get_target_resource_name() then
+    --The recipe kept its name, but a mod update can still have changed what it needs, so the
+    --fluid requirement is always recalculated.
+    self.fluid = self:get_required_fluid()
     return
   end
   self:target_name_changed()
