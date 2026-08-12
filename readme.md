@@ -11,7 +11,7 @@ Demonstration video: https://streamable.com/ymk8h
 You can also mine things like Uranium, by inputting the required fluid into the back of the depot.
 The mining depot has a small caution floor mat in front of where the drones spawn. If you block it, a warning will show, and drones won't be able to spawn.
 
-The mining area is shown when hovering over a depot, it is a 80x80 area in front of the depot.
+The mining area is shown when hovering over a depot, it is a roughly 50x50 area in front of the depot.
 
 The mining drones and mining depot is unlocked from the start of the game (so you can use it instead of mining drills), and they don't require any power.
 

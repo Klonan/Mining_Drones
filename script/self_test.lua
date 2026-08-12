@@ -207,10 +207,12 @@ local check_generated_prototypes = function()
   check(has_fluid, "uranium ore recipe requires a fluid ingredient")
 
   local depot_categories = prototypes.entity[depot_name].crafting_categories
+  local fluid_volume = prototypes.entity[depot_name].fluidbox_prototypes[1].get_volume()
 
   local recipes = 0
   local missing_recipe, missing_proxy, missing_drone = 0, 0, 0
   local unmineable_recipe, wrong_category, non_item_product = 0, 0, 0
+  local unpayable_fluid = 0
 
   for name, resource in pairs (prototypes.get_entity_filtered{{filter = "type", type = "resource"}}) do
 
@@ -245,6 +247,14 @@ local check_generated_prototypes = function()
         if product.type ~= "item" then non_item_product = non_item_product + 1 end
       end
 
+      --The depot only starts mining once it holds a tenth of the recipe's fluid amount, so a
+      --fluid box smaller than that means the resource can never be mined however much is piped in.
+      for k, ingredient in pairs (recipe.ingredients) do
+        if ingredient.type == "fluid" and (ingredient.amount / 10) > fluid_volume then
+          unpayable_fluid = unpayable_fluid + 1
+        end
+      end
+
       if not prototypes.entity[shared.attack_proxy_name..name] then
         missing_proxy = missing_proxy + 1
       end
@@ -264,6 +274,7 @@ local check_generated_prototypes = function()
   check_equal(wrong_category, 0, "every mining recipe is in a category the depot can craft")
   check_equal(missing_proxy, 0, "every mining recipe has its attack proxy")
   check_equal(missing_drone, 0, "every mining recipe has all of its drone variations")
+  check_equal(unpayable_fluid, 0, "every fluid gated recipe fits in the depot fluid box")
 
   -- Drones must not share an ammo category with anything the player can research, or damage
   -- upgrades would silently change how fast they mine.
@@ -416,6 +427,43 @@ local check_fluid_production = function()
   check(produced("main") > refs.iron_produced, "the iron depot kept producing after the research")
 end
 
+-- A depot that cannot pay for a single mine must retire the drone it was about to order,
+-- instead of leaving it standing in the field forever with no command.
+local check_fluid_starvation = function()
+
+  local entity = refs.depots.fluid
+  local depot = depot_object(entity)
+  if not check(depot ~= nil, "the fluid depot is registered") then return end
+
+  local drone
+  for unit_number in pairs (depot.drones) do
+    local candidate = storage.mining_drone.drones[unit_number]
+    if candidate and candidate.entity.valid then
+      drone = candidate
+      break
+    end
+  end
+  if not check(drone ~= nil, "the fluid depot has a drone in the field") then return end
+
+  entity.clear_fluid(1)
+
+  local target = drone.mining_target
+  if not (target and target.valid) then
+    target = refs.surface.find_entities_filtered{name = plots.fluid.resource, limit = 1}[1]
+  end
+  if not check(target ~= nil, "there is a uranium target to order the drone to") then return end
+
+  local unit_number = drone.unit_number
+  local drone_items = entity.get_item_count(drone_item)
+  depot:order_drone(drone, target)
+
+  check(not drone.entity.valid, "a drone the depot could not pay for was retired, not stranded")
+  check_equal(storage.mining_drone.drones[unit_number], nil, "the retired drone unregistered itself")
+  check_equal(depot.drones[unit_number], nil, "the depot forgot the retired drone")
+  check_equal(entity.get_item_count(drone_item), drone_items, "retiring the drone did not consume a drone item")
+
+end
+
 -- The engine only lets a crafting machine with this shape turn around while its fluid box is in
 -- use, so the uranium depot is the only one that can actually be rotated in game.
 local rotate_depot = function()
@@ -470,6 +518,13 @@ local check_migration = function()
   -- The technology bonuses used to live in storage too.
   storage.mining_technologies = {walking_speed = {}, mining_speed = {}, cargo_size = {}, productivity_bonus = {}}
 
+  -- A fresh install must be born with the inventory fix marked as done, or the first mod update
+  -- would needlessly wipe the cargo of every drone in the field. Saves from before the fix
+  -- existed don't have the flag, which is what makes the fix run for them - so unset it here to
+  -- walk the path an old save would take.
+  check_equal(storage.mining_drone.fix_inventories, true, "a fresh install is marked as not needing the inventory fix")
+  storage.mining_drone.fix_inventories = nil
+
   -- A mod update can change what a recipe needs without renaming it, so the fluid requirement
   -- has to be worked out again rather than kept from when the recipe was first seen.
   local fluid_depot = depot_object(refs.depots.fluid)
@@ -489,12 +544,33 @@ local check_migration = function()
   end
   check(flat, "every migrated entry is a target rather than a surface bucket")
   check_equal(storage.mining_technologies, nil, "the stale technology storage was dropped")
+  check_equal(storage.mining_drone.fix_inventories, true, "the inventory fix ran and marked itself done")
   check_close(mining_technologies.get_productivity_bonus(refs.force.index), 0.6, "bonuses are still correct after migration")
 end
 
 local check_after_migration = function()
   check(produced("main") > refs.iron_produced, "the depot mines again after the migration ("..produced("main")..")")
   refs.iron_produced = produced("main")
+end
+
+-- Once the inventory fix has run, further configuration changes must leave the drone
+-- inventories alone - replacing them throws away whatever the drones are carrying.
+local check_repeat_configuration_change = function()
+
+  local drone
+  for unit_number, candidate in pairs (storage.mining_drone.drones) do
+    if candidate.entity.valid then
+      drone = candidate
+      break
+    end
+  end
+  if not check(drone ~= nil, "there is an active drone to watch through a configuration change") then return end
+
+  local inventory = drone.inventory
+  mining_drone.on_configuration_changed()
+  check(inventory.valid and drone.inventory == inventory,
+        "a configuration change on an up to date save does not replace drone inventories")
+
 end
 
 local reset_depots = function()
@@ -560,6 +636,54 @@ local check_path_requests_recovered = function()
   check_equal(script_data.path_requests[refs.stalled_id], nil, "the unanswered path request was given up on")
   check(produced("south") > refs.copper_before_stall,
         "depots kept mining through an unanswered path request ("..produced("south")..")")
+end
+
+-- The west depot filled up and idled long ago; emptying its output puts drones back in the
+-- field so the next phase has one to kill.
+local wake_west_depot = function()
+  refs.depots.west.get_output_inventory().clear()
+end
+
+-- A script can destroy a drone and its depot in the same tick without raising anything. Both
+-- are then handled from on_object_destroyed at the end of the tick, in an order the API does
+-- not promise. The drone side has to survive reaching a depot object whose entity is already
+-- invalid, whichever way around the engine delivers them.
+local same_tick_destroy = function()
+
+  local entity = refs.depots.west
+  local depot = depot_object(entity)
+  refs.depots.west = nil
+  refs.depot_count = refs.depot_count - 1
+
+  if not check(depot ~= nil, "the west depot is registered") then
+    entity.destroy()
+    return
+  end
+
+  local victim
+  for unit_number in pairs (depot.drones) do
+    local drone = storage.mining_drone.drones[unit_number]
+    if drone and drone.entity.valid then
+      victim = drone
+      break
+    end
+  end
+
+  if check(victim ~= nil, "the west depot had a drone in the field when it was destroyed") then
+    refs.same_tick_unit = victim.unit_number
+    victim.entity.destroy()
+  end
+
+  entity.destroy()
+
+end
+
+-- The end-of-tick handlers either crashed the game (in which case nothing below ever runs) or
+-- cleaned both of them up.
+local check_same_tick_destroy = function()
+  if not refs.same_tick_unit then return end
+  check_equal(storage.mining_drone.drones[refs.same_tick_unit], nil,
+              "a drone destroyed in the same tick as its depot cleans up without a crash")
 end
 
 -- Entities can be removed by a script without raising anything, in which case on_object_destroyed
@@ -639,18 +763,23 @@ local phases =
   {tick =  7200, name = "drain idle",         run = drain_idle_drones},
   {tick =  7800, name = "idle drained",       run = check_idle_drained},
   {tick = 11400, name = "fluid production",   run = check_fluid_production},
+  {tick = 11460, name = "fluid starvation",   run = check_fluid_starvation},
   {tick = 12000, name = "rotate",             run = rotate_depot},
   {tick = 12600, name = "rotation",           run = check_rotation},
   {tick = 18600, name = "rotated back",       run = check_rotated_back},
   {tick = 19200, name = "change recipe",      run = change_recipe},
   {tick = 19800, name = "migration",          run = check_migration},
   {tick = 23400, name = "after migration",    run = check_after_migration},
+  {tick = 23460, name = "repeat config change", run = check_repeat_configuration_change},
   {tick = 24000, name = "reset",              run = reset_depots},
   {tick = 27000, name = "recovered",          run = check_recovered},
   {tick = 27600, name = "change force",       run = change_force},
   {tick = 30600, name = "force changed",      run = check_force_change},
   {tick = 31200, name = "stall path request", run = stall_path_requests},
   {tick = 33600, name = "path recovered",     run = check_path_requests_recovered},
+  {tick = 33660, name = "wake west depot",    run = wake_west_depot},
+  {tick = 34140, name = "same tick destroy",  run = same_tick_destroy},
+  {tick = 34160, name = "same tick destroyed", run = check_same_tick_destroy},
   {tick = 34200, name = "silent destroy",     run = silent_destroy},
   {tick = 34260, name = "silently destroyed", run = check_silent_destroy},
   {tick = 34800, name = "tear down",          run = tear_down},

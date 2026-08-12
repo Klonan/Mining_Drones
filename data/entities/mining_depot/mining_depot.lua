@@ -220,7 +220,9 @@ local mining_depot =
       production_type = "input",
       pipe_picture = mining_depot_pipes(),
       pipe_covers = pipecoverspictures(),
-      volume = 10,
+      --The 1.1 fluid box was base_area 5, height 2, which converts to a volume of 1000.
+      --The 2.0 update wrote 10 here, so resources needing more than 10 fluid could never be mined.
+      volume = 1000,
       pipe_connections =
       {
         {direction = 12, flow_direction = "input-output", position = {-2, -0.5} },

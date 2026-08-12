@@ -12,6 +12,11 @@ Date: ????
   Bugfixes:
     - Fixed that mining drone productivity research did nothing. It has had no effect on the
       amount of ore delivered since the 2.0 update.
+    - Fixed that the depot fluid box was converted to a hundredth of its old size in the 2.0
+      update, so any resource needing more than 10 fluid could never be mined at all.
+    - Fixed that a drone could be left standing in the field forever with no orders if the
+      depot ran out of fluid at the exact moment it was being ordered.
+    - Recipes for fluid gated resources now say which fluid they need.
     - Fixed that mining targets were never released when a depot was removed or had its recipe
       changed while it had queued path requests, which permanently reserved those ore entities
       so no other depot would mine them.

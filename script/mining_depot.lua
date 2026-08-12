@@ -436,6 +436,11 @@ local draw_text = rendering.draw_text
 
 function mining_depot:update_sticker()
 
+  --Defensive: when a drone and its depot are destroyed in the same tick, today the depot is
+  --always cleaned up first, but that rests on undocumented event ordering - so the drone paths
+  --into here must survive a depot object whose entity is already gone.
+  if not self.entity.valid then return end
+
   if self.rendering and self.rendering.valid then
     self.rendering.text = self:get_active_drone_count() .. "/" .. self:get_drone_item_count()
     return
@@ -623,10 +628,6 @@ function mining_depot:get_should_spawn_drone_count(extra)
 
 end
 
-function mining_depot:say(text)
-  self.entity.surface.create_entity{name = "flying-text", position = self.entity.position, text = text}
-end
-
 function mining_depot:try_to_mine_targets()
 
   if self:get_active_drone_count() >= self:get_drone_item_count() then
@@ -792,7 +793,8 @@ end
 
 function mining_depot:remove_drone(drone, remove_item)
 
-  if remove_item then
+  --Defensive, see update_sticker.
+  if remove_item and self.entity.valid then
     local inventory = self:get_drone_inventory()
     if inventory and inventory.valid then
       inventory.remove{name = default_bot_name, count = 1}
@@ -825,7 +827,11 @@ function mining_depot:order_drone(drone, entity)
     if available < needed_fluid then
       mining_count = floor(available / fluid_per_mine)
       if mining_count <= 0 then
+        --Can't pay for a single mine: release the target and retire the drone, instead of
+        --leaving it standing in the field forever with no command.
         self:add_mining_target(entity)
+        drone.mining_target = nil
+        self:return_drone(drone)
         return
       end
       needed_fluid = fluid_per_mine * mining_count

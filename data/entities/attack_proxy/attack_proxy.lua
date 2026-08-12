@@ -192,7 +192,15 @@ local make_recipes = function(entity)
 
   local recipe_name = "mine-"..entity.name
 
-  local localised_name = {"mine", entity.localised_name or {"entity-name."..entity.name}}
+  local resource_localised_name = entity.localised_name or {"entity-name."..entity.name}
+  local localised_name
+  if fluid then
+    local fluid_prototype = data.raw.fluid[fluid]
+    local fluid_localised_name = (fluid_prototype and fluid_prototype.localised_name) or {"fluid-name."..fluid}
+    localised_name = {"mine-with-fluid", resource_localised_name, fluid_localised_name}
+  else
+    localised_name = {"mine", resource_localised_name}
+  end
 
   local recipe_results = {}
   local seen = {}

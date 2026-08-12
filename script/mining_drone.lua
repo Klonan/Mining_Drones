@@ -21,7 +21,9 @@ local script_data =
 {
   drones = {},
   inventory_pool = {},
-  big_migration = true
+  --Fresh installs never had the leaked inventories, so the one time fix in
+  --on_configuration_changed must not run and throw away in-flight drone cargo.
+  fix_inventories = true
 }
 
 local drone_path_flags = {prefer_straight_paths = false, use_cache = false}
@@ -382,10 +384,6 @@ function mining_drone:update(event)
     self:process_return_to_depot()
     return
   end
-end
-
-function mining_drone:say(text)
-  self.entity.surface.create_entity{name = "flying-text", position = self.entity.position, text = text}
 end
 
 function mining_drone:attack_mining_proxy()
