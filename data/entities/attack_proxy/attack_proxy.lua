@@ -218,31 +218,31 @@ local make_recipes = function(entity)
 
   local recipe =
   {
-    type = "recipe",
-    name = recipe_name,
-    localised_name = localised_name,
-    icon = entity.dark_background_icon or entity.icon,
-    icon_size = entity.icon_size,
-    icons = entity.icons,
-    ingredients =
-    {
-      {type = "item", name = names.drone_name, amount = 1},
-      fluid and {type = "fluid", name = fluid, amount = fluid_amount * 10}
-    },
-    results = recipe_results,
-    categories = {names.mining_depot},
-    subgroup = "extraction-machine",
-    --overload_multiplier = 100,
-    hide_from_player_crafting = true,
-    main_product = "",
-    allow_decomposition = false,
-    allow_as_intermediate = false,
-    allow_intermediates = true,
-    can_set_quality = false,
-    order = entity.order or entity.name,
-    allow_inserter_overload = false,
-    energy_required = 1.166
-  }
+  type = "recipe",
+  name = recipe_name,
+  localised_name = localised_name,
+  icon = entity.dark_background_icon or entity.icon,
+  icon_size = entity.icon_size,
+  icons = entity.icons,
+  ingredients = {
+    { type = "item", name = names.drone_name, amount = 1 },
+    fluid and { type = "fluid", name = fluid, amount = fluid_amount * 10 }
+  },
+  results = recipe_results,
+  categories = { names.mining_depot },
+  subgroup = "extraction-machine",
+  --overload_multiplier = 100,
+  hide_from_player_crafting = true,
+  main_product = "",
+  allow_decomposition = false,
+  allow_as_intermediate = false,
+  allow_intermediates = true,
+  can_set_quality = false,
+  order = entity.order or entity.name,
+  allow_inserter_overload = false,
+  auto_recycle = false,
+  energy_required = 1.166
+}
   data:extend{recipe}
 
   local map_color = entity.map_color or { r = 0.869, g = 0.5, b = 0.130, a = 0.5 }
