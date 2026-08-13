@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.0
-Date: ????
+Date: 2026-08-13
   Changes:
     - Updated to Factorio 2.1.
     - Depots now show a proper status in their GUI: working, no resource selected, no mining
@@ -9,6 +9,7 @@ Date: ????
     - Depots built by script cloning are now registered and work.
     - Added get_depot_count, get_bonuses and reset_depots to the 'mining_drones' remote interface.
     - The mod setting and the technology effect descriptions can now be translated.
+    - Disabled quality on the mining recipes.
   Bugfixes:
     - Fixed that mining drone productivity research did nothing. It has had no effect on the
       amount of ore delivered since the 2.0 update.

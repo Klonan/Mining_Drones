@@ -238,6 +238,7 @@ local make_recipes = function(entity)
     allow_decomposition = false,
     allow_as_intermediate = false,
     allow_intermediates = true,
+    can_set_quality = false,
     order = entity.order or entity.name,
     allow_inserter_overload = false,
     energy_required = 1.166
