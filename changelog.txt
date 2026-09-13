@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.1.1
+Date: 2026-09-13
+  Changes:
+    - Adjusted the mining drone recipes so you can actually craft them. Mining drones are quite a bit more expensive now.
+---------------------------------------------------------------------------------------------------
 Version: 2.1.0
 Date: 2026-08-13
   Changes:

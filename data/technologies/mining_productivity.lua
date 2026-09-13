@@ -66,7 +66,7 @@ for k = 1, finite_levels do
       icons = technology_icons(),
       upgrade = true,
       effects = effects(),
-      prerequisites = k > 1 and {name.."-"..(k - 1)} or {},
+      prerequisites = k > 1 and {name.."-"..(k - 1)} or {"automation-science-pack"},
       unit =
       {
         count = k * 250,

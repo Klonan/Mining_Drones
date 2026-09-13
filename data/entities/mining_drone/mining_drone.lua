@@ -21,9 +21,9 @@ local recipe =
   enabled = true,
   ingredients =
   {
-    {type = "item", name = "iron-plate", amount = 10},
-    {type = "item", name = "iron-gear-wheel", amount = 5},
-    {type = "item", name = "iron-stick", amount = 10}
+    {type = "item", name = "light-armor", amount = 1},
+    {type = "item", name = "iron-plate", amount = 2},
+    {type = "item", name = "iron-gear-wheel", amount = 4},
   },
   energy_required = 2,
   results = {{type = "item", name = name, amount = 1}}
